@@ -1,0 +1,58 @@
+plugins {
+     id 'com.android.application'
+}
+
+def buildWithCMake = project.hasProperty('BUILD_WITH_CMAKE');
+
+android {
+    namespace = "com.crzgames.myapp"
+    compileSdkVersion 36
+    defaultConfig {
+        minSdkVersion 28
+        targetSdkVersion 36
+        versionCode 1
+        versionName "1.0"
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_PLATFORM=android-28", "-DANDROID_STL=c++_static"
+                abiFilters 'armeabi-v7a', 'arm64-v8a'
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    applicationVariants.all { variant ->
+        tasks["merge${variant.name.capitalize()}Assets"]
+            .dependsOn("externalNativeBuild${variant.name.capitalize()}")
+    }
+    if (!project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
+        sourceSets.main {
+            jniLibs.srcDir 'libs'
+        }
+
+        externalNativeBuild {
+            cmake {
+                path '../../CMakeLists.txt'
+                version '4.0.2'
+            }
+        }
+    }
+    sourceSets {
+        main {
+            assets {
+                srcDirs '../../examples/assets'
+            }
+        }
+    }
+    lint {
+        abortOnError = false
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+}

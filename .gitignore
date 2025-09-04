@@ -1,0 +1,21 @@
+.idea
+.vs
+.vscode
+.DS_Store
+/site/
+/dist/
+nul
+build
+
+# librc2d android project
+**/local.properties
+**/.gradle/
+**/app/build/
+**/app/.cxx/
+
+# Dependency directories
+/dependencies/
+
+docker-build-output
+
+examples/shaders/tools/
