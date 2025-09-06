@@ -54,6 +54,14 @@ typedef struct RC2D_GraphicsShaderEntry {
     RC2D_GPUShader* shader;
 
     /**
+     * Pointeur vers l'état de rendu GPU associé (pour l'API Renderer GPU).
+     * 
+     * IMPORTANT:
+     * \note Ce pointeur doit être libéré via SDL_DestroyGPURenderState().
+     */
+    SDL_GPURenderState* gpu_render_state;
+
+    /**
      * Timestamp de la dernière modification du fichier shader.
      */
     SDL_Time lastModified;
@@ -120,6 +128,20 @@ typedef struct RC2D_EngineState {
  * \since Cette variable est disponible depuis RC2D 1.0.0.
  */
 extern RC2D_EngineState rc2d_engine_state;
+
+/**
+ * \brief Hot-reload des shaders graphiques (fragment).
+ * 
+ * Cette fonction utilise SDL_GetPathInfo pour obtenir les informations sur le fichier
+ * spécifié, si un shader graphique a été modifié depuis sa dernière compilation,
+ * alors il doit être recompilé.
+ * 
+ * \param {const char*} path - Chemin du fichier dont on veut obtenir le temps de modification.
+ * \return {SDL_Time} - Temps de modification du fichier, ou 0 en cas d'erreur.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_gpu_hotReloadGraphicsShaders(void);
 
 /**
  * \brief Initialise le moteur RC2D.
