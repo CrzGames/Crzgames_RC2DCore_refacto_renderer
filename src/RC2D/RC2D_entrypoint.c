@@ -16,6 +16,7 @@
 #include <RC2D/RC2D_internal.h>
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_memory.h>
+#include <RC2D/RC2D_graphics.h>
 
 /**
  * SDL3 Callback: Initialisation
@@ -123,25 +124,21 @@ SDL_AppResult SDL_AppIterate(void *appstate)
      * 7. Terminer le calcul du delta time pour la frame actuelle.
      */
     rc2d_engine_deltatime_start();
-    #if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
-    rc2d_gpu_hotReloadGraphicsShadersAndGraphicsPipeline();
-    rc2d_gpu_hotReloadComputeShader();
-    #endif
+
     if (rc2d_engine_state.config != NULL && 
         rc2d_engine_state.config->callbacks != NULL && 
         rc2d_engine_state.config->callbacks->rc2d_update != NULL) 
     {
         rc2d_engine_state.config->callbacks->rc2d_update(rc2d_engine_state.delta_time);
     }
-    rc2d_gpu_clear();
-    if (!rc2d_engine_state.skip_rendering &&
-        rc2d_engine_state.config != NULL && 
+    rc2d_graphics_clear();
+    if (rc2d_engine_state.config != NULL && 
         rc2d_engine_state.config->callbacks != NULL && 
         rc2d_engine_state.config->callbacks->rc2d_draw != NULL) 
     {
         rc2d_engine_state.config->callbacks->rc2d_draw();
     }
-    rc2d_gpu_present();
+    rc2d_graphics_present();
     rc2d_engine_deltatime_end();
 
     /**

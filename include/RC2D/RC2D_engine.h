@@ -984,106 +984,6 @@ typedef struct RC2D_Callbacks {
 } RC2D_EngineCallbacks;
 
 /**
- * \brief Modes d'affichage pour le contenu du letterbox/pillarbox.
- * 
- * Définit comment les zones de letterbox/pillarbox (marges visibles autour du rendu principal)
- * doivent être remplies lorsque la résolution logique n'occupe pas toute la fenêtre.
- * 
- * \note Ces zones apparaissent notamment en cas de mise à l’échelle non proportionnelle
- * ou de ratio d’aspect incompatible (par ex. 16:9 dans une fenêtre 4:3).
- * Ce système permet d’améliorer l’esthétique du rendu sur tous les écrans.
- * 
- * \since Cette enum est disponible depuis RC2D 1.0.0.
- */
-typedef enum RC2D_LetterboxMode {
-    /**
-     * Aucune texture ni remplissage : les marges ne sont pas dessinées, donc noires.
-     * 
-     * Cela signifie que si le contenu ne remplit pas l'écran, les zones de letterbox
-     * seront noires par défaut.
-     */
-    RC2D_LETTERBOX_NONE,
-
-    /**
-     * Une seule texture est utilisée pour tous les bords.
-     * 
-     * Cela signifie que la même texture sera appliquée sur le haut, le bas, la gauche
-     * et la droite de l'écran, créant un effet uniforme.
-     */
-    RC2D_LETTERBOX_UNIFORM,
-
-    /**
-     * Chaque bord (haut, bas, gauche, droite) peut avoir sa propre texture.
-     * 
-     * Cela permet une personnalisation plus poussée, où chaque bord peut afficher
-     * une texture différente pour un effet visuel unique.
-     */
-    RC2D_LETTERBOX_PER_SIDE,
-
-    /**
-     * Une grande texture unique est affichée derrière toute la scène, 
-     * incluant les zones letterbox et le rendu principal.
-     * 
-     * Cela signifie que la texture remplira l'arrière-plan de l'écran, y compris les zones de letterbox,
-     * créant un effet d'immersion totale.
-     */
-    RC2D_LETTERBOX_BACKGROUND_FULL,
-
-    /**
-     * Un shader est appliqué aux zones de letterbox/pillarbox.
-     * 
-     * Cela permet de dessiner un effet visuel personnalisé (via un shader) dans les zones
-     * de letterbox/pillarbox, au lieu d'utiliser des textures.
-     */
-    RC2D_LETTERBOX_SHADER
-} RC2D_LetterboxMode;
-
-/**
- * \brief Textures de remplissage pour les marges du letterbox/pillarbox.
- * 
- * Cette structure permet de définir le comportement visuel des marges 
- * (haut, bas, gauche, droite) en cas de mise à l’échelle logique avec le mode 
- * `RC2D_LOGICAL_PRESENTATION_LETTERBOX` ou `RC2D_LOGICAL_PRESENTATION_INTEGER_SCALE`.
- *
- * \since Cette structure est disponible depuis RC2D 1.0.0.
- */
-typedef struct RC2D_LetterboxTextures {
-    /**
-     * Mode d’affichage utilisé pour remplir les zones de letterbox.
-     * 
-     * - `RC2D_LETTERBOX_NONE` : pas de remplissage, marges noires.
-     * - `RC2D_LETTERBOX_UNIFORM` : une seule texture sur tous les bords.
-     * - `RC2D_LETTERBOX_PER_SIDE` : textures différentes pour chaque bord.
-     * - `RC2D_LETTERBOX_BACKGROUND_FULL` : texture géante en arrière-plan.
-     */
-    RC2D_LetterboxMode mode;
-
-    /**
-     * Texture unique utilisée sur tous les côtés (mode `RC2D_LETTERBOX_UNIFORM`).
-     */
-    const char* uniform_filename;
-
-    /**
-     * Texture spécifique pour chaque côtés (mode `RC2D_LETTERBOX_PER_SIDE`).
-     */
-    const char* top_filename;
-    const char* bottom_filename;
-    const char* left_filename;
-    const char* right_filename;
-
-    /**
-     * Texture géante utilisée en arrière-plan total (mode `RC2D_LETTERBOX_BACKGROUND_FULL`).
-     */
-    const char* background_filename;
-
-    /**
-     * Noms des fichiers de shader pour le mode `RC2D_LETTERBOX_SHADER`.
-     */
-    const char* shader_vertex_filename;
-    const char* shader_fragment_filename;
-} RC2D_LetterboxTextures;
-
-/**
  * \brief Définit comment le contenu du jeu est affiché à l'écran.
  *
  * Ce mode influence la manière dont la résolution logique est convertie en pixels physiques.
@@ -1198,15 +1098,6 @@ typedef struct RC2D_EngineConfig {
      * Par défaut : RC2D_LOGICAL_PRESENTATION_LETTERBOX.
      */
     RC2D_LogicalPresentationMode logicalPresentationMode;
-
-    /**
-     * Textures pour les bordures décoratives (letterbox/pillarbox), pour les modes suivants :
-     * - RC2D_LOGICAL_PRESENTATION_LETTERBOX
-     * - RC2D_LOGICAL_PRESENTATION_INTEGER_SCALE
-     * 
-     * Par défaut : NULL.
-     */
-    RC2D_LetterboxTextures* letterboxTextures;
 
     /**
      * Informations sur l'application (nom, version, identifier).

@@ -131,12 +131,10 @@ add_subdirectory(dependencies/SDL EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_ttf EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_image EXCLUDE_FROM_ALL)
 #add_subdirectory(dependencies/SDL_mixer EXCLUDE_FROM_ALL)
-add_subdirectory(dependencies/cglm EXCLUDE_FROM_ALL)
 
 # Chemin vers les dépendances
 set(DEPENDENCIES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
 set(CRZGAMES_LIBRARIES "${DEPENDENCIES_PATH}/Crzgames_Libraries")
-
 
 function(rc2d_configure_onnxruntime target_name)
   if(RC2D_ONNX_MODULE_ENABLED)
@@ -612,14 +610,11 @@ function(rc2d_force_link_linux target_name)
   endif()
 endfunction()
 
-# Headers de RC2D + les lib qui sont dans le répertoire "external" + cglm
+# Headers de RC2D + les lib qui sont dans le répertoire "external"
 function(rc2d_include_headers target_name)
   target_include_directories(${target_name} PRIVATE
     "${PROJECT_SOURCE_DIR}/include"
     "${PROJECT_SOURCE_DIR}/include/external"
-  )
-  target_include_directories(${PROJECT_NAME} PRIVATE
-    dependencies/cglm/include
   )
 endfunction()
 

@@ -6,6 +6,8 @@
 #include <RC2D/RC2D_platform_defines.h>
 #include <RC2D/RC2D_memory.h>
 #include <RC2D/RC2D_config.h>
+#include <RC2D/RC2D_engine.h>
+#include <RC2D/RC2D_gpu.h>
 
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
@@ -15,21 +17,57 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_gpu.h>
+#include <SDL3/SDL_render.h>
 
 #include <SDL3_ttf/SDL_ttf.h>
 
 //#include <SDL3_mixer/SDL_mixer.h>
 
-#if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
-#include <SDL3_shadercross/SDL_shadercross.h>
-#endif
-
 RC2D_EngineState rc2d_engine_state = {0};
 
+/**
+ * \brief Initialise les valeurs par défaut de l'état global du moteur RC2D.
+ *
+ * Cette fonction configure les valeurs par défaut pour toutes les variables de la structure RC2D_EngineState.
+ * Elle est appelée avant toute autre opération pour garantir que l'état du moteur est correctement initialisé.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+static void rc2d_engine_stateInit(void) {
+    // Configuration de l'application (mettre toutes les valeurs par défaut)
+    rc2d_engine_state.config = rc2d_engine_getDefaultConfig();
+
+    // SDL : Fenêtre et événements
+    rc2d_engine_state.window = NULL;
+    // rc2d_engine_state.rc2d_event est déjà zéro-initialisé
+
+    // SDL : Renderer
+    rc2d_engine_state.renderer = NULL;
+
+    // SDL GPU
+    rc2d_engine_state.gpu_device = NULL;
+
+    // Initialiser le cache des shaders graphiques
+    rc2d_engine_state.gpu_graphics_shader_count = 0;
+    rc2d_engine_state.gpu_graphics_shaders_cache = NULL;
+    rc2d_engine_state.gpu_graphics_shader_mutex = SDL_CreateMutex();
+    if (!rc2d_engine_state.gpu_graphics_shader_mutex) {
+        RC2D_assert_release(false, RC2D_LOG_CRITICAL, "Erreur lors de la création du mutex pour les shaders : %s", SDL_GetError());
+        return;
+    }
+
+    // État d'exécution de la boucle de jeu
+    rc2d_engine_state.fps = 60;
+    rc2d_engine_state.delta_time = 0.0;
+    rc2d_engine_state.game_is_running = true;
+    rc2d_engine_state.last_frame_time = 0;
+
+    // Paramètres de rendu
+    rc2d_engine_state.render_scale = 1.0f;
+}
+
 RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void)
-{
-    static RC2D_LetterboxTextures default_letterbox_textures = {0};
-    
+{    
     static RC2D_AppInfo default_app_info = {
         .name = "RC2D Game",
         .version = "1.0.0",
@@ -53,7 +91,6 @@ RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void)
         .logicalHeight = 1080,
         .logicalPresentationMode = RC2D_LOGICAL_PRESENTATION_LETTERBOX,
         .pixelartMode = false,
-        .letterboxTextures = &default_letterbox_textures,
         .appInfo = &default_app_info,
         .gpuFramesInFlight = RC2D_GPU_FRAMES_BALANCED,
         .gpuOptions = &default_gpu_options
@@ -92,6 +129,7 @@ static bool rc2d_engine_supported_gpu_backends(void)
 
     return true;
 }
+
 
 /**
  * \brief Convertit le mode de présentation SDL_GPU en chaîne de caractères.
@@ -200,7 +238,7 @@ static bool rc2d_engine_configure_swapchain(void)
                 SDL_WindowSupportsGPUSwapchainComposition(rc2d_engine_state.gpu_device, rc2d_engine_state.window, sc)) 
             {
                 // Essaye la combinaison
-                if (SDL_SetGPUSwapchainParameters(rc2d_engine_state.gpu_device, rc2d_engine_state.window, pm, sc)) 
+                if (SDL_SetGPUSwapchainParameters(rc2d_engine_state.gpu_device, rc2d_engine_state.window, sc, pm)) 
                 {
                     // Si la combinaison est supportée, on l'applique
                     rc2d_engine_state.gpu_present_mode = pm;
@@ -232,140 +270,6 @@ static bool rc2d_engine_configure_swapchain(void)
     }
 
     return true;
-}
-
-/**
- * \brief Initialise les valeurs par défaut de l'état global du moteur RC2D.
- *
- * Cette fonction configure les valeurs par défaut pour toutes les variables de la structure RC2D_EngineState.
- * Elle est appelée avant toute autre opération pour garantir que l'état du moteur est correctement initialisé.
- *
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-static void rc2d_engine_stateInit(void) {
-    // Configuration de l'application (mettre toutes les valeurs par défaut)
-    rc2d_engine_state.config = rc2d_engine_getDefaultConfig();
-
-    // SDL : Fenêtre et événements
-    rc2d_engine_state.window = NULL;
-    // rc2d_engine_state.rc2d_event est déjà zéro-initialisé
-
-    // SDL GPU
-    rc2d_engine_state.gpu_device = NULL;
-    rc2d_engine_state.gpu_present_mode = SDL_GPU_PRESENTMODE_VSYNC;
-    rc2d_engine_state.gpu_swapchain_composition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
-    rc2d_engine_state.gpu_current_command_buffer = NULL;
-    rc2d_engine_state.gpu_current_render_pass = NULL;
-    rc2d_engine_state.gpu_current_swapchain_texture = NULL;
-    static SDL_GPUViewport default_viewport = {0, 0, 0, 0};
-    rc2d_engine_state.gpu_current_viewport = &default_viewport;
-
-    // Initialiser le cache des shaders graphiques
-    rc2d_engine_state.gpu_graphics_shader_count = 0;
-    rc2d_engine_state.gpu_graphics_shaders_cache = NULL;
-    rc2d_engine_state.gpu_graphics_shader_mutex = SDL_CreateMutex();
-    if (!rc2d_engine_state.gpu_graphics_shader_mutex) {
-        RC2D_assert_release(false, RC2D_LOG_CRITICAL, "Erreur lors de la création du mutex pour les shaders : %s", SDL_GetError());
-        return;
-    }
-
-    // Initialiser le cache des pipelines graphiques pour les shaders graphiques
-    rc2d_engine_state.gpu_graphics_pipeline_count = 0;
-    rc2d_engine_state.gpu_graphics_pipelines_cache = NULL;
-    rc2d_engine_state.gpu_graphics_pipeline_mutex = SDL_CreateMutex();
-    if (!rc2d_engine_state.gpu_graphics_pipeline_mutex) {
-        RC2D_assert_release(false, RC2D_LOG_CRITICAL, "Erreur lors de la création du mutex pour les pipelines : %s", SDL_GetError());
-        return;
-    }
-    
-    // Initialiser le cache des shaders de calcul
-    rc2d_engine_state.gpu_compute_shader_count = 0;
-    rc2d_engine_state.gpu_compute_shaders_cache = NULL;
-    rc2d_engine_state.gpu_compute_shader_mutex = SDL_CreateMutex();
-    if (!rc2d_engine_state.gpu_compute_shader_mutex) {
-        RC2D_assert_release(false, RC2D_LOG_CRITICAL, "Erreur lors de la création du mutex pour les shaders de calcul : %s", SDL_GetError());
-        return;
-    }
-
-    // Initialiser le cache des textures GPU
-    rc2d_engine_state.gpu_image_cache_count = 0;
-    rc2d_engine_state.gpu_image_cache = NULL;
-    rc2d_engine_state.gpu_image_cache_mutex = SDL_CreateMutex();
-    if (!rc2d_engine_state.gpu_image_cache_mutex) {
-        RC2D_assert_release(false, RC2D_LOG_CRITICAL, "Erreur lors de la création du mutex pour le cache d'images : %s", SDL_GetError());
-        return;
-    }
-
-    // État d'exécution de la boucle de jeu
-    rc2d_engine_state.fps = 60;
-    rc2d_engine_state.delta_time = 0.0;
-    rc2d_engine_state.game_is_running = true;
-    rc2d_engine_state.last_frame_time = 0;
-
-    // Paramètres de rendu
-    rc2d_engine_state.render_scale = 1.0f;
-
-    // Letterbox / Pillarbox
-    rc2d_engine_state.letterbox_textures.mode = RC2D_LETTERBOX_NONE;
-    rc2d_engine_state.letterbox_count = 0;
-
-    rc2d_engine_state.letterbox_uniform_texture = RC2D_calloc(1, sizeof(RC2D_Image));
-    rc2d_engine_state.letterbox_top_texture = RC2D_calloc(1, sizeof(RC2D_Image));
-    rc2d_engine_state.letterbox_bottom_texture = RC2D_calloc(1, sizeof(RC2D_Image));
-    rc2d_engine_state.letterbox_left_texture = RC2D_calloc(1, sizeof(RC2D_Image));
-    rc2d_engine_state.letterbox_right_texture = RC2D_calloc(1, sizeof(RC2D_Image));
-    rc2d_engine_state.letterbox_background_texture = RC2D_calloc(1, sizeof(RC2D_Image));
-
-    if (!rc2d_engine_state.letterbox_uniform_texture || !rc2d_engine_state.letterbox_top_texture ||
-        !rc2d_engine_state.letterbox_bottom_texture || !rc2d_engine_state.letterbox_left_texture ||
-        !rc2d_engine_state.letterbox_right_texture || !rc2d_engine_state.letterbox_background_texture) {
-        RC2D_assert_release(false, RC2D_LOG_CRITICAL, "Cannot continue with invalid letterbox texture allocations");
-    }
-}
-
-/**
- * \brief Initialise la bibliothèque SDL3_shadercross.
- * 
- * Cette fonction initialise la bibliothèque SDL3_shadercross pour le rechargement à chaud des shaders.
- * Elle doit être appelée avant d'utiliser les fonctionnalités de rechargement à chaud des shaders.
- * 
- * \return true si l'initialisation a réussi, false sinon.
- * 
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-static bool rc2d_engine_init_sdlshadercross(void)
-{
-#if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
-    if (!SDL_ShaderCross_Init()) 
-    {
-        RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de l'initialisation de SDL_shadercross.");
-        return false;
-    }
-    else 
-    {
-        RC2D_log(RC2D_LOG_INFO, "SDL_shadercross initialisé avec succès.");
-        return true;
-    }
-#endif
-
-    // Si le rechargement à chaud des shaders n'est pas activé, on retourne true par défaut
-    return true;
-}
-
-/**
- * \brief Libère les ressources SDL3_shadercross.
- * 
- * Cette fonction libère les ressources allouées par SDL3_shadercross.
- * Elle doit être appelée avant de quitter l'application pour éviter les fuites de mémoire.
- * 
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-static void rc2d_engine_cleanup_sdlshadercross(void)
-{
-#if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
-    SDL_ShaderCross_Quit();
-    RC2D_log(RC2D_LOG_INFO, "SDL_shadercross nettoyé avec succès.");
-#endif
 }
 
 /**
@@ -616,101 +520,7 @@ static bool rc2d_engine_create_window(void)
 }
 
 /**
- * \brief Convertit une valeur SDL_GPUSampleCount en une chaîne lisible.
- *
- * \param sample_count La valeur SDL_GPUSampleCount à convertir.
- * \return Une chaîne statique décrivant le niveau de MSAA, ou "Unknown" si la valeur est invalide.
- *
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-static const char* rc2d_engine_sampleCountToString(SDL_GPUSampleCount sample_count)
-{
-    switch (sample_count)
-    {
-        case SDL_GPU_SAMPLECOUNT_1:
-            return "No MSAA (1x)";
-        case SDL_GPU_SAMPLECOUNT_2:
-            return "MSAA 2x";
-        case SDL_GPU_SAMPLECOUNT_4:
-            return "MSAA 4x";
-        case SDL_GPU_SAMPLECOUNT_8:
-            return "MSAA 8x";
-        default:
-            return "Unknown";
-    }
-}
-
-/**
- * \brief Configure le niveau de MSAA (Multi-Sample Anti-Aliasing) pour le rendu graphique.
- * 
- * Cette fonction vérifie les niveaux de MSAA supportés par le GPU et configure le moteur RC2D
- * pour utiliser le niveau de MSAA le plus élevé disponible. Si aucun niveau de MSAA n'est supporté,
- * elle utilise SAMPLECOUNT_1 (pas de MSAA).
- * 
- * \return true si la configuration du MSAA a réussi, false sinon.
- * 
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-static bool rc2d_engine_configureMSAA(void)
-{
-    // Si c'est un jeu en pixel art, on n'utilise pas de MSAA
-    if (rc2d_engine_state.config->pixelartMode)
-    {
-        RC2D_log(RC2D_LOG_INFO, "MSAA désactivé pour les jeux en pixel art.");
-        rc2d_engine_state.gpu_current_sample_count_supported = SDL_GPU_SAMPLECOUNT_1;
-        return true;
-    }
-
-    // Récupérer le format de swapchain pour vérifier la compatibilité avec le MSAA
-    SDL_GPUTextureFormat swapchain_format = SDL_GetGPUSwapchainTextureFormat(rc2d_gpu_getDevice(), rc2d_window_getWindow());
-    if (swapchain_format == SDL_GPU_TEXTUREFORMAT_INVALID)
-    {
-        RC2D_log(RC2D_LOG_CRITICAL, "Echec de la recuperation du format de swapchain : %s", SDL_GetError());
-        return false;
-    }
-
-    // Ordre décroissant de qualité pour le MSAA
-    SDL_GPUSampleCount sample_counts[] = {
-        SDL_GPU_SAMPLECOUNT_8,  // MSAA 8x : meilleure qualité
-        SDL_GPU_SAMPLECOUNT_4,  // MSAA 4x : bon compromis
-        SDL_GPU_SAMPLECOUNT_2,  // MSAA 2x : qualité modérée
-        SDL_GPU_SAMPLECOUNT_1   // Pas de MSAA : toujours supporté
-    };
-
-    bool msaa_supported = false;
-    SDL_GPUSampleCount selected_sample_count = SDL_GPU_SAMPLECOUNT_1; // Fallback par défaut
-
-    // On parcourt les niveaux de MSAA supportés par le GPU
-    for (int i = 0; i < SDL_arraysize(sample_counts); ++i)
-    {
-        SDL_GPUSampleCount sample_count = sample_counts[i];
-        if (SDL_GPUTextureSupportsSampleCount(rc2d_engine_state.gpu_device, swapchain_format, sample_count))
-        {
-            selected_sample_count = sample_count;
-            msaa_supported = true;
-            RC2D_log(RC2D_LOG_INFO, "%s supporter par rapport au format de la swapchain", rc2d_engine_sampleCountToString(sample_count));
-            break; // Arrêter dès qu'un niveau supporté est trouvé
-        }
-        else
-        {
-            RC2D_log(RC2D_LOG_DEBUG, "%s non supporter par rapport au format de la swapchain", rc2d_engine_sampleCountToString(sample_count));
-        }
-    }
-
-    // Si aucun niveau de MSAA n'est supporté, on utilise SAMPLECOUNT_1 donc pas de MSAA
-    if (!msaa_supported)
-    {
-        RC2D_log(RC2D_LOG_INFO, "Aucun niveau de MSAA supporter, utilisation de SAMPLECOUNT_1 donc pas de MSAA.");
-    }
-
-    // On set le niveau de MSAA sélectionné dans l'état du moteur
-    rc2d_engine_state.gpu_current_sample_count_supported = selected_sample_count;
-
-    return true;
-}
-
-/**
- * \brief Initialise le dispositif GPU pour le rendu graphique dans RC2D.
+ * \brief Initialise le dispositif de Renderer GPU pour le rendu graphique dans RC2D.
  * 
  * Cette fonction configure et crée le dispositif GPU SDL3, vérifie les formats de shaders supportés,
  * configure les modes de présentation et les paramètres de swapchain, et associe la fenêtre au GPU.
@@ -719,139 +529,62 @@ static bool rc2d_engine_configureMSAA(void)
  * 
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-static bool rc2d_engine_create_gpu(void)
+static bool rc2d_engine_create_renderergpu(void)
 {
-    SDL_PropertiesID gpu_props = SDL_CreateProperties();
-    
     /**
-     * Propriété concernant le GPU :
-     * - SDL_PROP_GPU_DEVICE_CREATE_DEBUGMODE_BOOLEAN : active le mode debug GPU.
-     * - SDL_PROP_GPU_DEVICE_CREATE_VERBOSE_BOOLEAN : active les logs détaillés.
-     * - SDL_PROP_GPU_DEVICE_CREATE_PREFERLOWPOWER_BOOLEAN : privilégie un GPU à faible consommation ou non.
-     * - SDL_PROP_GPU_DEVICE_CREATE_NAME_STRING : nom du GPU (Vulkan, Metal, Direct3D12 ou un backend privé).
+     * Active le mode de débogage pour le rendu GPU si demandé dans la configuration.
+     * Utile pour le développement et le débogage des shaders.
      */
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_DEBUGMODE_BOOLEAN, rc2d_engine_state.config->gpuOptions->debugMode);
-    //SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_VERBOSE_BOOLEAN, rc2d_engine_state.config->gpuOptions->verbose);
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_PREFERLOWPOWER_BOOLEAN, rc2d_engine_state.config->gpuOptions->preferLowPower);
-    
-    // Pilote GPU forcé si nécessaire
-    switch (rc2d_engine_state.config->gpuOptions->driver)
-    {
+    SDL_SetHint(SDL_HINT_RENDER_GPU_DEBUG,
+                rc2d_engine_state.config->gpuOptions->debugMode ? "1" : "0");
+
+    // Utiliser le renderer "gpu"
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "gpu");
+
+    /**
+     * Force le backend GPU si demandé dans la configuration.
+     */
+    switch (rc2d_engine_state.config->gpuOptions->driver) {
         case RC2D_GPU_DRIVER_VULKAN:
-            SDL_SetStringProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_NAME_STRING, "vulkan");
+            SDL_SetHint(SDL_HINT_GPU_DRIVER, "vulkan");
             break;
         case RC2D_GPU_DRIVER_METAL:
-            SDL_SetStringProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_NAME_STRING, "metal");
+            SDL_SetHint(SDL_HINT_GPU_DRIVER, "metal");
             break;
         case RC2D_GPU_DRIVER_DIRECT3D12:
-            SDL_SetStringProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_NAME_STRING, "direct3d12");
+            SDL_SetHint(SDL_HINT_GPU_DRIVER, "direct3d12");
             break;
         case RC2D_GPU_DRIVER_PRIVATE:
-            SDL_SetStringProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_NAME_STRING, "a voir plus tard avec SDL3");
+            // Rien d'équivalent en public pour un backend privé.
             break;
         case RC2D_GPU_DRIVER_DEFAULT:
         default:
-            // Ne pas setter la propriété pour laisser SDL choisir automatiquement
+            // Laisser SDL choisir
             break;
     }
 
     /**
-     * Désactiver certaines fonctionnalités GPU qui ne sont pas nécessaires et permet surtout pour la plateforme Android
-     * d'être d'avantage compatible.
-     * 
-     * - SDL_PROP_GPU_DEVICE_CREATE_VULKAN_SHADERCLIPDISTANCE_BOOLEAN : désactive le support de clip distance pour Vulkan.
-     * 
-     * - SDL_PROP_GPU_DEVICE_CREATE_VULKAN_DEPTHCLAMP_BOOLEAN : Si elle est désactivée, la propriété
-     *   enable_depth_clip dans SDL_GPURasterizerState doit toujours être définie sur « true ».
-     * 
-     * - SDL_PROP_GPU_DEVICE_CREATE_VULKAN_DRAWINDIRECTFIRST_BOOLEAN : Si elle est désactivée, l'argument
-     *   first_instance de SDL_GPUIndirectDrawCommand doit être défini sur « 0 ».
-     * 
-     * - SDL_PROP_GPU_DEVICE_CREATE_VULKAN_SAMPLERANISOTROPY_BOOLEAN : Si elle est désactivée, la propriété 
-     *   enable_anisotropy de SDL_GPUSamplerCreateInfo doit être définie sur « false ». 
-     */
-    /*SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_VULKAN_SHADERCLIPDISTANCE_BOOLEAN, false);
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_VULKAN_DEPTHCLAMP_BOOLEAN, false);
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_VULKAN_DRAWINDIRECTFIRST_BOOLEAN, false);
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_VULKAN_SAMPLERANISOTROPY_BOOLEAN, false);*/
-
-    /**
-     * Propriétés concernant le GPU :
-     * - SDL_PROP_GPU_DEVICE_CREATE_SHADERS_PRIVATE_BOOLEAN : active le format de shader privé (NDA).
-     * - SDL_PROP_GPU_DEVICE_CREATE_SHADERS_SPIRV_BOOLEAN : active le format de shader SPIR-V.
-     * - SDL_PROP_GPU_DEVICE_CREATE_SHADERS_DXBC_BOOLEAN : active le format de shader DXBC.
-     * - SDL_PROP_GPU_DEVICE_CREATE_SHADERS_DXIL_BOOLEAN : active le format de shader DXIL.
-     * - SDL_PROP_GPU_DEVICE_CREATE_SHADERS_MSL_BOOLEAN : active le format de shader MSL.
-     * - SDL_PROP_GPU_DEVICE_CREATE_SHADERS_METALLIB_BOOLEAN : active le format de shader METALLIB.
-     */
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_PRIVATE_BOOLEAN, true);
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_SPIRV_BOOLEAN, true);
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_DXBC_BOOLEAN, true);
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_DXIL_BOOLEAN, true);
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_MSL_BOOLEAN, true);
-    SDL_SetBooleanProperty(gpu_props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_METALLIB_BOOLEAN, true);
-
-    // Vérification de la compatibilité du GPU avec les propriétés spécifiées.
-    if (!SDL_GPUSupportsProperties(gpu_props)) {
-        RC2D_log(RC2D_LOG_CRITICAL, "Le GPU ne supporte pas les propriétés spécifiées.");
-        SDL_DestroyProperties(gpu_props);
-        return false;
-    }
-
-    // Créer le GPU device avec les propriétés spécifiées
-    rc2d_engine_state.gpu_device = SDL_CreateGPUDeviceWithProperties(gpu_props);
-    SDL_DestroyProperties(gpu_props);
-    if (!rc2d_engine_state.gpu_device) 
+    * Créez un contexte de rendu GPU 2D pour une fenêtre,
+    * avec prise en charge du format de shader spécifié.
+    */
+    SDL_GPUShaderFormat supported_formats =
+        SDL_GPU_SHADERFORMAT_SPIRV |
+        SDL_GPU_SHADERFORMAT_DXIL  |
+        SDL_GPU_SHADERFORMAT_MSL   |
+        SDL_GPU_SHADERFORMAT_METALLIB |
+        SDL_GPU_SHADERFORMAT_DXBC |
+        SDL_GPU_SHADERFORMAT_PRIVATE;
+    rc2d_engine_state.renderer = SDL_CreateGPURenderer(rc2d_engine_state.window, supported_formats, &rc2d_engine_state.gpu_device);
+    if (!rc2d_engine_state.renderer) 
     {
-        RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de la création du GPU device : %s", SDL_GetError());
+        RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de la création du renderer GPU : %s", SDL_GetError());
+        SDL_DestroyGPUDevice(rc2d_engine_state.gpu_device);
+        rc2d_engine_state.gpu_device = NULL;
         return false;
     }
     else
     {
-        RC2D_log(RC2D_LOG_INFO, "GPU device créé avec succès.");
-    }
-
-    /**
-     * Détecter les formats supportés par le GPU
-     */
-    SDL_GPUShaderFormat supported_formats = SDL_GetGPUShaderFormats(rc2d_engine_state.gpu_device);
-    RC2D_log(RC2D_LOG_INFO, "Supported shader formats : ");
-    if (supported_formats & SDL_GPU_SHADERFORMAT_PRIVATE)
-    {
-        RC2D_log(RC2D_LOG_INFO, "- PRIVATE(NDA)");
-    }
-    if (supported_formats & SDL_GPU_SHADERFORMAT_SPIRV)
-    {
-        RC2D_log(RC2D_LOG_INFO, "- SPIR-V");
-    }
-    if (supported_formats & SDL_GPU_SHADERFORMAT_DXBC)
-    {
-        RC2D_log(RC2D_LOG_INFO, "- DXBC");
-    }
-    if (supported_formats & SDL_GPU_SHADERFORMAT_DXIL)
-    {
-        RC2D_log(RC2D_LOG_INFO, "- DXIL");
-    }
-    if (supported_formats & SDL_GPU_SHADERFORMAT_MSL)
-    {
-        RC2D_log(RC2D_LOG_INFO, "- MSL");
-    }
-    if (supported_formats & SDL_GPU_SHADERFORMAT_METALLIB)
-    {
-        RC2D_log(RC2D_LOG_INFO, "- METALLIB");
-    }
-
-    /**
-     * Associe la fenêtre au GPU device
-     */
-    if (!SDL_ClaimWindowForGPUDevice(rc2d_engine_state.gpu_device, rc2d_engine_state.window))
-    {
-        RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de l'association de la fenêtre au GPU : %s", SDL_GetError());
-        return false;
-    }
-    else
-    {
-        RC2D_log(RC2D_LOG_INFO, "Fenêtre associée au GPU avec succès.");
+        RC2D_log(RC2D_LOG_INFO, "Renderer GPU créé avec succès.");
     }
 
     // Configurer le swapchain en utilisant la fonction dédiée
@@ -874,12 +607,9 @@ static bool rc2d_engine_create_gpu(void)
         RC2D_log(RC2D_LOG_INFO, "Frames en vol configurees avec succes : %d", rc2d_engine_state.config->gpuFramesInFlight);
     }
 
-    // Configurer le MSAA (Multi-Sample Anti-Aliasing)
-    if (!rc2d_engine_configureMSAA()) 
-    {
-        return false;
-    }
-
+    /**
+    * Renvoie true si tout s'est bien passé.
+    */
     return true;
 }
 
@@ -908,112 +638,7 @@ static void rc2d_engine_calculate_renderscale_and_gpuviewport(void)
     // Récupère l'échelle d'affichage de la fenêtre (ex: 1.0 pour 100%, 2.0 pour 200%)
     float display_scale = rc2d_window_getDisplayScale();
 
-    // Calcule la taille réelle (en pixels) de la zone sûre
-    int effective_width = (int)(safe_area.width * pixel_density);
-    int effective_height = (int)(safe_area.height * pixel_density);
-
-    // Initialisation des variables de viewport
-    float viewport_x, viewport_y, viewport_width, viewport_height;
-
-    // Initialisation de l'échelle de rendu
-    float scale;
-
-    // --- Mode Pixel Art ---
-    if (rc2d_engine_state.config->logicalPresentationMode == RC2D_LOGICAL_PRESENTATION_INTEGER_SCALE) 
-    {
-        // Calcul de mise à l’échelle entière
-        int int_scale = SDL_min(effective_width / rc2d_engine_state.config->logicalWidth, effective_height / rc2d_engine_state.config->logicalHeight);
-
-        // Si l’échelle est trop petite, on la fixe à 1 pour éviter les problèmes d’affichage
-        if (int_scale < 1) int_scale = 1;
-        scale = (float)int_scale;
-
-        // Calcul de la taille du viewport
-        viewport_width = rc2d_engine_state.config->logicalWidth * scale;
-        viewport_height = rc2d_engine_state.config->logicalHeight * scale;
-    }
-    // --- Mode Letterbox ---
-    else if (rc2d_engine_state.config->logicalPresentationMode == RC2D_LOGICAL_PRESENTATION_LETTERBOX)
-    {
-        float logical_aspect = (float)rc2d_engine_state.config->logicalWidth / rc2d_engine_state.config->logicalHeight;
-        float window_aspect = (float)effective_width / effective_height;
-
-        // On adapte la largeur ou la hauteur selon le ratio d’aspect (16:9, 4:3, etc.)
-        if (window_aspect > logical_aspect) 
-        {
-            scale = (float)effective_height / rc2d_engine_state.config->logicalHeight;
-            viewport_width = rc2d_engine_state.config->logicalWidth * scale;
-            viewport_height = effective_height;
-        } 
-        else 
-        {
-            scale = (float)effective_width / rc2d_engine_state.config->logicalWidth;
-            viewport_width = effective_width;
-            viewport_height = rc2d_engine_state.config->logicalHeight * scale;
-        }
-    }
-
-    // Convertit la taille du viewport de pixels physiques vers pixels logiques
-    viewport_width /= pixel_density;
-    viewport_height /= pixel_density;
-
-    // Centre le viewport dans la zone sûre
-    viewport_x = safe_area.x + (safe_area.width - viewport_width) / 2.0f;
-    viewport_y = safe_area.y + (safe_area.height - viewport_height) / 2.0f;
-
-    // Applique le viewport au GPU
-    rc2d_engine_state.gpu_current_viewport->x = viewport_x;
-    rc2d_engine_state.gpu_current_viewport->y = viewport_y;
-    rc2d_engine_state.gpu_current_viewport->w = viewport_width;
-    rc2d_engine_state.gpu_current_viewport->h = viewport_height;
-    rc2d_engine_state.gpu_current_viewport->min_depth = 0.0f;
-    rc2d_engine_state.gpu_current_viewport->max_depth = 1.0f;
-
-    // Applique l’échelle de rendu interne
-    rc2d_engine_state.render_scale = scale * display_scale;
-
-    // Calcule les zones de letterbox/pillarbox si nécessaire
-    rc2d_engine_state.letterbox_count = 0;
-    SDL_memset(rc2d_engine_state.letterbox_areas, 0, sizeof(RC2D_Rect) * 4);
-
-    if (viewport_width < safe_area.width || viewport_height < safe_area.height) 
-    {
-        // Barres verticales (gauche/droite) - Letterbox
-        if (viewport_x > safe_area.x) 
-        {
-            // Barre gauche
-            rc2d_engine_state.letterbox_areas[0].x = safe_area.x;
-            rc2d_engine_state.letterbox_areas[0].y = safe_area.y;
-            rc2d_engine_state.letterbox_areas[0].width = viewport_x - safe_area.x;
-            rc2d_engine_state.letterbox_areas[0].height = safe_area.height;
-            rc2d_engine_state.letterbox_count++;
-
-            // Barre droite
-            rc2d_engine_state.letterbox_areas[1].x = viewport_x + viewport_width;
-            rc2d_engine_state.letterbox_areas[1].y = safe_area.y;
-            rc2d_engine_state.letterbox_areas[1].width = safe_area.x + safe_area.width - (viewport_x + viewport_width);
-            rc2d_engine_state.letterbox_areas[1].height = safe_area.height;
-            rc2d_engine_state.letterbox_count++;
-        }
-
-        // Barres horizontales (haut/bas) - Pillarbox
-        if (viewport_y > safe_area.y) 
-        {
-            // Barre haute
-            rc2d_engine_state.letterbox_areas[2].x = safe_area.x;
-            rc2d_engine_state.letterbox_areas[2].y = safe_area.y;
-            rc2d_engine_state.letterbox_areas[2].width = safe_area.width;
-            rc2d_engine_state.letterbox_areas[2].height = viewport_y - safe_area.y;
-            rc2d_engine_state.letterbox_count++;
-
-            // Barre basse
-            rc2d_engine_state.letterbox_areas[3].x = safe_area.x;
-            rc2d_engine_state.letterbox_areas[3].y = viewport_y + viewport_height;
-            rc2d_engine_state.letterbox_areas[3].width = safe_area.width;
-            rc2d_engine_state.letterbox_areas[3].height = safe_area.y + safe_area.height - (viewport_y + viewport_height);
-            rc2d_engine_state.letterbox_count++;
-        }
-    }
+    // ... TODO: REFAIRE le calcul de l'échelle de rendu et du viewport GPU en fonction du mode de présentation
 }
 
 /**
@@ -2103,14 +1728,6 @@ static bool rc2d_engine(void)
     }
 
     /**
-     * Initialiser la librairie SDL3_shadercross
-     */
-    if (!rc2d_engine_init_sdlshadercross())
-    {
-        return false;
-    }
-
-    /**
      * Vérifier si le GPU de l'utilisateur est supporté par l'API SDL3_GPU.
      * 
      * Cela permet de s'assurer que le GPU est compatible avec au 
@@ -2132,9 +1749,9 @@ static bool rc2d_engine(void)
     }
 
     /**
-     * Initialiser et créer le dispositif GPU
+     * Initialiser et créer le renderer GPU avec SDL3_GPU.
      */
-    if (!rc2d_engine_create_gpu())
+    if (!rc2d_engine_create_renderergpu())
     {
         return false;
     }
@@ -2170,9 +1787,6 @@ static bool rc2d_engine(void)
     {
         return false;
     }
-
-    // vérifie le nombre de letterbox count
-    RC2D_log(RC2D_LOG_DEBUG, "Letterbox count: %d\n", rc2d_engine_state.letterbox_count);
 
     // Log pour indiquer que tout le moteur a été initialisé avec succès
     RC2D_log(RC2D_LOG_INFO, "RC2D Engine initialized successfully.\n");
@@ -2212,9 +1826,6 @@ void rc2d_engine_quit(void)
 
     // Lib SDL3_mixer Deinitialize
     rc2d_engine_cleanup_sdlmixer();
-
-    // Lib SDL3_shadercross Deinitialize
-    rc2d_engine_cleanup_sdlshadercross();
     
     /* Libérer les shaders graphiques (vertex/fragment) */
     if (rc2d_engine_state.gpu_graphics_shader_mutex) 
@@ -2235,59 +1846,6 @@ void rc2d_engine_quit(void)
         SDL_DestroyMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
         rc2d_engine_state.gpu_graphics_shader_mutex = NULL;
     }
-
-    /* Libérer les shaders de calcul */
-    if (rc2d_engine_state.gpu_compute_shader_mutex) 
-    {
-        SDL_LockMutex(rc2d_engine_state.gpu_compute_shader_mutex);
-        for (int i = 0; i < rc2d_engine_state.gpu_compute_shader_count; i++) 
-        {
-            if (rc2d_engine_state.gpu_compute_shaders_cache[i].filename) 
-            {
-                RC2D_safe_free(rc2d_engine_state.gpu_compute_shaders_cache[i].filename);
-                rc2d_engine_state.gpu_compute_shaders_cache[i].filename = NULL;
-            }
-        }
-        RC2D_safe_free(rc2d_engine_state.gpu_compute_shaders_cache);
-        rc2d_engine_state.gpu_compute_shaders_cache = NULL;
-        rc2d_engine_state.gpu_compute_shader_count = 0;
-        SDL_UnlockMutex(rc2d_engine_state.gpu_compute_shader_mutex);
-        SDL_DestroyMutex(rc2d_engine_state.gpu_compute_shader_mutex);
-        rc2d_engine_state.gpu_compute_shader_mutex = NULL;
-    }
-
-    /* Libérer les pipelines graphiques */
-    if (rc2d_engine_state.gpu_graphics_pipeline_mutex) 
-    {
-        SDL_LockMutex(rc2d_engine_state.gpu_graphics_pipeline_mutex);
-        for (int i = 0; i < rc2d_engine_state.gpu_graphics_pipeline_count; i++) 
-        {
-            if (rc2d_engine_state.gpu_graphics_pipelines_cache[i].vertex_shader_filename) 
-            {
-                RC2D_safe_free(rc2d_engine_state.gpu_graphics_pipelines_cache[i].vertex_shader_filename);
-                rc2d_engine_state.gpu_graphics_pipelines_cache[i].vertex_shader_filename = NULL;
-            }
-            if (rc2d_engine_state.gpu_graphics_pipelines_cache[i].fragment_shader_filename) 
-            {
-                RC2D_safe_free(rc2d_engine_state.gpu_graphics_pipelines_cache[i].fragment_shader_filename);
-                rc2d_engine_state.gpu_graphics_pipelines_cache[i].fragment_shader_filename = NULL;
-            }
-        }
-        RC2D_safe_free(rc2d_engine_state.gpu_graphics_pipelines_cache);
-        rc2d_engine_state.gpu_graphics_pipelines_cache = NULL;
-        rc2d_engine_state.gpu_graphics_pipeline_count = 0;
-        SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_pipeline_mutex);
-        SDL_DestroyMutex(rc2d_engine_state.gpu_graphics_pipeline_mutex);
-        rc2d_engine_state.gpu_graphics_pipeline_mutex = NULL;
-    }
-
-    // Nettoyer les textures de letterbox
-    RC2D_safe_free(rc2d_engine_state.letterbox_uniform_texture);
-    RC2D_safe_free(rc2d_engine_state.letterbox_top_texture);
-    RC2D_safe_free(rc2d_engine_state.letterbox_bottom_texture);
-    RC2D_safe_free(rc2d_engine_state.letterbox_left_texture);
-    RC2D_safe_free(rc2d_engine_state.letterbox_right_texture);
-    RC2D_safe_free(rc2d_engine_state.letterbox_background_texture);
 
     /* Annuler la revendication de la fenêtre */
     if (rc2d_engine_state.gpu_device && rc2d_engine_state.window) 
@@ -2487,20 +2045,5 @@ void rc2d_engine_configure(const RC2D_EngineConfig* config)
     {
         RC2D_log(RC2D_LOG_WARN, "Invalid presentation mode provided. Using default values.\n");
         rc2d_engine_state.config->logicalPresentationMode = RC2D_LOGICAL_PRESENTATION_LETTERBOX;
-    }
-
-    /**
-     * Vérifie si la propriété concernant le mode de rendu des textures pour les letterbox est valide.
-     * 
-     * Si le mode de rendu est valide, on l'utilise, sinon on utilise les valeurs par défaut.
-     */
-    if (config->letterboxTextures != NULL) 
-    {
-        rc2d_engine_state.letterbox_textures = *config->letterboxTextures;
-    } 
-    else 
-    {
-        RC2D_log(RC2D_LOG_WARN, "No letterbox textures provided. Default black bars will be used.\n");
-        rc2d_engine_state.letterbox_textures.mode = RC2D_LETTERBOX_NONE;
     }
 }
