@@ -418,108 +418,11 @@ Image rc2d_rres_loadImageFromChunk(rresResourceChunk chunk)
         dataSize = width * height * bytesPerPixel;
     }
 
-    // Créer la texture GPU
-    SDL_GPUTextureCreateInfo createInfo = {
-        .type = SDL_GPU_TEXTURETYPE_2D,
-        .format = gpuFormat,
-        .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER, // Utilisation pour le rendu
-        .width = width,
-        .height = height,
-        .layer_count_or_depth = 1,
-        .num_levels = 1, // Pas de mipmaps pour l'instant
-        .sample_count = SDL_GPU_SAMPLECOUNT_1,
-        .props = 0
-    };
+    // FIXME: Récupérer le code d'avant pour le renderer
 
-    SDL_GPUTexture *texture = SDL_CreateGPUTexture(rc2d_gpu_getDevice(), &createInfo);
-    if (!texture)
-    {
-        RC2D_log(RC2D_LOG_ERROR, "Échec de la création de la texture GPU: %s\n", SDL_GetError());
-        return image;
-    }
-
-    // Créer un buffer de transfert
-    SDL_GPUTransferBuffer *transferBuffer = SDL_CreateGPUTransferBuffer(
-        rc2d_gpu_getDevice(),
-        &(SDL_GPUTransferBufferCreateInfo){
-            .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
-            .size = dataSize
-        }
-    );
-    if (!transferBuffer)
-    {
-        RC2D_log(RC2D_LOG_ERROR, "Échec de la création du buffer de transfert: %s\n", SDL_GetError());
-        SDL_ReleaseGPUTexture(rc2d_gpu_getDevice(), texture);
-        return image;
-    }
-
-    // Mapper le buffer de transfert et copier les données
-    void *mappedData = SDL_MapGPUTransferBuffer(rc2d_gpu_getDevice(), transferBuffer, false);
-    if (!mappedData)
-    {
-        RC2D_log(RC2D_LOG_ERROR, "Échec du mappage du buffer de transfert: %s\n", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(rc2d_gpu_getDevice(), transferBuffer);
-        SDL_ReleaseGPUTexture(rc2d_gpu_getDevice(), texture);
-        return image;
-    }
-
-    SDL_memcpy(mappedData, chunk.data.raw, dataSize);
-    SDL_UnmapGPUTransferBuffer(rc2d_gpu_getDevice(), transferBuffer);
-
-    // Créer un copy pass pour le téléversement
-    SDL_GPUCommandBuffer *commandBuffer = SDL_AcquireGPUCommandBuffer(rc2d_gpu_getDevice());
-    if (!commandBuffer)
-    {
-        RC2D_log(RC2D_LOG_ERROR, "Échec de l'acquisition du buffer de commandes: %s\n", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(rc2d_gpu_getDevice(), transferBuffer);
-        SDL_ReleaseGPUTexture(rc2d_gpu_getDevice(), texture);
-        return image;
-    }
-
-    SDL_GPUCopyPass *copyPass = SDL_BeginGPUCopyPass(commandBuffer);
-    if (!copyPass)
-    {
-        RC2D_log(RC2D_LOG_ERROR, "Échec du démarrage du copy pass: %s\n", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(rc2d_gpu_getDevice(), transferBuffer);
-        SDL_ReleaseGPUTexture(rc2d_gpu_getDevice(), texture);
-        SDL_ReleaseGPUCommandBuffer(commandBuffer);
-        return image;
-    }
-
-    // Configurer les informations de transfert
-    SDL_GPUTextureTransferInfo source = {
-        .transfer_buffer = transferBuffer,
-        .offset = 0, // Offset aligné à 512 octets pour Direct3D 12
-        .pixels_per_row = width, // Données compactes
-        .rows_per_layer = height
-    };
-
-    SDL_GPUTextureRegion destination = {
-        .texture = texture,
-        .mip_level = 0,
-        .layer = 0,
-        .x = 0,
-        .y = 0,
-        .z = 0,
-        .w = width,
-        .h = height,
-        .d = 1
-    };
-
-    // Téléverser les données
-    SDL_UploadToGPUTexture(copyPass, &source, &destination, false);
-
-    // Terminer le copy pass
-    SDL_EndGPUCopyPass(copyPass);
-
-    // Soumettre le buffer de commandes
-    SDL_SubmitGPUCommandBuffer(commandBuffer);
-
-    // Libérer le buffer de transfert
-    SDL_ReleaseGPUTransferBuffer(rc2d_gpu_getDevice(), transferBuffer);
 
     // Assigner la texture à la structure Image
-    image.texture = texture;
+    //image.texture = texture;
 
     return image;
 }
@@ -634,7 +537,7 @@ Font rc2d_rres_loadFontFromChunk(rresResourceChunk chunk, float ptsize)
             font.font = TTF_OpenFontIO(rw, true, ptsize);
             if (!font.font)
             {
-                RC2D_log(RC2D_LOG_ERROR, "Erreur de chargement de la police: %s\n", TTF_GetError());
+                RC2D_log(RC2D_LOG_ERROR, "Erreur de chargement de la police: %s\n", SDL_GetError());
                 RC2D_safe_free(font.rawData);
             }
 
