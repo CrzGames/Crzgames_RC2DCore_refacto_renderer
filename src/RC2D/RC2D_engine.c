@@ -584,11 +584,18 @@ static bool rc2d_engine_create_renderergpu(void)
      * Active le mode de débogage pour le rendu GPU si demandé dans la configuration.
      * Utile pour le développement et le débogage des shaders.
      */
-    SDL_SetHint(SDL_HINT_RENDER_GPU_DEBUG,
-                rc2d_engine_state.config->gpuOptions->debugMode ? "1" : "0");
+    SDL_SetHint(SDL_HINT_RENDER_GPU_DEBUG, rc2d_engine_state.config->gpuOptions->debugMode ? "1" : "0");
 
-    // Utiliser le renderer "gpu"
+    /**
+    * Une variable contrôlant s'il faut préférer un GPU basse consommation sur les systèmes multi-GPU.
+    */ 
+    SDL_SetHint(SDL_HINT_RENDER_GPU_LOW_POWER, rc2d_engine_state.config->gpuOptions->preferLowPower ? "1" : "0");
+
+    /**
+     * Spécifie le driver de rendu à utiliser.
+     */
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "gpu");
+    SDL_SetHint(SDL_HINT_GPU_DRIVER, "vulkan");
 
     /**
      * Force le backend GPU si demandé dans la configuration.
@@ -627,8 +634,13 @@ static bool rc2d_engine_create_renderergpu(void)
     if (!rc2d_engine_state.renderer) 
     {
         RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de la création du renderer GPU : %s", SDL_GetError());
-        SDL_DestroyGPUDevice(rc2d_engine_state.gpu_device);
-        rc2d_engine_state.gpu_device = NULL;
+
+        if (rc2d_engine_state.gpu_device != NULL)
+        {
+            SDL_DestroyGPUDevice(rc2d_engine_state.gpu_device);
+            rc2d_engine_state.gpu_device = NULL;
+        }
+
         return false;
     }
     else
@@ -1905,12 +1917,6 @@ void rc2d_engine_quit(void)
         SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
         SDL_DestroyMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
         rc2d_engine_state.gpu_graphics_shader_mutex = NULL;
-    }
-
-    /* Annuler la revendication de la fenêtre */
-    if (rc2d_engine_state.gpu_device && rc2d_engine_state.window) 
-    {
-        SDL_ReleaseWindowFromGPUDevice(rc2d_engine_state.gpu_device, rc2d_engine_state.window);
     }
 
     // Forcer le contexte de rendu à vider toutes les commandes et l'état en attente.
