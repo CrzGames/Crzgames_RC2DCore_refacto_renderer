@@ -123,6 +123,11 @@ set(SDLIMAGE_XCF OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XPM OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
 
+# SDL3 :
+# Il peut vous donner accès à beaucoup plus de contrôleurs de jeu,
+# Mais il nécessite l'autorisation de l'utilisateur avant que votre application puisse communiquer avec le matériel Bluetooth
+set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "" FORCE)
+
 # SDL3, SDL3_ttf, SDL3_image, SDL3_mixer : 
 # Permet de dire à CMake de ne pas chercher les dépendances dans le système,
 # mais de les utiliser à partir du répertoire "dependencies", dont également les submodules
@@ -140,13 +145,13 @@ function(rc2d_configure_onnxruntime target_name)
   if(RC2D_ONNX_MODULE_ENABLED)
     if(WIN32)
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/windows/include/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/windows/lib/onnxruntime/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/onnxruntime/${RC2D_ARCH}")
 
       # Link les librairies ONNX Runtime
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         onnxruntime
       )
 
@@ -164,26 +169,26 @@ function(rc2d_configure_onnxruntime target_name)
       endforeach()
     elseif (ANDROID)
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/android/include/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime, pour le linker ensuite
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/android/lib/onnxruntime/${ANDROID_ABI}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/onnxruntime/${ANDROID_ABI}")
 
       # Link les librairies ONNX Runtime
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         onnxruntime
       )
     elseif (APPLE)
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/macos/include/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/onnxruntime")
 
       # Ajouter explicitement la lib .dylib à linker
-      target_link_directories(${target_name} PRIVATE
+      target_link_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/macos/lib/onnxruntime"
       )
 
       # Link la librairies ONNX Runtime
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         onnxruntime
         "-framework CoreML"
       )
@@ -202,13 +207,13 @@ function(rc2d_configure_onnxruntime target_name)
       endforeach()
     elseif (RC2D_PLATFORM STREQUAL "SLR3-SNIPER") # Steam Deck / Steam Linux
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/slr3-sniper/include/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/include/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/onnxruntime/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/onnxruntime/${RC2D_ARCH}")
 
       # Link les librairies ONNX Runtime
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         onnxruntime
       )
 
@@ -224,13 +229,13 @@ function(rc2d_configure_onnxruntime target_name)
       )
     elseif (RC2D_PLATFORM STREQUAL "Linux")
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/linux/include/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}")
 
       # Link les librairies ONNX Runtime
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         onnxruntime
       )
 
@@ -304,15 +309,15 @@ function(rc2d_configure_shadercross target_name)
     # Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est activé, on link la lib shadercross
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT ANDROID)
       # Link le dossier include de shadercross à la target
-      target_include_directories(${target_name} PRIVATE
+      target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/macos/include"
       )
 
       # Récupérer le dossier de la lib shadercross
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross")
 
       # Link la lib shadercross
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         SDL3_shadercross
       )
 
@@ -358,15 +363,15 @@ function(rc2d_configure_shadercross target_name)
     # Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est activé, on link la lib shadercross
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT ANDROID)
       # Link le dossier include de shadercross à la target
-      target_include_directories(${target_name} PRIVATE
+      target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/windows/include"
       )
 
       # Récupérer le dossier de la lib shadercross
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/windows/lib/SDL3_shadercross/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/SDL3_shadercross/${RC2D_ARCH}")
 
       # Link la lib shadercross
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         SDL3_shadercross
       )
 
@@ -434,15 +439,15 @@ function(rc2d_configure_shadercross target_name)
     )
 
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT ANDROID)
-      target_include_directories(${target_name} PRIVATE
+      target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/slr3-sniper/include"
       )
 
       # Récupérer le dossier de la lib shadercross
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/SDL3_shadercross/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/SDL3_shadercross/${RC2D_ARCH}")
 
       # Link la lib shadercross
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         SDL3_shadercross
       )
 
@@ -506,15 +511,15 @@ function(rc2d_configure_shadercross target_name)
 
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT ANDROID)
       # Link le dossier include de shadercross à la target
-      target_include_directories(${target_name} PRIVATE
+      target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/linux/include"
       )
 
       # Récupérer le dossier de la lib shadercross
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${RC2D_ARCH}")
 
       # Link la lib shadercross
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         SDL3_shadercross
       )
 
@@ -538,37 +543,37 @@ function(rc2d_configure_openssl target_name)
   if(RC2D_DATA_MODULE_ENABLED)
     if(APPLE)
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/macos/include")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/macos/lib/OpenSSL")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/lib/OpenSSL")
 
       # Link les librairies OpenSSL
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         ssl    # OpenSSL
         crypto # OpenSSL
       )
     elseif (ANDROID)
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/android/include")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/android/lib/OpenSSL/${ANDROID_ABI}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/OpenSSL/${ANDROID_ABI}")
 
       # Link les librairies OpenSSL
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         ssl    # OpenSSL
         crypto # OpenSSL
       )
     elseif(WIN32)
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/windows/include")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/windows/lib/OpenSSL/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/OpenSSL/${RC2D_ARCH}")
 
       # Link les librairies OpenSSL
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         libssl    # OpenSSL
         libcrypto # OpenSSL
         Crypt32   # OpenSSL CryptoAPI (Librarie native de Windows, obligatoire)
@@ -576,25 +581,25 @@ function(rc2d_configure_openssl target_name)
       )
     elseif (RC2D_PLATFORM STREQUAL "Linux")
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/linux/include")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/linux/lib/OpenSSL/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/OpenSSL/${RC2D_ARCH}")
 
       # Link les librairies OpenSSL
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         ssl    # OpenSSL
         crypto # OpenSSL
       )
     elseif(RC2D_PLATFORM STREQUAL "SLR3-SNIPER") # Steam Deck / Steam Linux
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/slr3-sniper/include")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/include")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PRIVATE "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/OpenSSL/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/OpenSSL/${RC2D_ARCH}")
 
       # Link les librairies OpenSSL
-      target_link_libraries(${target_name} PRIVATE
+      target_link_libraries(${target_name} PUBLIC
         ssl    # OpenSSL
         crypto # OpenSSL
       )
@@ -604,7 +609,7 @@ endfunction()
 
 function(rc2d_force_link_linux target_name)
   if(UNIX AND NOT APPLE AND NOT ANDROID)
-    target_link_libraries(${target_name} PRIVATE
+    target_link_libraries(${target_name} PUBLIC
       "-Wl,--no-as-needed" m pthread dl "-Wl,--as-needed"
     )
   endif()
@@ -612,7 +617,7 @@ endfunction()
 
 # Headers de RC2D + les lib qui sont dans le répertoire "external"
 function(rc2d_include_headers target_name)
-  target_include_directories(${target_name} PRIVATE
+  target_include_directories(${target_name} PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
     "${PROJECT_SOURCE_DIR}/include/external"
   )
@@ -622,37 +627,37 @@ endfunction()
 function(rc2d_target_compile_definitions target_name)
   # Définitions de compilation pour le rechargement à chaud des shaders
   if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
-    target_compile_definitions(${target_name} PRIVATE RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=1)
+    target_compile_definitions(${target_name} PUBLIC RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=1)
   else()
-    target_compile_definitions(${target_name} PRIVATE RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=0)
+    target_compile_definitions(${target_name} PUBLIC RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=0)
   endif()
 
   # Définitions de compilation pour le niveau d'assertion
-  target_compile_definitions(${target_name} PRIVATE RC2D_ASSERT_LEVEL=${RC2D_ASSERT_LEVEL})
+  target_compile_definitions(${target_name} PUBLIC RC2D_ASSERT_LEVEL=${RC2D_ASSERT_LEVEL})
 
   # Les définitions de compilation pour les modules RC2D
   if(RC2D_DATA_MODULE_ENABLED)
-    target_compile_definitions(${target_name} PRIVATE RC2D_DATA_MODULE_ENABLED=1)
+    target_compile_definitions(${target_name} PUBLIC RC2D_DATA_MODULE_ENABLED=1)
   else()
-    target_compile_definitions(${target_name} PRIVATE RC2D_DATA_MODULE_ENABLED=0)
+    target_compile_definitions(${target_name} PUBLIC RC2D_DATA_MODULE_ENABLED=0)
   endif()
 
   if(RC2D_NET_MODULE_ENABLED)
-    target_compile_definitions(${target_name} PRIVATE RC2D_NET_MODULE_ENABLED=1)
+    target_compile_definitions(${target_name} PUBLIC RC2D_NET_MODULE_ENABLED=1)
   else()
-    target_compile_definitions(${target_name} PRIVATE RC2D_NET_MODULE_ENABLED=0)
+    target_compile_definitions(${target_name} PUBLIC RC2D_NET_MODULE_ENABLED=0)
   endif()
 
   if(RC2D_ONNX_MODULE_ENABLED)
-    target_compile_definitions(${target_name} PRIVATE RC2D_ONNX_MODULE_ENABLED=1)
+    target_compile_definitions(${target_name} PUBLIC RC2D_ONNX_MODULE_ENABLED=1)
   else()
-    target_compile_definitions(${target_name} PRIVATE RC2D_ONNX_MODULE_ENABLED=0)
+    target_compile_definitions(${target_name} PUBLIC RC2D_ONNX_MODULE_ENABLED=0)
   endif()
 
   if (RC2D_MEMORY_DEBUG_ENABLED)
-    target_compile_definitions(${target_name} PRIVATE RC2D_MEMORY_DEBUG_ENABLED=1)
+    target_compile_definitions(${target_name} PUBLIC RC2D_MEMORY_DEBUG_ENABLED=1)
   else()
-    target_compile_definitions(${target_name} PRIVATE RC2D_MEMORY_DEBUG_ENABLED=0)
+    target_compile_definitions(${target_name} PUBLIC RC2D_MEMORY_DEBUG_ENABLED=0)
   endif()
 endfunction()
 
@@ -681,8 +686,17 @@ rc2d_target_compile_definitions(${PROJECT_NAME})
 # Inclure les répertoires d'en-tête (headers)
 rc2d_include_headers(${PROJECT_NAME})
 
+if (WIN32)
+  # Link les dépendances spécifiques à Windows
+  target_link_libraries(${PROJECT_NAME} PUBLIC
+    ws2_32 # Bibliothèque native à Windows (pour la librairie Enet/OpenSSL)
+    winmm # Bibliothèque native à Windows (pour la librairie Enet)
+    Crypt32 # Bibliothèque native à Windows (pour la librairie OpenSSL)
+  )
+endif()
+
 # Link les dépendances communes à toutes les plateformes
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME} PUBLIC
   #SDL3_mixer::SDL3_mixer -> FIXME: SDL3_mixer n'ai pas encore disponible
   SDL3_image::SDL3_image
   SDL3_ttf::SDL3_ttf
@@ -744,7 +758,7 @@ if(RC2D_BUILD_EXAMPLES)
   rc2d_target_compile_definitions(${RC2D_EXAMPLE_TARGET_NAME})
 
   # Les fichiers d'en-tête (headers) de l'exemple sont dans le répertoire "examples/include"
-  target_include_directories(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
+  target_include_directories(${RC2D_EXAMPLE_TARGET_NAME} PUBLIC
     "${PROJECT_SOURCE_DIR}/examples/include"
   )
 
@@ -762,7 +776,7 @@ if(RC2D_BUILD_EXAMPLES)
   rc2d_configure_onnxruntime(${RC2D_EXAMPLE_TARGET_NAME})
 
   # Link les dépendances communes à toutes les plateformes + on link la lib RC2D pour finir
-  target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
+  target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PUBLIC
     SDL3_image::SDL3_image
     SDL3_ttf::SDL3_ttf
     SDL3::SDL3
@@ -847,7 +861,7 @@ if(RC2D_BUILD_TESTS)
   endif()
 
   # Link les dépendances communes à toutes les plateformes + on link la lib RC2D pour finir
-  target_link_libraries(rc2d_tests PRIVATE
+  target_link_libraries(rc2d_tests PUBLIC
     SDL3_image::SDL3_image
     SDL3_ttf::SDL3_ttf
     SDL3::SDL3
