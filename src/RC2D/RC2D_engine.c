@@ -592,12 +592,6 @@ static bool rc2d_engine_create_renderergpu(void)
     SDL_SetHint(SDL_HINT_RENDER_GPU_LOW_POWER, rc2d_engine_state.config->gpuOptions->preferLowPower ? "1" : "0");
 
     /**
-     * Spécifie le driver de rendu à utiliser.
-     */
-    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "gpu");
-    SDL_SetHint(SDL_HINT_GPU_DRIVER, "vulkan");
-
-    /**
      * Force le backend GPU si demandé dans la configuration.
      */
     switch (rc2d_engine_state.config->gpuOptions->driver) {
@@ -634,38 +628,11 @@ static bool rc2d_engine_create_renderergpu(void)
     if (!rc2d_engine_state.renderer) 
     {
         RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de la création du renderer GPU : %s", SDL_GetError());
-
-        if (rc2d_engine_state.gpu_device != NULL)
-        {
-            SDL_DestroyGPUDevice(rc2d_engine_state.gpu_device);
-            rc2d_engine_state.gpu_device = NULL;
-        }
-
         return false;
     }
     else
     {
         RC2D_log(RC2D_LOG_INFO, "Renderer GPU créé avec succès.");
-    }
-
-    // Configurer le swapchain en utilisant la fonction dédiée
-    if (!rc2d_engine_configure_swapchain())
-    {
-        return false;
-    }
-
-    /**
-     * Configurer le nombre de frames en vol pour le GPU
-     * On utilise le nombre de frames en vol spécifié dans la configuration du moteur.
-     */
-    if (!SDL_SetGPUAllowedFramesInFlight(rc2d_engine_state.gpu_device, (Uint32)rc2d_engine_state.config->gpuFramesInFlight)) 
-    {
-        RC2D_log(RC2D_LOG_CRITICAL, "Echec de la configuration des frames en vol pour le GPU : %s", SDL_GetError());
-        return false;
-    }
-    else
-    {
-        RC2D_log(RC2D_LOG_INFO, "Frames en vol configurees avec succes : %d", rc2d_engine_state.config->gpuFramesInFlight);
     }
 
     /**
@@ -1929,13 +1896,6 @@ void rc2d_engine_quit(void)
     if (rc2d_engine_state.renderer)
     {
         SDL_DestroyRenderer(rc2d_engine_state.renderer);
-    }
-
-    /* Détruire le périphérique GPU */
-    if (rc2d_engine_state.gpu_device) 
-    {
-        SDL_DestroyGPUDevice(rc2d_engine_state.gpu_device);
-        rc2d_engine_state.gpu_device = NULL;
     }
 
     /* Détruire la fenêtre */

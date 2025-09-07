@@ -661,11 +661,16 @@ file(GLOB_RECURSE SOURCES
   "${PROJECT_SOURCE_DIR}/src/*.c"
 )
 
+# Fichiers d'en-tête (headers) du projet RC2D
+file(GLOB_RECURSE HEADERS
+  "${PROJECT_SOURCE_DIR}/include/*.h"
+)
+
 # Choisir entre bibliothèque dynamique/partagées ou statique pour RC2D
 if(RC2D_BUILD_SHARED_LIBS)
-  add_library(${PROJECT_NAME} SHARED ${SOURCES})
+  add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 else()
-  add_library(${PROJECT_NAME} STATIC ${SOURCES})
+  add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
   # Rajouter le suffixe "_static" au nom de la bibliothèque statique, pour éviter les conflits
   set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}_static")
 endif()
@@ -713,6 +718,11 @@ if(RC2D_BUILD_EXAMPLES)
     "${PROJECT_SOURCE_DIR}/examples/src/*.c"
   )
 
+  # Ajouter les fichiers inclus dans le répertoire "examples/include" et ses sous-répertoires
+  file(GLOB_RECURSE RC2D_EXAMPLE_HEADERS
+    "${PROJECT_SOURCE_DIR}/examples/include/*.h"
+  )
+
   # Définir des flags de compilation pour le mode Release (NDEBUG = No Debug, donc Release)
   set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
 
@@ -720,9 +730,9 @@ if(RC2D_BUILD_EXAMPLES)
   if(ANDROID)
     # Pour Android, il faut obligatoirement mettre SHARED et "main" comme nom de target, quand
     # c'est un exécutable
-    add_library(${RC2D_EXAMPLE_TARGET_NAME} SHARED ${RC2D_EXAMPLE_SOURCES})
+    add_library(${RC2D_EXAMPLE_TARGET_NAME} SHARED ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS})
   else()
-    add_executable(${RC2D_EXAMPLE_TARGET_NAME} ${RC2D_EXAMPLE_SOURCES})
+    add_executable(${RC2D_EXAMPLE_TARGET_NAME} ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS})
   endif()
 
   if (WIN32)

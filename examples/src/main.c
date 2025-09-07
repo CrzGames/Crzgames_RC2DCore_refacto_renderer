@@ -27,7 +27,7 @@ const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[])
     config->gpuOptions->verbose = true;
 #endif
     config->gpuOptions->preferLowPower = false;
-    config->gpuOptions->driver = RC2D_GPU_DRIVER_DEFAULT;
+    config->gpuOptions->driver = RC2D_GPU_DRIVER_VULKAN;
     config->windowWidth = 800;
     config->windowHeight = 600;
     config->logicalWidth = 1920;
