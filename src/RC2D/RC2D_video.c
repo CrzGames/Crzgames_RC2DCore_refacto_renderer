@@ -105,7 +105,7 @@ int rc2d_video_open(RC2D_Video* video, const char* filename, SDL_Renderer* rende
     video->sws_ctx = sws_getContext(
         video->width, video->height, video->codec_ctx->pix_fmt,
         video->width, video->height, AV_PIX_FMT_RGB24,
-        SWS_BILINEAR, NULL, NULL, NULL
+        SWS_FAST_BILINEAR, NULL, NULL, NULL
     );
     if (!video->sws_ctx) 
     {
@@ -233,7 +233,8 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
 // Dessine la frame actuelle
 int rc2d_video_draw(RC2D_Video* video, SDL_Renderer* renderer) 
 {
-    if (!video->texture || video->is_finished) {
+    if (!video->texture || video->is_finished) 
+    {
         return -1; // Pas de texture ou vidéo terminée
     }
 
@@ -247,13 +248,16 @@ int rc2d_video_draw(RC2D_Video* video, SDL_Renderer* renderer)
     float logical_aspect = (float)logical_w / logical_h;
 
     SDL_FRect dst_rect;
-    if (video_aspect > logical_aspect) {
+    if (video_aspect > logical_aspect) 
+    {
         // La vidéo est plus large : ajuster la hauteur
         dst_rect.w = (float)logical_w;
         dst_rect.h = logical_w / video_aspect;
         dst_rect.x = 0;
         dst_rect.y = (logical_h - dst_rect.h) / 2; // Centrer verticalement
-    } else {
+    } 
+    else 
+    {
         // La vidéo est plus haute : ajuster la largeur
         dst_rect.h = (float)logical_h;
         dst_rect.w = logical_h * video_aspect;
@@ -261,7 +265,12 @@ int rc2d_video_draw(RC2D_Video* video, SDL_Renderer* renderer)
         dst_rect.y = 0;
     }
 
-    SDL_RenderTexture(renderer, video->texture, NULL, &dst_rect);
+    if (!SDL_RenderTexture(renderer, video->texture, NULL, &dst_rect)) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Erreur : échec du rendu de la texture : %s\n", SDL_GetError());
+        return -1;
+    }
+
     return 0;
 }
 
