@@ -48,17 +48,18 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    // 1) Charger la vidéo du splash screen
+    SDL_SetRenderLogicalPresentation(rc2d_engine_state.renderer, 1920, 1080, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+
     const char *base_path = SDL_GetBasePath();
     char full_path[512];
-    SDL_snprintf(full_path, sizeof(full_path), "%SSplashScreen_Studio.mp4", base_path);
 
+    // 1) Charger la vidéo du splash screen
+    SDL_snprintf(full_path, sizeof(full_path), "%SSplashScreen_Studio.mp4", base_path);
     if (rc2d_video_open(&g_splash_video, full_path, rc2d_engine_state.renderer) != 0) {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load splash video: %s", SDL_GetError());
         g_splash_active = false; // Passe directement au jeu si la vidéo échoue
     }
 
-    // 2) Charger la texture (tile.png à côté de l'exe)
+    // 2) Charger la texture et le navire
     SDL_snprintf(full_path, sizeof(full_path), "%stile.png", base_path);
     g_ocean_tile_texture = IMG_LoadTexture(rc2d_engine_state.renderer, full_path);
     if (!g_ocean_tile_texture) 

@@ -873,6 +873,10 @@ if(RC2D_BUILD_EXAMPLES)
   if (WIN32)
     # Définir le projet de démarrage dans Visual Studio
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${RC2D_EXAMPLE_TARGET_NAME})
+
+    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+      VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>"
+    )
   endif()
 
   # Compiler les définitions pour la target rc2d_example
