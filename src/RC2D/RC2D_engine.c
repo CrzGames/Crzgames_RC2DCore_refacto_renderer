@@ -382,6 +382,7 @@ static void rc2d_engine_cleanup_sdlshadercross(void)
  */
 static bool rc2d_engine_init_openssl(void) 
 {
+#if RC2D_DATA_MODULE_ENABLED
     if (OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS | OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL) == 0)
     {
         RC2D_assert_release(false, RC2D_LOG_CRITICAL, "Erreur lors de l'initialisation d'OpenSSL : %s", ERR_error_string(ERR_get_error(), NULL));
@@ -392,6 +393,10 @@ static bool rc2d_engine_init_openssl(void)
         RC2D_log(RC2D_LOG_INFO, "OpenSSL initialisé avec succès.");
         return true;
     }
+#endif
+
+    // Si le module RC2D_data n'est pas activé, on retourne true par défaut
+    return true;
 }
 
 /**
@@ -404,9 +409,11 @@ static bool rc2d_engine_init_openssl(void)
  */
 static void rc2d_engine_cleanup_openssl(void)
 {
+#if RC2D_DATA_MODULE_ENABLED
     ERR_free_strings();
     EVP_cleanup();
     RC2D_log(RC2D_LOG_INFO, "OpenSSL nettoyé avec succès.");
+#endif
 }
 
 /**
@@ -1875,10 +1882,12 @@ static bool rc2d_engine(void)
 	//rc2d_keyboard_init();
     rc2d_timer_init();
 
+#if RC2D_ONNX_MODULE_ENABLED
     if (!rc2d_onnx_init())
     {
         return false;
     }
+#endif
 
     // Log pour indiquer que tout le moteur a été initialisé avec succès
     RC2D_log(RC2D_LOG_INFO, "RC2D Engine initialized successfully.\n");
@@ -1908,7 +1917,9 @@ void rc2d_engine_quit(void)
      */
 	//rc2d_filesystem_quit();
     //rc2d_touch_freeTouchState();
+#if RC2D_ONNX_MODULE_ENABLED
     rc2d_onnx_cleanup();
+#endif
 
     // Lib OpenSSL Deinitialize
     rc2d_engine_cleanup_openssl();
