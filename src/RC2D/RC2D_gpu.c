@@ -6,6 +6,7 @@
 
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_filesystem.h>
+#include <SDL3/SDL_gpu.h>
 
 #if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
 #include <SDL3_shadercross/SDL_shadercross.h>

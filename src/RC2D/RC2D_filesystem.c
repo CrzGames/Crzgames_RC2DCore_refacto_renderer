@@ -3,6 +3,7 @@
 #include <RC2D/RC2D_memory.h>
 
 #include <SDL3/SDL_stdinc.h>
+#include <SDL3/SDL_filesystem.h>
 
 static char* prefPath = NULL;
 static char* basePath = NULL;
@@ -43,8 +44,8 @@ char* rc2d_filesystem_getPathApp(void)
 
 void rc2d_filesystem_quit(void)
 {
-    RC2D_free_safe(prefPath);
-    RC2D_free_safe(basePath);
+    RC2D_safe_free(prefPath);
+    RC2D_safe_free(basePath);
 }
 
 char* rc2d_filesystem_getPathAssetsInResourceRRES(void)
