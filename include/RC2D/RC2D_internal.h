@@ -260,6 +260,15 @@ bool rc2d_onnx_init(void);
 void rc2d_onnx_cleanup(void);
 #endif
 
+/**
+ * Libère les ressources allouées par le module de système de fichiers.
+ * 
+ * Cette fonction doit être appelée avant de quitter l'application pour éviter les fuites de mémoire.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_filesystem_quit(void);
+
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus
 }

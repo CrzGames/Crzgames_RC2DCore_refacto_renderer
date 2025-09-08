@@ -9,9 +9,11 @@
 #include <RC2D/RC2D_engine.h>
 #include <RC2D/RC2D_gpu.h>
 
+#if RC2D_DATA_MODULE_ENABLED
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
+#endif
 
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_events.h>
@@ -1915,7 +1917,7 @@ void rc2d_engine_quit(void)
     /**
      * Détruire les ressources internes des modules de la lib RC2D.
      */
-	//rc2d_filesystem_quit();
+	rc2d_filesystem_quit();
     //rc2d_touch_freeTouchState();
 #if RC2D_ONNX_MODULE_ENABLED
     rc2d_onnx_cleanup();
