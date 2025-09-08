@@ -1858,6 +1858,11 @@ static bool rc2d_engine(void)
     }
 
     /**
+     * Activer le blending (alpha) dans SDL3.
+     */
+	SDL_SetRenderDrawBlendMode(rc2d_engine_state.renderer, SDL_BLENDMODE_BLEND);
+
+    /**
      * Calcul initial du viewport GPU et de l'échelle de rendu pour l'ensemble de l'application.
      * Cela permet de s'assurer que le rendu est effectué à la bonne échelle et dans la bonne zone de la fenêtre.
      */
