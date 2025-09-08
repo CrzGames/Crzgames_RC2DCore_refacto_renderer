@@ -4,4 +4,4 @@ SDL=https://github.com/libsdl-org/SDL.git:901a524d0d3d5d5b06558969bc0f64ef17bfad
 SDL_image=https://github.com/libsdl-org/SDL_image.git:release-3.2.4
 SDL_ttf=https://github.com/libsdl-org/SDL_ttf.git:release-3.2.2
 #SDL_mixer=https://github.com/libsdl-org/SDL_mixer.git:release-3.2.0
-Crzgames_Libraries=https://github.com/CrzGames/Crzgames_Libraries.git:4571cb49d411f455f21654b3a5d12067592f7be3
+Crzgames_Libraries=https://github.com/CrzGames/Crzgames_Libraries.git:6b7609f356a73416d866d702ac5b13ceb4a4d732

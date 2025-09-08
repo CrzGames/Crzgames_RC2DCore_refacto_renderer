@@ -38,6 +38,7 @@
 #include <RC2D/RC2D_touch.h>
 #include <RC2D/RC2D_tweening.h>
 #include <RC2D/RC2D_version.h>
+#include <RC2D/RC2D_video.h>
 #include <RC2D/RC2D_window.h>
 
 #endif // RC2D_H

@@ -21,6 +21,9 @@ option(RC2D_MEMORY_DEBUG_ENABLED "Enable RC2D memory debug tracking (realloc/mal
 # Option pour activer la compilation des shaders en ligne (hot reload) pour SDL3_shadercross
 option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable hot reload shaders with SDL3_shadercross" ON)
 
+# Option pour activer le module RC2D_video (basé sur FFmpeg)
+option(RC2D_VIDEO_MODULE_ENABLED "Enable RC2D_video (FFmpeg-based)" ON)
+
 # Option pour activer le module RC2D_data
 option(RC2D_DATA_MODULE_ENABLED "Enable RC2D_data module" ON)
 
@@ -140,6 +143,50 @@ add_subdirectory(dependencies/SDL_image EXCLUDE_FROM_ALL)
 # Chemin vers les dépendances
 set(DEPENDENCIES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
 set(CRZGAMES_LIBRARIES "${DEPENDENCIES_PATH}/Crzgames_Libraries")
+
+function(rc2d_configure_ffmpeg target_name)
+  if (RC2D_VIDEO_MODULE_ENABLED)
+    if (WIN32)
+      # Link le dossier include de FFmpeg à la target
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/ffmpeg")
+
+      # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/ffmpeg/${RC2D_ARCH}")
+
+      # Link les librairies FFmpeg
+      target_link_libraries(${target_name} PUBLIC
+        avcodec
+        avdevice
+        avfilter
+        avformat
+        avutil
+        swresample
+        swscale
+      )
+
+      # Copier aussi les DLLs dans le répertoire de l'exécutable
+      file(GLOB_RECURSE FFMPEG_DLLS
+        "${CRZGAMES_LIBRARIES}/windows/bin/ffmpeg/${RC2D_ARCH}/*.dll"
+      )
+      foreach(FILE IN LISTS FFMPEG_DLLS)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                  "${FILE}"
+                  "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+        )
+      endforeach()
+      
+    elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx")
+
+    elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+
+    elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Steam Deck, Raspberry PI 5 etc.
+    
+    elseif (ANDROID)
+    endif()
+  endif()
+endfunction()
 
 function(rc2d_configure_rcenet target_name)
   if (RC2D_NET_MODULE_ENABLED)
@@ -695,6 +742,13 @@ endfunction()
 
 # Fonction pour les target_compile_definitions par target
 function(rc2d_target_compile_definitions target_name)
+  # Définitions de compilation pour le module vidéo
+  if(RC2D_VIDEO_MODULE_ENABLED)
+    target_compile_definitions(${target_name} PUBLIC RC2D_VIDEO_MODULE_ENABLED=1)
+  else()
+    target_compile_definitions(${target_name} PUBLIC RC2D_VIDEO_MODULE_ENABLED=0)
+  endif()
+
   # Définitions de compilation pour le rechargement à chaud des shaders
   if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
     target_compile_definitions(${target_name} PUBLIC RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=1)
@@ -764,6 +818,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   SDL3::SDL3
 )
 
+# Link la dépendance ffmpeg si le module RC2D_video est activé
+rc2d_configure_ffmpeg(${PROJECT_NAME})
+
 # Link onnxruntime si le module RC2D_onnx est activé
 rc2d_configure_onnxruntime(${PROJECT_NAME})
 
@@ -828,6 +885,9 @@ if(RC2D_BUILD_EXAMPLES)
 
   # Inclure les répertoires d'en-tête (headers)
   rc2d_include_headers(${RC2D_EXAMPLE_TARGET_NAME})
+
+  # Link la dépendance ffmpeg si le module RC2D_video est activé
+  rc2d_configure_ffmpeg(${RC2D_EXAMPLE_TARGET_NAME})
 
   # Linker la dépendance OpenSSL non commune à toutes les plateformes
   # Cela dépend de la plateforme, donc on le fait dans la fonction rc2d_configure_openssl
@@ -901,8 +961,13 @@ if(RC2D_BUILD_TESTS)
     "${PROJECT_SOURCE_DIR}/tests/*.c"
   )
 
+  # Ajouter les fichiers inclus dans le répertoire "tests/include" et ses sous-répertoires
+  file(GLOB_RECURSE RC2D_TEST_HEADERS
+    "${PROJECT_SOURCE_DIR}/tests/include/*.h"
+  )
+
   # Créer un exécutable pour les tests
-  add_executable(rc2d_tests ${RC2D_TEST_SOURCES})
+  add_executable(rc2d_tests ${RC2D_TEST_SOURCES} ${RC2D_TEST_HEADERS})
 
   # Compiler les définitions pour la target rc2d_tests
   rc2d_target_compile_definitions(rc2d_tests)
@@ -919,6 +984,15 @@ if(RC2D_BUILD_TESTS)
 
   # Link onnxruntime si le module RC2D_onnx est activé
   rc2d_configure_onnxruntime(rc2d_tests)
+
+  # Link la dépendance ffmpeg si le module RC2D_video est activé
+  rc2d_configure_ffmpeg(rc2d_tests)
+
+  # Linker la dépendance RCEnet si le module RC2D_net est activé
+  rc2d_configure_rcenet(rc2d_tests)
+
+  # Linker les dépendances natives selon la plateforme
+  rc2d_force_link_linux(rc2d_tests)
   
   # Linker Criterion selon la plateforme
   if(APPLE)
