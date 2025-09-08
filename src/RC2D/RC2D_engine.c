@@ -25,6 +25,10 @@
 #include <SDL3_shadercross/SDL_shadercross.h>
 #endif
 
+#if RC2D_NET_MODULE_ENABLED
+#include <rcenet/enet.h>
+#endif
+
 //#include <SDL3_mixer/SDL_mixer.h>
 
 RC2D_EngineState rc2d_engine_state = {0};
@@ -274,6 +278,50 @@ static bool rc2d_engine_configure_swapchain(void)
     }
 
     return true;
+}
+
+/**
+ * \brief Initialise la bibliothèque RCENet pour le module réseau.
+ * 
+ * Cette fonction initialise la bibliothèque RCENet si le module RC2D_net est activé.
+ * Elle doit être appelée avant d'utiliser les fonctionnalités réseau.
+ * 
+ * \return true si l'initialisation a réussi, false sinon.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+static bool rc2d_engine_init_rcenet(void)
+{
+#if RC2D_NET_MODULE_ENABLED
+    if (enet_initialize() < 0) 
+    {
+        RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de l'initialisation de RCEnet.");
+        return false;
+    }
+    else 
+    {
+        RC2D_log(RC2D_LOG_INFO, "RCENet initialiser avec succes.");
+        return true;
+    }
+#endif
+    // Si le module RC2D_net n'est pas activé, on retourne true par défaut
+    return true;
+}
+
+/**
+ * \brief Libère les ressources RCNet.
+ * 
+ * Cette fonction libère les ressources allouées par RCENet.
+ * Elle doit être appelée avant de quitter l'application pour éviter les fuites de mémoire.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+static void rc2d_engine_cleanup_rcenet(void)
+{
+#if RC2D_NET_MODULE_ENABLED
+    enet_deinitialize();
+    RC2D_log(RC2D_LOG_INFO, "RCENet nettoyer avec succes.");
+#endif
 }
 
 /**
@@ -1764,6 +1812,14 @@ static bool rc2d_engine(void)
     }
 
     /**
+     * Initialiser la librairie RCENet
+     */
+    if (!rc2d_engine_init_rcenet())
+    {
+        return false;
+    }
+
+    /**
      * Vérifier si le GPU de l'utilisateur est supporté par l'API SDL3_GPU.
      * 
      * Cela permet de s'assurer que le GPU est compatible avec au 
@@ -1865,6 +1921,9 @@ void rc2d_engine_quit(void)
 
     // Lib SDL3_shadercross Deinitialize
     rc2d_engine_cleanup_sdlshadercross();
+
+    // Lib RCENet Deinitialize
+    rc2d_engine_cleanup_rcenet();
     
     /* Libérer les shaders graphiques (vertex/fragment) */
     if (rc2d_engine_state.gpu_graphics_shader_mutex) 

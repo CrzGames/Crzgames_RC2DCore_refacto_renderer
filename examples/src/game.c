@@ -135,7 +135,7 @@ void rc2d_draw(void)
     }
 
     // Dessiner la texture avec le shader de fragment
-    SDL_RenderTexture(rc2d_engine_state.renderer, g_ocean_tile_texture, NULL, NULL);
+    //SDL_RenderTexture(rc2d_engine_state.renderer, g_ocean_tile_texture, NULL, NULL);
 
     // Désactiver le render state
     SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);

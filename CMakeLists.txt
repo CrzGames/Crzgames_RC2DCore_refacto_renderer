@@ -141,6 +141,76 @@ add_subdirectory(dependencies/SDL_image EXCLUDE_FROM_ALL)
 set(DEPENDENCIES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
 set(CRZGAMES_LIBRARIES "${DEPENDENCIES_PATH}/Crzgames_Libraries")
 
+function(rc2d_configure_rcenet target_name)
+  if (RC2D_NET_MODULE_ENABLED)
+    if (WIN32)
+      # Link le dossier include de RCEnet à la target
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/rcenet")
+
+      # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/rcenet/${RC2D_ARCH}")
+
+      # Link les librairies RCEnet
+      target_link_libraries(${target_name} PUBLIC
+        rcenet
+        ws2_32 # Bibliothèque native à Windows (pour la librairie Enet)
+        winmm # Bibliothèque native à Windows (pour la librairie Enet)
+      )
+
+    elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx")
+      # Link le dossier include de RCEnet à la target
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/rcenet")
+
+      # Ajouter explicitement la lib .dylib à linker
+      target_link_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES}/macos/lib/rcenet"
+      )
+
+      # Link la librairies RCEnet
+      target_link_libraries(${target_name} PUBLIC
+        rcenet
+      )
+
+    elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+      # Link le dossier include de RCEnet à la target
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/rcenet")
+
+      # Ajouter explicitement la lib .a à linker
+      target_link_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES}/ios/lib/rcenet"
+      )
+
+      # Link la librairies RCEnet
+      target_link_libraries(${target_name} PUBLIC
+        rcenet
+      )
+
+    elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Steam Deck, Raspberry PI 5 etc.
+      # Link le dossier include de RCEnet à la target
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/rcenet")
+
+      # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/rcenet/${RC2D_ARCH}")
+
+      # Link les librairies RCEnet
+      target_link_libraries(${target_name} PUBLIC
+        rcenet
+      )
+    elseif (ANDROID)
+      # Link le dossier include de RCEnet à la target
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/rcenet")
+
+      # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/rcenet/${ANDROID_ABI}")
+
+      # Link les librairies RCEnet
+      target_link_libraries(${target_name} PUBLIC
+        rcenet
+      )
+    endif()
+  endif()
+endfunction()
+
 function(rc2d_configure_onnxruntime target_name)
   if(RC2D_ONNX_MODULE_ENABLED)
     if(WIN32)
@@ -686,15 +756,6 @@ rc2d_target_compile_definitions(${PROJECT_NAME})
 # Inclure les répertoires d'en-tête (headers)
 rc2d_include_headers(${PROJECT_NAME})
 
-if (WIN32)
-  # Link les dépendances spécifiques à Windows
-  target_link_libraries(${PROJECT_NAME} PUBLIC
-    ws2_32 # Bibliothèque native à Windows (pour la librairie Enet/OpenSSL)
-    winmm # Bibliothèque native à Windows (pour la librairie Enet)
-    Crypt32 # Bibliothèque native à Windows (pour la librairie OpenSSL)
-  )
-endif()
-
 # Link les dépendances communes à toutes les plateformes
 target_link_libraries(${PROJECT_NAME} PUBLIC
   #SDL3_mixer::SDL3_mixer -> FIXME: SDL3_mixer n'ai pas encore disponible
@@ -715,6 +776,9 @@ rc2d_configure_shadercross(${PROJECT_NAME})
 
 # Linker les dépendances natives selon la plateforme
 rc2d_force_link_linux(${PROJECT_NAME})
+
+# Linker la dépendance RCEnet si le module RC2D_net est activé
+rc2d_configure_rcenet(${PROJECT_NAME})
 
 # Pour l'exemple RC2D
 if(RC2D_BUILD_EXAMPLES)
@@ -775,6 +839,12 @@ if(RC2D_BUILD_EXAMPLES)
   # Link onnxruntime si le module RC2D_onnx est activé
   rc2d_configure_onnxruntime(${RC2D_EXAMPLE_TARGET_NAME})
 
+  # Linker les dépendances natives selon la plateforme
+  rc2d_force_link_linux(${RC2D_EXAMPLE_TARGET_NAME})
+
+  # Linker la dépendance RCEnet si le module RC2D_net est activé
+  rc2d_configure_rcenet(${RC2D_EXAMPLE_TARGET_NAME})
+
   # Link les dépendances communes à toutes les plateformes + on link la lib RC2D pour finir
   target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PUBLIC
     SDL3_image::SDL3_image
@@ -782,8 +852,6 @@ if(RC2D_BUILD_EXAMPLES)
     SDL3::SDL3
     ${PROJECT_NAME} # RC2D
   )
-
-  rc2d_force_link_linux(${RC2D_EXAMPLE_TARGET_NAME})
 
   if (NOT ANDROID)
     # Copier le dossier shaders dans le dossier de sortie de rc2d_example (exécutable)
