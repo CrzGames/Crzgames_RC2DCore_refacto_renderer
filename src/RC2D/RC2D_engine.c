@@ -1860,7 +1860,20 @@ static bool rc2d_engine(void)
     /**
      * Activer le blending (alpha) dans SDL3.
      */
-	SDL_SetRenderDrawBlendMode(rc2d_engine_state.renderer, SDL_BLENDMODE_BLEND);
+	if (!SDL_SetRenderDrawBlendMode(rc2d_engine_state.renderer, SDL_BLENDMODE_BLEND))
+    {
+        RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'activer le blending (alpha) : %s\n", SDL_GetError());
+    }
+
+    /**
+     * Activer le VSync pour le renderer.
+     * Cela permet de synchroniser le rendu avec le taux de rafraîchissement du moniteur,
+     * réduisant ainsi les déchirures d'écran (screen tearing).
+     */
+    if (!SDL_SetRenderVSync(rc2d_engine_state.renderer, 1))
+    {
+        RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'activer le VSync : %s\n", SDL_GetError());
+    }
 
     /**
      * Calcul initial du viewport GPU et de l'échelle de rendu pour l'ensemble de l'application.
