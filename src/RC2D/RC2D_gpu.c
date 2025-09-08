@@ -108,7 +108,7 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
     const char* entrypoint = NULL;
 
     // Récupérer les formats supportés par le backend actuel
-    SDL_GPUShaderFormat backendFormatsSupported = SDL_GetGPUSupportedShaderFormats(rc2d_gpu_getDevice());
+    SDL_GPUShaderFormat backendFormatsSupported = SDL_GetGPUShaderFormats(rc2d_gpu_getDevice());
 
     // Le format de shader à utiliser pour la compilation hors ligne
     SDL_GPUShaderFormat format = SDL_GPU_SHADERFORMAT_INVALID;
