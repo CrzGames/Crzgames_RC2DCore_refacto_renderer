@@ -85,6 +85,8 @@ typedef struct RC2D_EngineState {
     // SDL : Renderer
     SDL_Renderer* renderer;
 
+    SDL_Texture* render_target;
+
     /**
      * SDL GPU
      * 

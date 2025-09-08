@@ -54,6 +54,8 @@ static void rc2d_engine_stateInit(void) {
     // SDL : Renderer
     rc2d_engine_state.renderer = NULL;
 
+    rc2d_engine_state.render_target = NULL;
+
     // SDL GPU
     rc2d_engine_state.gpu_device = NULL;
 
@@ -1875,6 +1877,55 @@ static bool rc2d_engine(void)
         RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'activer le VSync : %s\n", SDL_GetError());
     }
 
+    /**
+     * Configurer le mode de présentation logique (letterbox ou integer scale).
+     * Cela permet de gérer comment le contenu est affiché dans la fenêtre,
+     * en fonction des préférences de l'utilisateur.
+     */
+    if (rc2d_engine_state.config->logicalPresentationMode == RC2D_LOGICAL_PRESENTATION_LETTERBOX)
+    {
+        /**
+         * Si le mode de présentation logique est en "letterbox",
+         * on active le letterboxing dans le renderer.
+         */
+        if (!SDL_SetRenderLogicalPresentation(rc2d_engine_state.renderer,  
+            rc2d_engine_state.config->logicalWidth, rc2d_engine_state.config->logicalHeight,
+            SDL_LOGICAL_PRESENTATION_LETTERBOX))
+        {
+            RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'activer le letterboxing : %s\n", SDL_GetError());
+        }
+    }
+    else if (rc2d_engine_state.config->logicalPresentationMode == RC2D_LOGICAL_PRESENTATION_INTEGER_SCALE)
+    {
+        /**
+         * Si le mode de présentation logique est en "integer scale",
+         * on active le integer scaling dans le renderer.
+         */
+        if (!SDL_SetRenderLogicalPresentation(rc2d_engine_state.renderer, 
+            rc2d_engine_state.config->logicalWidth, rc2d_engine_state.config->logicalHeight, 
+            SDL_LOGICAL_PRESENTATION_INTEGER_SCALE))
+        {
+            RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'activer le integer scale : %s\n", SDL_GetError());
+        }
+    }
+
+    /**
+     * Créer la texture de rendu (render target) qui servira de surface de dessin principale.
+     * Cette texture est utilisée pour le rendu hors écran avant d'être présentée à l'écran.
+     */
+    rc2d_engine_state.render_target = SDL_CreateTexture(
+        rc2d_engine_state.renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_TARGET,
+        rc2d_engine_state.config->logicalWidth,
+        rc2d_engine_state.config->logicalHeight
+    );
+    if (!rc2d_engine_state.render_target) 
+    {
+        RC2D_log(RC2D_LOG_CRITICAL, "CreateTexture(render_target) failed: %s", SDL_GetError());
+        return false;
+    }
+  
     /**
      * Calcul initial du viewport GPU et de l'échelle de rendu pour l'ensemble de l'application.
      * Cela permet de s'assurer que le rendu est effectué à la bonne échelle et dans la bonne zone de la fenêtre.

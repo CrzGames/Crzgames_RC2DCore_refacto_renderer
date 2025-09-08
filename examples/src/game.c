@@ -39,7 +39,7 @@ typedef enum SplashState {
 static SplashState         g_splash_state = SPLASH_STUDIO;
 
 /* Durée du fondu (secondes) */
-static const double        g_fade_seconds = 3.0;
+static const double        g_fade_seconds = 1.5;
 
 /* ========================================================================= */
 /*                         HELPERS / PETITES UTILS                           */
@@ -122,7 +122,6 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    SDL_SetRenderLogicalPresentation(rc2d_engine_state.renderer, 1920, 1080, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
 
     const char *base_path = SDL_GetBasePath();
