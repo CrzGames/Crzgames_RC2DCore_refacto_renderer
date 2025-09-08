@@ -31,7 +31,7 @@
 #include <rcenet/enet.h>
 #endif
 
-//#include <SDL3_mixer/SDL_mixer.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 RC2D_EngineState rc2d_engine_state = {0};
 
@@ -470,17 +470,12 @@ static void rc2d_engine_cleanup_sdlttf(void)
  */
 static bool rc2d_engine_init_sdlmixer(void) 
 {
-    /*int audioFlags = MIX_INIT_OGG | MIX_INIT_MP3; // MIX_INIT_OGG for Nintendo Switch and other platforms
-    if (Mix_Init(audioFlags) == -1) {
-        RC2D_log(RC2D_LOG_CRITICAL, "Could not init SDL3_mixer : %s\n", Mix_GetError());
-		return -1;
+    if (!MIX_Init())
+    {
+        RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de l'initialisation de SDL3_mixer : %s\n", SDL_GetError());
+        return false;
     }
-    if (Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 2048) == -1) {
-        RC2D_log(RC2D_LOG_CRITICAL, "Could not init Mix_OpenAudio : %s\n", SDL_GetError());
-        return -1;
-    }*/
 
-    // FIXEME : En attente de la mise en œuvre de SDL3_mixer
     return true;
 }
 
@@ -494,9 +489,7 @@ static bool rc2d_engine_init_sdlmixer(void)
  */
 static void rc2d_engine_cleanup_sdlmixer(void)
 {
-    // FIXEME : En attente de la mise en œuvre de SDL3_mixer
-    /*Mix_CloseAudio();
-    Mix_Quit();*/
+    MIX_Quit();
     RC2D_log(RC2D_LOG_INFO, "SDL3_mixer nettoyé avec succès.\n");
 }
 

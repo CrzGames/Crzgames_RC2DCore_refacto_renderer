@@ -1,113 +1,69 @@
 #ifndef RC2D_AUDIO_H
 #define RC2D_AUDIO_H
 
-// #include <SDL3/mixer.h>
-
-/* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// 0 and 128 it's min and max SDL2 volume.
-#define RC2D_AUDIO_MIN_VOLUME 0
-#define RC2D_AUDIO_MAX_VOLUME 128
+#include <SDL3_mixer/SDL_mixer.h>
 
 /**
- * Enumération des types de fichiers audio pris en charge.
+ * \brief Charge un fichier audio à partir d'un chemin.
  *
- * @typedef {Enum} RC2D_FileAudioType
- * @property {Number} RC2D_FILE_TYPE_WAV - Le type de fichier audio est WAV.
- * @property {Number} RC2D_FILE_TYPE_MP3 - Le type de fichier audio est MP3.
- * @property {Number} RC2D_FILE_TYPE_UNKNOWN - Le type de fichier audio est inconnu.
- */
-typedef enum RC2D_FileAudioType {
-    RC2D_FILE_TYPE_WAV,
-    RC2D_FILE_TYPE_MP3,
-    RC2D_FILE_TYPE_UNKNOWN
-} RC2D_FileAudioType;
-
-/**
- * Enumération des types de sources audio.
+ * Cette fonction charge un fichier audio (par exemple WAV, MP3) dans un objet MIX_Audio.
  *
- * @typedef {Enum} RC2D_AudioType
- * @property {Number} RC2D_AUDIO_TYPE_MUSIC - Le type de source audio est une musique.
- * @property {Number} RC2D_AUDIO_TYPE_SOUND - Le type de source audio est un son.
- * @property {Number} RC2D_AUDIO_TYPE_UNKNOWN - Le type de source audio est inconnu.
- */
-typedef enum RC2D_AudioType {
-    RC2D_AUDIO_TYPE_MUSIC,
-    RC2D_AUDIO_TYPE_SOUND,
-    RC2D_AUDIO_TYPE_UNKNOWN
-} RC2D_AudioType;
-
-/**
- * Structure représentant une source audio pouvant être un effet sonore ou de la musique.
- * @typedef {object} RC2D_SourceAudio
- * @property {Mix_Chunk} sound - Pointeur vers un effet sonore chargé avec SDL_mixer
- * @property {Mix_Music} music - Pointeur vers une musique chargée avec SDL_mixer
- * @property {RC2D_FileAudioType} type - Type de source audio (musique ou son).
- * @property {RC2D_AudioType} fileType - Type de fichier audio (WAV ou MP3).
- */
-typedef struct RC2D_SourceAudio {
-    // Mix_Chunk* sound; 
-    // Mix_Music* music;
-    RC2D_AudioType audioType;
-    RC2D_FileAudioType fileType;
-} RC2D_SourceAudio;
-
-/**
- * Crée une nouvelle source audio à partir d'un fichier spécifié.
- * Cette fonction charge un effet sonore ou de la musique en fonction du type de fichier et du type d'audio spécifiés.
- *
- * @param {const char*} filePath - Chemin vers le fichier audio à charger.
- * @param {RC2D_FileAudioType} fileType - Type du fichier audio (WAV, MP3, etc.).
- * @param {RC2D_AudioType} type - Type de l'audio (effet sonore ou musique).
+ * \param mixer Le mixer associé (peut être NULL).
+ * \param path Chemin vers le fichier audio.
+ * \param predecode Si true, décode complètement l'audio à la lecture.
+ * \return Pointeur vers le MIX_Audio chargé, ou NULL en cas d'erreur.
  * 
- * @return {RC2D_SourceAudio} Une nouvelle source audio contenant le son ou la musique chargée. La source audio peut être vide en cas d'erreur lors du chargement.
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-RC2D_SourceAudio rc2d_audio_newSource(const char* filePath, const RC2D_FileAudioType fileType, const RC2D_AudioType type);
+MIX_Audio* rc2d_audio_load(MIX_Mixer *mixer, const char *path, bool predecode);
 
 /**
- * Libère les ressources associées à une source audio.
- * Cette fonction libère un effet sonore ou de la musique de la mémoire.
+ * \brief Détruit un objet audio chargé.
  *
- * @param {RC2D_SourceAudio*} sourceAudio - Pointeur vers la source audio à libérer.
+ * Cette fonction libère les ressources associées à un objet MIX_Audio.
+ *
+ * \param audio L'objet audio à détruire.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-void rc2d_audio_freeSource(RC2D_SourceAudio* sourceAudio);
+void rc2d_audio_destroy(MIX_Audio *audio);
 
 /**
- * Joue une source audio spécifiée, avec la possibilité de boucler la lecture.
- * Peut jouer un effet sonore ou de la musique en fonction de la source audio.
+ * \brief Crée une piste audio pour le mixage.
  *
- * @param {const RC2D_SourceAudio*} sourceAudio - La source audio à jouer.
- * @param {const int} loops - Le nombre de fois à boucler la lecture. -1 pour une boucle infinie, 0 pour une seule lecture.
+ * Cette fonction crée une nouvelle piste (track) pour jouer un son sur le mixer.
+ *
+ * \param mixer Le mixer sur lequel créer la piste.
+ * \return Pointeur vers le MIX_Track créé, ou NULL en cas d'erreur.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-void rc2d_audio_play(const RC2D_SourceAudio* sourceAudio, const int loops);
+MIX_Track* rc2d_audio_createTrack(MIX_Mixer *mixer);
 
 /**
- * Met en pause la lecture de la source audio spécifiée.
+ * \brief Détruit une piste audio.
  *
- * @param {const RC2D_SourceAudio*} sourceAudio - La source audio à mettre en pause.
+ * Cette fonction libère les ressources associées à une piste audio.
+ *
+ * \param track La piste à détruire.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-void rc2d_audio_pause(const RC2D_SourceAudio* sourceAudio);
+void rc2d_audio_destroyTrack(MIX_Track *track);
 
 /**
- * Arrête la lecture de la source audio spécifiée.
+ * \brief Contrôle la lecture d'une piste audio (play, pause, stop).
  *
- * @param {const RC2D_SourceAudio*} sourceAudio - La source audio à arrêter.
- */
-void rc2d_audio_stop(const RC2D_SourceAudio* sourceAudio);
-
-/**
- * Définit le volume sonore global pour toutes les sources audio.
- * Affecte à la fois les effets sonores et la musique.
+ * Cette fonction permet de jouer, mettre en pause ou arrêter une piste audio.
  *
- * @param {int} volume - Le volume sonore à définir, compris entre 0 (silence) et 128 (volume maximal).
+ * \param track La piste audio à contrôler.
+ * \param audio L'objet audio à jouer.
+ * \param action Action à effectuer : 0 pour jouer, 1 pour pause, 2 pour arrêter.
+ * \param loops Nombre de boucles pour la lecture (-1 pour boucle infinie, 0 pour une seule lecture).
+ * \return 0 en cas de succès, -1 en cas d'erreur.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-void rc2d_audio_setVolume(const int volume);
-
-#ifdef __cplusplus
-}
-#endif
+int rc2d_audio_control(MIX_Track *track, MIX_Audio *audio, int action, int loops);
 
 #endif // RC2D_AUDIO_H

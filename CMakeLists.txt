@@ -107,7 +107,7 @@ endif()
 # des repositories de SDL3_ttf, SDL3_mixer, SDL3_image
 set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
 set(SDLIMAGE_VENDORED ON CACHE BOOL "" FORCE)
-#set(SDLMIXER_VENDORED ON CACHE BOOL "" FORCE)
+set(SDLMIXER_VENDORED ON CACHE BOOL "" FORCE)
 
 # SDL3_image : Désactiver explicitement tous les formats d'image qui sont activé par défault.
 # Il restera ces formats activé par défault : STB, PNG et SVG
@@ -138,7 +138,7 @@ set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "" FORCE)
 add_subdirectory(dependencies/SDL EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_ttf EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_image EXCLUDE_FROM_ALL)
-#add_subdirectory(dependencies/SDL_mixer EXCLUDE_FROM_ALL)
+add_subdirectory(dependencies/SDL_mixer EXCLUDE_FROM_ALL)
 
 # Chemin vers les dépendances
 set(DEPENDENCIES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
@@ -812,7 +812,7 @@ rc2d_include_headers(${PROJECT_NAME})
 
 # Link les dépendances communes à toutes les plateformes
 target_link_libraries(${PROJECT_NAME} PUBLIC
-  #SDL3_mixer::SDL3_mixer -> FIXME: SDL3_mixer n'ai pas encore disponible
+  SDL3_mixer::SDL3_mixer
   SDL3_image::SDL3_image
   SDL3_ttf::SDL3_ttf
   SDL3::SDL3
@@ -911,6 +911,7 @@ if(RC2D_BUILD_EXAMPLES)
 
   # Link les dépendances communes à toutes les plateformes + on link la lib RC2D pour finir
   target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PUBLIC
+    SDL3_mixer::SDL3_mixer
     SDL3_image::SDL3_image
     SDL3_ttf::SDL3_ttf
     SDL3::SDL3
