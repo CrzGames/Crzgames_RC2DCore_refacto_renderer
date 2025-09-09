@@ -704,31 +704,76 @@ static bool rc2d_engine_create_renderergpu(void)
 }
 
 /**
- * \brief Calcule l'échelle de rendu et le viewport GPU.
+ * \brief Met à jour le rectangle de la zone visible et interactive en coordonnées logiques.
  *
- * Cette fonction calcule l'échelle de rendu interne et le viewport GPU en fonction de la taille de la fenêtre,
- * de la zone sûre, du DPI et du mode de présentation.
- * Elle doit être appelée après la création de la fenêtre et avant le rendu.
+ * Cette fonction calcule et met à jour le rectangle représentant la zone de l'écran
+ * qui est garantie d'être visible et interactive, en tenant compte des marges de sécurité
+ * et du mode de présentation.
  * 
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-static void rc2d_engine_calculate_renderscale_and_gpuviewport(void) 
+void rc2d_engine_presentationUpdate(void)
 {
-    // Récupère la taille réelle de la fenêtre (pixels visibles, indépendamment du DPI)
-    int window_width, window_height;
-    rc2d_window_getSize(&window_width, &window_height);
+    // 1) Récupère la logique et le mode courant
+    int LW = 0, LH = 0; 
+    SDL_RendererLogicalPresentation mode = SDL_LOGICAL_PRESENTATION_DISABLED;
+    SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &LW, &LH, &mode);
 
-    // Récupère la zone sûre : certaines plateformes (TV, téléphones à encoche..etc) ont des zones à éviter
-    RC2D_Rect safe_area;
-    rc2d_window_getSafeArea(&safe_area);
+    rc2d_engine_state.logical_w = LW;
+    rc2d_engine_state.logical_h = LH;
 
-    // Gère le high DPI : pixel_density > 1.0 = écran Retina, etc.
-    float pixel_density = rc2d_window_getPixelDensity();
+    // 2) Rectangle de présentation final (en pixels de sortie)
+    SDL_FRect pres_px = {0,0,0,0};
+    if (!SDL_GetRenderLogicalPresentationRect(rc2d_engine_state.renderer, &pres_px))
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Erreur lors de la récupération du rectangle de présentation logique : %s", SDL_GetError());
+        return;
+    }
 
-    // Récupère l'échelle d'affichage de la fenêtre (ex: 1.0 pour 100%, 2.0 pour 200%)
-    float display_scale = rc2d_window_getDisplayScale();
+    // 3) Portion LOGIQUE réellement visible (crop si OVERSCAN)
+    SDL_FRect visible;
+    if (mode == SDL_LOGICAL_PRESENTATION_OVERSCAN) 
+    {
+        // facteur d’échelle appliqué par SDL (pixels sortants par unité logique)
+        float sx = pres_px.w / (float)LW;
+        float sy = pres_px.h / (float)LH;
+        float s  = SDL_max(sx, sy);            // OVERSCAN = "cover" => on prend le plus grand
 
-    // ... TODO: REFAIRE le calcul de l'échelle de rendu et du viewport GPU en fonction du mode de présentation
+        float vis_w = pres_px.w / s;           // largeur VISIBLE en unités logiques
+        float vis_h = pres_px.h / s;           // hauteur VISIBLE en unités logiques
+
+        visible.x = (float)LW * 0.5f - vis_w * 0.5f;
+        visible.y = (float)LH * 0.5f - vis_h * 0.5f;
+        visible.w = vis_w;
+        visible.h = vis_h;
+    } 
+    else 
+    {
+        // LETTERBOX / INTEGER / DISABLED => tout le logique est visible
+        visible = (SDL_FRect){0,0,(float)LW,(float)LH};
+    }
+
+    // 4) Safe area (déjà en coords logiques pour le renderer)
+    SDL_Rect s = {0,0,LW,LH};
+    SDL_GetRenderSafeArea(rc2d_engine_state.renderer, &s);
+    SDL_FRect safe = { (float)s.x, (float)s.y, (float)s.w, (float)s.h };
+
+    // 5) Intersection visible ∩ safe => garanti visible + interactif
+    float x1 = SDL_max(visible.x, safe.x);
+    float y1 = SDL_max(visible.y, safe.y);
+    float x2 = SDL_min(visible.x + visible.w, safe.x + safe.w);
+    float y2 = SDL_min(visible.y + visible.h, safe.y + safe.h);
+
+    rc2d_engine_state.visible_safe_rect = (SDL_FRect){
+        x1, y1,
+        (x2 > x1) ? (x2 - x1) : 0.0f,
+        (y2 > y1) ? (y2 - y1) : 0.0f
+    };
+}
+
+SDL_FRect rc2d_engine_getVisibleSafeRectRender(void) 
+{
+    return rc2d_engine_state.visible_safe_rect;
 }
 
 /**
@@ -939,7 +984,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
              * Recalculer le viewport GPU et le render scale, puisque l'orientation de l'affichage a changé.
              * Cela est nécessaire pour s'assurer que le rendu s'adapte correctement à la nouvelle orientation.
              */
-            rc2d_engine_calculate_renderscale_and_gpuviewport();
+            rc2d_engine_presentationUpdate();
             rc2d_engine_update_fps_based_on_monitor();
 
             RC2D_DisplayOrientation newOrientation = rc2d_window_getDisplayOrientation();
@@ -954,7 +999,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitoradded != NULL) 
         {
-            rc2d_engine_calculate_renderscale_and_gpuviewport();
+            rc2d_engine_presentationUpdate();
             rc2d_engine_update_fps_based_on_monitor();
 
             rc2d_engine_state.config->callbacks->rc2d_monitoradded(event->display.displayID);
@@ -968,7 +1013,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitorremoved != NULL) 
         {
-            rc2d_engine_calculate_renderscale_and_gpuviewport();
+            rc2d_engine_presentationUpdate();
             rc2d_engine_update_fps_based_on_monitor();
 
             rc2d_engine_state.config->callbacks->rc2d_monitorremoved(event->display.displayID);
@@ -982,7 +1027,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitormoved != NULL) 
         {
-            rc2d_engine_calculate_renderscale_and_gpuviewport();
+            rc2d_engine_presentationUpdate();
             rc2d_engine_update_fps_based_on_monitor();
 
             rc2d_engine_state.config->callbacks->rc2d_monitormoved(event->display.displayID);
@@ -996,7 +1041,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitordesktopmodechanged != NULL) 
         {
-            rc2d_engine_calculate_renderscale_and_gpuviewport();
+            rc2d_engine_presentationUpdate();
             rc2d_engine_update_fps_based_on_monitor();
 
             rc2d_engine_state.config->callbacks->rc2d_monitordesktopmodechanged(event->display.displayID);
@@ -1010,7 +1055,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitorcurrentmodechanged != NULL) 
         {
-            rc2d_engine_calculate_renderscale_and_gpuviewport();
+            rc2d_engine_presentationUpdate();
             rc2d_engine_update_fps_based_on_monitor();
 
             rc2d_engine_state.config->callbacks->rc2d_monitorcurrentmodechanged(event->display.displayID);
@@ -1020,7 +1065,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
     // Monitor Content Scale Changed
     else if (event->type == SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED)
     {
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
         rc2d_engine_update_fps_based_on_monitor();
     }
 
@@ -1086,7 +1131,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * Quand la zone de sécurité de la fenêtre change,
          * on indique que le viewport du gpu et render scale doit être recalculé.
          */
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
         rc2d_engine_update_fps_based_on_monitor();
     }
 
@@ -1100,7 +1145,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * et on indique que le viewport du gpu et le render scale interne doit être recalculé.
          */
         rc2d_engine_update_fps_based_on_monitor();
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
 
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
@@ -1131,7 +1176,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * et on indique que le viewport du gpu et le render scale interne doit être recalculé.
          */
         rc2d_engine_update_fps_based_on_monitor();
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
 
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
@@ -1148,7 +1193,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * En cas de changement de taille de pixels de la fenêtre (ex: changement de DPI), 
          * On indique que le viewport du gpu et le render scale interne doit être recalculé.
          */
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
         rc2d_engine_update_fps_based_on_monitor();
     }
 
@@ -1159,7 +1204,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * En cas de changement d'échelle d'affichage de la fenêtre, 
          * On indique que le viewport du gpu et le render scale interne doit être recalculé.
          */
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
         rc2d_engine_update_fps_based_on_monitor();
     }
 
@@ -1182,7 +1227,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * on met à jour la largeur et la hauteur de la fenêtre 
          * et on indique que le viewport du gpu et le render scale interne doit être recalculé.
          */
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
         rc2d_engine_update_fps_based_on_monitor();
 
         if (rc2d_engine_state.config != NULL && 
@@ -1214,7 +1259,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * et on indique que le viewport du gpu et le render scale interne doit être recalculé.
          */
         rc2d_engine_update_fps_based_on_monitor();
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
 
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
@@ -1235,7 +1280,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * on met à jour les FPS en fonction du moniteur actuel.
          */
         rc2d_engine_update_fps_based_on_monitor();
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
 
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
@@ -1264,7 +1309,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * on met à jour la largeur et la hauteur de la fenêtre 
          * et on indique que le viewport du gpu et le render scale interne doit être recalculé.
          */
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
 
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
@@ -1282,7 +1327,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * on met à jour la largeur et la hauteur de la fenêtre 
          * et on indique que le viewport du gpu et le render scale interne doit être recalculé.
          */
-        rc2d_engine_calculate_renderscale_and_gpuviewport();
+        rc2d_engine_presentationUpdate();
 
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
@@ -1911,6 +1956,19 @@ static bool rc2d_engine(void)
             RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'activer le integer scale : %s\n", SDL_GetError());
         }
     }
+    else if (rc2d_engine_state.config->logicalPresentationMode == RC2D_LOGICAL_PRESENTATION_OVERSCAN)
+    {
+        /**
+         * Si le mode de présentation logique est en "overscan",
+         * on active l'overscan dans le renderer.
+         */
+        if (!SDL_SetRenderLogicalPresentation(rc2d_engine_state.renderer, 
+            rc2d_engine_state.config->logicalWidth, rc2d_engine_state.config->logicalHeight, 
+            SDL_LOGICAL_PRESENTATION_OVERSCAN))
+        {
+            RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'activer l'overscan : %s\n", SDL_GetError());
+        }
+    }
 
     /**
      * Créer la texture de rendu (render target) qui servira de surface de dessin principale.
@@ -1933,7 +1991,7 @@ static bool rc2d_engine(void)
      * Calcul initial du viewport GPU et de l'échelle de rendu pour l'ensemble de l'application.
      * Cela permet de s'assurer que le rendu est effectué à la bonne échelle et dans la bonne zone de la fenêtre.
      */
-    rc2d_engine_calculate_renderscale_and_gpuviewport();
+    rc2d_engine_presentationUpdate();
 
     /**
      * Recupere les donnees du moniteur qui contient la fenetre window pour regarder 
@@ -2219,7 +2277,8 @@ void rc2d_engine_configure(const RC2D_EngineConfig* config)
      * Si le mode de présentation est valide, on l'utilise, sinon on utilise les valeurs par défaut.
      */
     if (config->logicalPresentationMode == RC2D_LOGICAL_PRESENTATION_INTEGER_SCALE ||
-        config->logicalPresentationMode == RC2D_LOGICAL_PRESENTATION_LETTERBOX)
+        config->logicalPresentationMode == RC2D_LOGICAL_PRESENTATION_LETTERBOX ||
+        config->logicalPresentationMode == RC2D_LOGICAL_PRESENTATION_OVERSCAN)
     {
         rc2d_engine_state.config->logicalPresentationMode = config->logicalPresentationMode;
     }

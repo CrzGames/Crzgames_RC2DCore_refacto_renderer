@@ -1012,6 +1012,17 @@ typedef enum RC2D_LogicalPresentationMode {
      * \note Idéal pour les jeux modernes ou vectoriels, s’adaptant à tous les écrans sans distorsion.
      */
     RC2D_LOGICAL_PRESENTATION_LETTERBOX,
+
+    /**
+     * Mise à l’échelle proportionnelle pour occuper tout l’espace disponible,
+     * en conservant le ratio d’aspect d’origine.
+     * 
+     * Si la résolution physique ne correspond pas exactement au ratio logique, le contenu
+     * est agrandi au-delà des bords de l’écran (overscan), coupant une partie de l’image.
+     * 
+     * \note Utile pour les jeux où le contenu important est centré, et où les bords peuvent être coupés.
+     */
+    RC2D_LOGICAL_PRESENTATION_OVERSCAN,
 } RC2D_LogicalPresentationMode;
 
 /**
@@ -1160,6 +1171,21 @@ const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[]);
  * \see rc2d_engine_setup
  */
 RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void);
+
+/**
+ * \brief Obtient le rectangle de la zone visible et interactive en coordonnées logiques.
+ *
+ * Cette fonction retourne le rectangle représentant la zone de l'écran qui est garantie
+ * d'être visible et interactive, en tenant compte des marges de sécurité et du mode de présentation.
+ * 
+ * Notamment le safe area pour les écrans avec des encoches, découpes ou des bords arrondis et 
+ * si le mode de présentation est en overscan, le rectangle peut dépasser les bords de l'écran. 
+ *
+ * \return {SDL_FRect} - Le rectangle de la zone visible et interactive en coordonnées logiques.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+SDL_FRect rc2d_engine_getVisibleSafeRectRender(void);
 
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */
 #ifdef __cplusplus

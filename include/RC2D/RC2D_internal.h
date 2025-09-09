@@ -94,6 +94,13 @@ typedef struct RC2D_EngineState {
     MIX_Mixer* mixer;
 
     /**
+    * Les données après avoir calculer pour overscan / letterbox +
+    * safe area (zone visible et interactive garantie)
+    */
+    int logical_w, logical_h;
+    SDL_FRect visible_safe_rect;
+
+    /**
      * SDL GPU
      * 
      * Cette structure contient :
