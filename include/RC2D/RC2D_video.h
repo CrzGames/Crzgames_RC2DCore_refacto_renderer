@@ -1,6 +1,8 @@
 #ifndef RC2D_VIDEO_H
 #define RC2D_VIDEO_H
 
+#if RC2D_VIDEO_MODULE_ENABLED
+
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
@@ -60,4 +62,5 @@ void rc2d_video_close (RC2D_Video* video);
 }
 #endif
 
+#endif // RC2D_VIDEO_MODULE_ENABLED
 #endif // RC2D_VIDEO_H

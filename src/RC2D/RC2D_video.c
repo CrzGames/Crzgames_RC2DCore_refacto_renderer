@@ -1,3 +1,4 @@
+#if RC2D_VIDEO_MODULE_ENABLED
 #include <RC2D/RC2D_video.h>
 #include <RC2D/RC2D_logger.h>
 
@@ -397,3 +398,4 @@ void rc2d_video_close(RC2D_Video* video)
 
     video->is_finished = 1;
 }
+#endif // RC2D_VIDEO_MODULE_ENABLED
