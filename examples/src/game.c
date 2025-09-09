@@ -111,7 +111,7 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    //rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
+    rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
 
     const char *base_path = SDL_GetBasePath();
     char full_path[512];
