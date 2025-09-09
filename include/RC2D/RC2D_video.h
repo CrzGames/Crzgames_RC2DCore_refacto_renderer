@@ -71,9 +71,9 @@ typedef struct RC2D_Video {
     SDL_AudioSpec    audio_spec;
 } RC2D_Video;
 
-int  rc2d_video_open  (RC2D_Video* video, const char* filename, SDL_Renderer* renderer);
+int  rc2d_video_open  (RC2D_Video* video, const char* filename);
 int  rc2d_video_update(RC2D_Video* video, double delta_time);
-int  rc2d_video_draw  (RC2D_Video* video, SDL_Renderer* renderer);
+int  rc2d_video_draw  (RC2D_Video* video);
 void rc2d_video_close (RC2D_Video* video);
 
 #ifdef __cplusplus

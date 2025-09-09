@@ -43,7 +43,7 @@ static inline void rc2d_upload_yuv_to_next_texture(RC2D_Video* v)
 /* -- API ------------------------------------------------------------------ */
 
 /* Ouvre et initialise une vidéo pour le splash screen */
-int rc2d_video_open(RC2D_Video* video, const char* filename, SDL_Renderer* renderer)
+int rc2d_video_open(RC2D_Video* video, const char* filename)
 {
     /* Init champs */
     video->format_ctx = NULL;
@@ -196,7 +196,7 @@ int rc2d_video_open(RC2D_Video* video, const char* filename, SDL_Renderer* rende
     /* Créer les textures IYUV (triple buffering) */
     for (int i = 0; i < RC2D_TEX_RING; ++i) {
         video->textures[i] = SDL_CreateTexture(
-            renderer,
+            rc2d_engine_state.renderer,
             SDL_PIXELFORMAT_IYUV,           /* Y + U + V (planar) */
             SDL_TEXTUREACCESS_STREAMING,
             video->width, video->height
@@ -529,7 +529,7 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
 }
 
 /* Dessine la dernière texture publiée (respect ratio + présentation logique) */
-int rc2d_video_draw(RC2D_Video* video, SDL_Renderer* renderer)
+int rc2d_video_draw(RC2D_Video* video)
 {
     if (!video || !video->texture || video->is_finished) {
         return -1;
@@ -537,7 +537,7 @@ int rc2d_video_draw(RC2D_Video* video, SDL_Renderer* renderer)
 
     int logical_w = 0, logical_h = 0;
     SDL_RendererLogicalPresentation mode;
-    SDL_GetRenderLogicalPresentation(renderer, &logical_w, &logical_h, &mode);
+    SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &logical_w, &logical_h, &mode);
 
     /* Si pas de logique définie, fallback sur la taille vidéo */
     if (logical_w <= 0 || logical_h <= 0) {
@@ -563,7 +563,7 @@ int rc2d_video_draw(RC2D_Video* video, SDL_Renderer* renderer)
         dst_rect.y = 0.0f;
     }
 
-    if (!SDL_RenderTexture(renderer, video->texture, NULL, &dst_rect)) {
+    if (!SDL_RenderTexture(rc2d_engine_state.renderer, video->texture, NULL, &dst_rect)) {
         RC2D_log(RC2D_LOG_ERROR, "SDL: échec rendu texture vidéo: %s", SDL_GetError());
         return -1;
     }

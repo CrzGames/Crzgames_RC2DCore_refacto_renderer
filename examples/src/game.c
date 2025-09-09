@@ -129,11 +129,11 @@ void rc2d_load(void)
 
     /* 1) Ouvrir la vidéo du Studio */
     SDL_snprintf(full_path, sizeof(full_path), "%sSplashScreen_Studio_1080p.mp4", base_path);
-    if (rc2d_video_open(&g_splash_studio, full_path, rc2d_engine_state.renderer) != 0) {
+    if (rc2d_video_open(&g_splash_studio, full_path) != 0) {
         RC2D_log(RC2D_LOG_WARN, "Studio splash failed to open, skipping directly to game splash.");
         /* Tente d'ouvrir la 2e directement */
         SDL_snprintf(full_path, sizeof(full_path), "%sSplashScreen_SeaTyrants_1080p.mp4", base_path);
-        if (rc2d_video_open(&g_splash_game, full_path, rc2d_engine_state.renderer) != 0) {
+        if (rc2d_video_open(&g_splash_game, full_path) != 0) {
             RC2D_log(RC2D_LOG_WARN, "Game splash failed to open, skipping to gameplay.");
             g_splash_state  = SPLASH_DONE;
             g_splash_active = false;
@@ -256,7 +256,7 @@ void rc2d_update(double dt)
             char full_path[512];
             SDL_snprintf(full_path, sizeof(full_path), "%sSplashScreen_SeaTyrants_1080p.mp4", base_path);
 
-            if (rc2d_video_open(&g_splash_game, full_path, rc2d_engine_state.renderer) != 0) {
+            if (rc2d_video_open(&g_splash_game, full_path) != 0) {
                 RC2D_log(RC2D_LOG_WARN, "Game splash failed, skipping to game.");
                 rc2d_video_close(&g_splash_studio);
                 g_splash_state  = SPLASH_DONE;
@@ -294,7 +294,7 @@ void rc2d_draw(void)
     if (g_splash_active) {
         if (g_splash_state == SPLASH_STUDIO) {
             /* 1) Dessiner la vidéo du studio */
-            rc2d_video_draw(&g_splash_studio, rc2d_engine_state.renderer);
+            rc2d_video_draw(&g_splash_studio);
 
             /* 2) Calculer l’alpha du voile noir sur les 6 dernières secondes */
             const double total = video_total_seconds(&g_splash_studio);   /* total (s) */
@@ -310,7 +310,7 @@ void rc2d_draw(void)
         }
         else if (g_splash_state == SPLASH_GAME) {
             /* 1) Dessiner la vidéo du jeu */
-            rc2d_video_draw(&g_splash_game, rc2d_engine_state.renderer);
+            rc2d_video_draw(&g_splash_game);
 
             /* 2) Calculer l’alpha du voile noir sur les 6 premières secondes (fade-in) */
             const double now = video_current_seconds(&g_splash_game);
