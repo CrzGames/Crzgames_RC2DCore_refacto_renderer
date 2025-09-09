@@ -163,6 +163,16 @@ void rc2d_load(void)
         return;
     }
 
+    // Sound
+    /*SDL_snprintf(full_path, sizeof(full_path), "%ssound1.mp3", base_path);
+    MIX_Audio* audio = rc2d_audio_load(full_path, true);
+    MIX_Track* track = rc2d_track_create();
+
+    rc2d_track_setAudio(track, audio);
+    rc2d_track_setGain(track, 1.0f);
+    rc2d_track_play(track, 0);*/
+
+    // Shader GPU
     SDL_GPUSamplerCreateInfo sampler_info = {
         .min_filter = SDL_GPU_FILTER_NEAREST,
         .mag_filter = SDL_GPU_FILTER_NEAREST,

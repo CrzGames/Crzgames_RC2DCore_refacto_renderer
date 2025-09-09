@@ -1,69 +1,163 @@
 #ifndef RC2D_AUDIO_H
 #define RC2D_AUDIO_H
 
+#include <stdbool.h>
+
 #include <SDL3_mixer/SDL_mixer.h>
 
-/**
- * \brief Charge un fichier audio à partir d'un chemin.
- *
- * Cette fonction charge un fichier audio (par exemple WAV, MP3) dans un objet MIX_Audio.
- *
- * \param mixer Le mixer associé (peut être NULL).
- * \param path Chemin vers le fichier audio.
- * \param predecode Si true, décode complètement l'audio à la lecture.
- * \return Pointeur vers le MIX_Audio chargé, ou NULL en cas d'erreur.
- * 
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-MIX_Audio* rc2d_audio_load(MIX_Mixer *mixer, const char *path, bool predecode);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
- * \brief Détruit un objet audio chargé.
+ * \brief Charger un asset audio pour une utilisation avec le mixeur courant.
  *
- * Cette fonction libère les ressources associées à un objet MIX_Audio.
+ * \details
+ * Cette fonction charge un fichier audio (WAV/OGG/MP3/FLAC, etc.) pour être joué
+ * sur le mixeur déjà initialisé de l’engine. Si \p predecode est vrai, l’audio est
+ * entièrement décodé en mémoire (plus de RAM, démarrage instantané et seek rapide).
  *
- * \param audio L'objet audio à détruire.
- * 
+ * \param path       Chemin du fichier audio à charger.
+ * \param predecode  Si vrai, décodage complet en mémoire ; sinon, décodage à la volée.
+ *
+ * \return (MIX_Audio*) Pointeur valide en cas de succès, NULL en cas d’échec.
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-void rc2d_audio_destroy(MIX_Audio *audio);
+MIX_Audio* rc2d_audio_load(const char* path, bool predecode);
 
 /**
- * \brief Crée une piste audio pour le mixage.
+ * \brief Détruire un asset audio précédemment chargé.
  *
- * Cette fonction crée une nouvelle piste (track) pour jouer un son sur le mixer.
+ * \param audio  L’asset à détruire (NULL autorisé, ne fait rien).
  *
- * \param mixer Le mixer sur lequel créer la piste.
- * \return Pointeur vers le MIX_Track créé, ou NULL en cas d'erreur.
- * 
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-MIX_Track* rc2d_audio_createTrack(MIX_Mixer *mixer);
+void rc2d_audio_destroy(MIX_Audio* audio);
 
 /**
- * \brief Détruit une piste audio.
+ * \brief Créer une piste de lecture liée au mixeur courant.
  *
- * Cette fonction libère les ressources associées à une piste audio.
+ * \details
+ * Une piste est une « voie » unique de lecture. Créez-en quelques-unes et réutilisez-les.
  *
- * \param track La piste à détruire.
- * 
+ * \return (MIX_Track*) Pointeur valide en cas de succès, NULL en cas d’échec.
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-void rc2d_audio_destroyTrack(MIX_Track *track);
+MIX_Track* rc2d_track_create(void);
 
 /**
- * \brief Contrôle la lecture d'une piste audio (play, pause, stop).
+ * \brief Détruire une piste de lecture.
  *
- * Cette fonction permet de jouer, mettre en pause ou arrêter une piste audio.
+ * \param track  La piste à détruire (NULL autorisé, ne fait rien).
  *
- * \param track La piste audio à contrôler.
- * \param audio L'objet audio à jouer.
- * \param action Action à effectuer : 0 pour jouer, 1 pour pause, 2 pour arrêter.
- * \param loops Nombre de boucles pour la lecture (-1 pour boucle infinie, 0 pour une seule lecture).
- * \return 0 en cas de succès, -1 en cas d'erreur.
- * 
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-int rc2d_audio_control(MIX_Track *track, MIX_Audio *audio, int action, int loops);
+void rc2d_track_destroy(MIX_Track* track);
 
-#endif // RC2D_AUDIO_H
+/**
+ * \brief Assigner un asset audio à une piste.
+ *
+ * \details
+ * La piste doit avoir une entrée (audio/stream/IOStream) avant d’être lue.
+ *
+ * \param track  Piste cible.
+ * \param audio  Asset audio chargé à associer.
+ *
+ * \return (bool) true si succès, false sinon (consulter les logs avec SDL_GetError()).
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+bool rc2d_track_setAudio(MIX_Track* track, MIX_Audio* audio);
+
+/**
+ * \brief Démarrer ou redémarrer la lecture d’une piste.
+ *
+ * \details
+ * - \p loops : 0 = une seule fois ; -1 = boucle infinie ; n>0 = n boucles supplémentaires.
+ * - La fonction redémarre la piste si elle est déjà en cours/pausée (comportement SDL_mixer).
+ *
+ * \param track  Piste à lire.
+ * \param loops  Nombre de boucles (0, -1, ou >0).
+ *
+ * \return (bool) true si succès, false sinon (consulter les logs avec SDL_GetError()).
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+bool rc2d_track_play(MIX_Track* track, int loops);
+
+/**
+ * \brief Mettre en pause une piste en lecture.
+ *
+ * \param track  Piste à mettre en pause.
+ *
+ * \return (bool) true si succès, false sinon (consulter les logs avec SDL_GetError()).
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+bool rc2d_track_pause(MIX_Track* track);
+
+/**
+ * \brief Reprendre une piste actuellement en pause.
+ *
+ * \param track  Piste à reprendre.
+ *
+ * \return (bool) true si succès, false sinon (consulter les logs avec SDL_GetError()).
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+bool rc2d_track_resume(MIX_Track* track);
+
+/**
+ * \brief Arrêter immédiatement une piste (sans fondu de sortie).
+ *
+ * \param track  Piste à arrêter.
+ *
+ * \return (bool) true si succès, false sinon (consulter les logs avec SDL_GetError()).
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+bool rc2d_track_stop(MIX_Track* track);
+
+/**
+ * \brief Régler le gain (volume) d’une piste.
+ *
+ * \details
+ * - 0.0f = silence, 1.0f = volume neutre, >1.0f = amplification (attention aux niveaux !).
+ * - Valeurs négatives interdites (voir doc SDL_mixer).
+ *
+ * \param track  Piste à régler.
+ * \param gain   Nouveau gain (>= 0.0f).
+ *
+ * \return (bool) true si succès, false sinon (consulter les logs avec SDL_GetError()).
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+bool rc2d_track_setGain(MIX_Track* track, float gain);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* RC2D_AUDIO_H */
