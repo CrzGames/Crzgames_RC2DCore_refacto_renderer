@@ -1,4 +1,5 @@
 #if RC2D_VIDEO_MODULE_ENABLED
+
 #include <RC2D/RC2D_video.h>
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_audio.h>
@@ -41,6 +42,22 @@ static inline void rc2d_upload_yuv_to_next_texture(RC2D_Video* v)
 }
 
 /* -- API ------------------------------------------------------------------ */
+
+/* Récupère la durée totale (secondes) depuis FFmpeg, ou <=0 si inconnue */
+double rc2d_video_totalSeconds(const RC2D_Video* v)
+{
+    if (!v || !v->format_ctx) return -1.0;
+    if (v->format_ctx->duration <= 0 || v->format_ctx->duration == AV_NOPTS_VALUE)
+        return -1.0;
+    return (double)v->format_ctx->duration / (double)AV_TIME_BASE;
+}
+
+/* Temps courant (secondes) — on utilise l’horloge du lecteur */
+double rc2d_video_currentSeconds(const RC2D_Video* v)
+{
+    if (!v) return 0.0;
+    return (v->clock_time < 0.0) ? 0.0 : v->clock_time;
+}
 
 /* Ouvre et initialise une vidéo pour le splash screen */
 int rc2d_video_open(RC2D_Video* video, const char* filename)

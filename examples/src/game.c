@@ -65,22 +65,6 @@ static inline void draw_fullscreen_black_with_alpha(SDL_Renderer* r, double a01)
     SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
 }
 
-/* Récupère la durée totale (secondes) depuis FFmpeg, ou <=0 si inconnue */
-static inline double video_total_seconds(const RC2D_Video* v)
-{
-    if (!v || !v->format_ctx) return -1.0;
-    if (v->format_ctx->duration <= 0 || v->format_ctx->duration == AV_NOPTS_VALUE)
-        return -1.0;
-    return (double)v->format_ctx->duration / (double)AV_TIME_BASE;
-}
-
-/* Temps courant (secondes) — on utilise l’horloge du lecteur */
-static inline double video_current_seconds(const RC2D_Video* v)
-{
-    if (!v) return 0.0;
-    return (v->clock_time < 0.0) ? 0.0 : v->clock_time;
-}
-
 /* ========================================================================= */
 /*                                UNLOAD                                     */
 /* ========================================================================= */
@@ -122,7 +106,7 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
+    //rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
 
     const char *base_path = SDL_GetBasePath();
     char full_path[512];
@@ -297,8 +281,8 @@ void rc2d_draw(void)
             rc2d_video_draw(&g_splash_studio);
 
             /* 2) Calculer l’alpha du voile noir sur les 6 dernières secondes */
-            const double total = video_total_seconds(&g_splash_studio);   /* total (s) */
-            const double now   = video_current_seconds(&g_splash_studio); /* courant (s) */
+            const double total = rc2d_video_totalSeconds(&g_splash_studio);   /* total (s) */
+            const double now   = rc2d_video_currentSeconds(&g_splash_studio); /* courant (s) */
 
             if (total > 0.0) {
                 const double remaining = total - now;
@@ -313,7 +297,7 @@ void rc2d_draw(void)
             rc2d_video_draw(&g_splash_game);
 
             /* 2) Calculer l’alpha du voile noir sur les 6 premières secondes (fade-in) */
-            const double now = video_current_seconds(&g_splash_game);
+            const double now = rc2d_video_currentSeconds(&g_splash_game);
             if (now < g_fade_seconds) {
                 double a = 1.0 - (now / g_fade_seconds); /* 1->0 sur 6s */
                 draw_fullscreen_black_with_alpha(rc2d_engine_state.renderer, a);
