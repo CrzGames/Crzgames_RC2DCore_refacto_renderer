@@ -21,6 +21,7 @@ static SDL_Texture*        g_ocean_navire_texture = NULL;
 static SDL_GPURenderState* g_ocean_render_state   = NULL;
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPUSampler*     g_ocean_sampler        = NULL;
+static SDL_Texture*        g_background_login_texture = NULL;
 
 /* ========================================================================= */
 /*                            SPLASH SYSTEME                                 */
@@ -74,6 +75,10 @@ void rc2d_unload(void)
     rc2d_video_close(&g_splash_studio);
     rc2d_video_close(&g_splash_game);
 
+    if (g_background_login_texture) {
+        SDL_DestroyTexture(g_background_login_texture);
+        g_background_login_texture = NULL;
+    }   
     if (g_ocean_render_state) {
         SDL_DestroyGPURenderState(g_ocean_render_state);
         g_ocean_render_state = NULL;
@@ -147,14 +152,11 @@ void rc2d_load(void)
         return;
     }
 
-    // Sound
-    /*SDL_snprintf(full_path, sizeof(full_path), "%ssound1.mp3", base_path);
-    MIX_Audio* audio = rc2d_audio_load(full_path, true);
-    MIX_Track* track = rc2d_track_create();
-
-    rc2d_track_setAudio(track, audio);
-    rc2d_track_setGain(track, 1.0f);
-    rc2d_track_play(track, 0);*/
+    SDL_snprintf(full_path, sizeof(full_path), "%sbackground-login.png", base_path);
+    g_background_login_texture = IMG_LoadTexture(rc2d_engine_state.renderer, full_path);
+    if (!g_background_login_texture) {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load background-login.png: %s", SDL_GetError());
+    }
 
     // Shader GPU
     SDL_GPUSamplerCreateInfo sampler_info = {
@@ -305,10 +307,14 @@ void rc2d_draw(void)
         }
         /* SPLASH_DONE n’affiche rien ici */
     } else {
-        /* --- Rendu jeu (exemple simple) --- */
-        float texW, texH;
-        SDL_GetTextureSize(g_ocean_navire_texture, &texW, &texH);
-        SDL_FRect dstrect = { 0.0f, 0.0f, texW, texH };
-        SDL_RenderTexture(rc2d_engine_state.renderer, g_ocean_navire_texture, NULL, &dstrect);
+        /* --- Rendu jeu : fond de login plein écran logique --- */
+        if (g_background_login_texture) {
+            int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode;
+            SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &lw, &lh, &mode);
+
+            SDL_FRect dst = { 0.0f, 0.0f, (float)lw, (float)lh };
+            /* src = NULL -> texture entière ; dst = plein cadre logique */
+            SDL_RenderTexture(rc2d_engine_state.renderer, g_background_login_texture, NULL, &dst);
+        }
     }
 }
