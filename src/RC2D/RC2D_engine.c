@@ -53,8 +53,10 @@ static void rc2d_engine_stateInit(void) {
 
     // SDL : Renderer
     rc2d_engine_state.renderer = NULL;
-
     rc2d_engine_state.render_target = NULL;
+
+    // SDL_mixer
+    rc2d_engine_state.mixer = NULL;
 
     // SDL GPU
     rc2d_engine_state.gpu_device = NULL;
@@ -473,6 +475,14 @@ static bool rc2d_engine_init_sdlmixer(void)
     if (!MIX_Init())
     {
         RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de l'initialisation de SDL3_mixer : %s\n", SDL_GetError());
+        return false;
+    }
+
+    rc2d_engine_state.mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
+    if (rc2d_engine_state.mixer == NULL)
+    {
+        RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de la création du périphérique de mixage audio : %s\n", SDL_GetError());
+        MIX_Quit();
         return false;
     }
 

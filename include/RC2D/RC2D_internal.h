@@ -11,6 +11,8 @@
 #include <SDL3/SDL_gpu.h>
 #include <SDL3/SDL_render.h>
 
+#include <SDL3_mixer/SDL_mixer.h>
+
 /**
  * IMPORTANT: 
  * Module interne de la bibliothèque RC2D.
@@ -85,7 +87,11 @@ typedef struct RC2D_EngineState {
     // SDL : Renderer
     SDL_Renderer* renderer;
 
+    // SDL : Render target (pour le rendu hors écran, si nécessaire)
     SDL_Texture* render_target;
+
+    // SDL_mixer
+    MIX_Mixer mixer;
 
     /**
      * SDL GPU
