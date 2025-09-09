@@ -91,7 +91,7 @@ typedef struct RC2D_EngineState {
     SDL_Texture* render_target;
 
     // SDL_mixer
-    MIX_Mixer mixer;
+    MIX_Mixer* mixer;
 
     /**
      * SDL GPU
