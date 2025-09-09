@@ -1,9 +1,8 @@
 #if RC2D_VIDEO_MODULE_ENABLED
 #include <RC2D/RC2D_video.h>
 #include <RC2D/RC2D_logger.h>
-
-#include <SDL3/SDL_render.h>
-#include <SDL3/SDL_timer.h>
+#include <RC2D/RC2D_audio.h>
+#include <RC2D/RC2D_internal.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,6 +72,23 @@ int rc2d_video_open(RC2D_Video* video, const char* filename, SDL_Renderer* rende
     video->perf_freq = SDL_GetPerformanceFrequency();
     video->perf_t0   = SDL_GetPerformanceCounter();
 
+    /* FFmpeg (audio) */
+    video->audio_codec_ctx = NULL;
+    video->audio_stream_index = -1;
+    video->audio_frame = NULL;
+    video->swr_ctx = NULL;
+    video->audio_buffer = NULL;
+    video->audio_buffer_size = 0;
+    video->audio_buffer_used = 0;
+
+    /* RC2D audio */
+    video->mix_audio = NULL;
+    video->mix_track = NULL;
+
+    /* Infos audio */
+    video->audio_time_base = 0.0;
+    video->audio_clock = 0.0;
+
     /* Ouvrir le fichier */
     if (avformat_open_input(&video->format_ctx, filename, NULL, NULL) < 0) {
         RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'ouvrir %s", filename);
@@ -99,41 +115,41 @@ int rc2d_video_open(RC2D_Video* video, const char* filename, SDL_Renderer* rende
         return -1;
     }
 
-    /* Trouver + allouer codec */
+    /* Trouver + allouer codec vidéo */
     AVCodec* codec = avcodec_find_decoder(video->format_ctx->streams[video->video_stream_index]->codecpar->codec_id);
     if (!codec) {
-        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: décodeur non trouvé");
+        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: décodeur vidéo non trouvé");
         avformat_close_input(&video->format_ctx);
         return -1;
     }
 
     video->codec_ctx = avcodec_alloc_context3(codec);
     if (!video->codec_ctx) {
-        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'allouer le contexte du codec");
+        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'allouer le contexte du codec vidéo");
         avformat_close_input(&video->format_ctx);
         return -1;
     }
 
     if (avcodec_parameters_to_context(video->codec_ctx,
          video->format_ctx->streams[video->video_stream_index]->codecpar) < 0) {
-        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible de copier les paramètres du codec");
+        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible de copier les paramètres du codec vidéo");
         avcodec_free_context(&video->codec_ctx);
         avformat_close_input(&video->format_ctx);
         return -1;
     }
 
     if (avcodec_open2(video->codec_ctx, codec, NULL) < 0) {
-        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'ouvrir le codec");
+        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'ouvrir le codec vidéo");
         avcodec_free_context(&video->codec_ctx);
         avformat_close_input(&video->format_ctx);
         return -1;
     }
 
-    /* Allouer frames */
+    /* Allouer frames vidéo */
     video->frame = av_frame_alloc();
     video->frame_yuv = av_frame_alloc();
     if (!video->frame || !video->frame_yuv) {
-        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'allouer les frames");
+        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'allouer les frames vidéo");
         if (video->frame) av_frame_free(&video->frame);
         if (video->frame_yuv) av_frame_free(&video->frame_yuv);
         avcodec_free_context(&video->codec_ctx);
@@ -188,7 +204,7 @@ int rc2d_video_open(RC2D_Video* video, const char* filename, SDL_Renderer* rende
         if (!video->textures[i]) {
             RC2D_log(RC2D_LOG_ERROR, "SDL: impossible de créer texture IYUV: %s", SDL_GetError());
             /* cleanup partiel */
-            for (int j = 0; j <= i; ++j) {
+            for (int j = 0; j < i; ++j) {
                 if (video->textures[j]) {
                     SDL_DestroyTexture(video->textures[j]);
                     video->textures[j] = NULL;
@@ -219,6 +235,190 @@ int rc2d_video_open(RC2D_Video* video, const char* filename, SDL_Renderer* rende
         video->frame_duration = 1.0 / 30.0;
     }
 
+    /* Initialisation audio */
+    for (unsigned int i = 0; i < video->format_ctx->nb_streams; i++) {
+        if (video->format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            video->audio_stream_index = (int)i;
+            break;
+        }
+    }
+
+    if (video->audio_stream_index != -1) {
+        /* Trouver et allouer le codec audio */
+        AVCodec* audio_codec = avcodec_find_decoder(
+            video->format_ctx->streams[video->audio_stream_index]->codecpar->codec_id);
+        if (!audio_codec) {
+            RC2D_log(RC2D_LOG_INFO, "FFmpeg: décodeur audio non trouvé, audio ignoré");
+            video->audio_stream_index = -1;
+        } else {
+            video->audio_codec_ctx = avcodec_alloc_context3(audio_codec);
+            if (!video->audio_codec_ctx) {
+                RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'allouer le contexte audio");
+                video->audio_stream_index = -1;
+            } else if (avcodec_parameters_to_context(video->audio_codec_ctx,
+                video->format_ctx->streams[video->audio_stream_index]->codecpar) < 0) {
+                RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible de copier les paramètres audio");
+                avcodec_free_context(&video->audio_codec_ctx);
+                video->audio_stream_index = -1;
+            } else if (avcodec_open2(video->audio_codec_ctx, audio_codec, NULL) < 0) {
+                RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'ouvrir le codec audio");
+                avcodec_free_context(&video->audio_codec_ctx);
+                video->audio_stream_index = -1;
+            } else {
+                /* Allouer frame audio */
+                video->audio_frame = av_frame_alloc();
+                if (!video->audio_frame) {
+                    RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'allouer le frame audio");
+                    avcodec_free_context(&video->audio_codec_ctx);
+                    video->audio_stream_index = -1;
+                } else {
+                    /* Base de temps audio */
+                    AVRational audio_tb = video->format_ctx->streams[video->audio_stream_index]->time_base;
+                    video->audio_time_base = av_q2d(audio_tb);
+
+                    /* Contexte de conversion audio vers S16 stereo 44100Hz */
+                    video->swr_ctx = swr_alloc();
+                    if (!video->swr_ctx) {
+                        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'allouer swr_ctx");
+                        av_frame_free(&video->audio_frame);
+                        avcodec_free_context(&video->audio_codec_ctx);
+                        video->audio_stream_index = -1;
+                    } else {
+                        AVChannelLayout out_layout = AV_CHANNEL_LAYOUT_STEREO;
+                        AVChannelLayout in_layout;
+                        av_channel_layout_copy(&in_layout, &video->audio_codec_ctx->ch_layout);
+                        if (in_layout.nb_channels == 0) {
+                            av_channel_layout_default(&in_layout, 2); // Default to stereo if undefined
+                        }
+
+                        /* Use swr_alloc_set_opts2 for modern FFmpeg */
+                        if (swr_alloc_set_opts2(&video->swr_ctx,
+                                                &out_layout, AV_SAMPLE_FMT_S16, 44100,
+                                                &in_layout, video->audio_codec_ctx->sample_fmt, video->audio_codec_ctx->sample_rate,
+                                                0, NULL) < 0) {
+                            RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible de configurer swr_ctx");
+                            swr_free(&video->swr_ctx);
+                            av_frame_free(&video->audio_frame);
+                            avcodec_free_context(&video->audio_codec_ctx);
+                            video->audio_stream_index = -1;
+                        } else if (swr_init(video->swr_ctx) < 0) {
+                            RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'initialiser swr_ctx");
+                            swr_free(&video->swr_ctx);
+                            av_frame_free(&video->audio_frame);
+                            avcodec_free_context(&video->audio_codec_ctx);
+                            video->audio_stream_index = -1;
+                        } else {
+                            /* Créer une piste audio RC2D */
+                            video->mix_track = MIX_CreateTrack(rc2d_engine_state.mixer);
+                            if (!video->mix_track) {
+                                RC2D_log(RC2D_LOG_ERROR, "RC2D: impossible de créer la piste audio");
+                                swr_free(&video->swr_ctx);
+                                av_frame_free(&video->audio_frame);
+                                avcodec_free_context(&video->audio_codec_ctx);
+                                video->audio_stream_index = -1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* Si audio présent, décoder tout l'audio upfront */
+    if (video->audio_stream_index != -1) {
+        /* Allouer buffer initial pour PCM (estimation grossière, realloc si besoin) */
+        video->audio_buffer_size = 1024 * 1024; // 1MB initial
+        video->audio_buffer = (uint8_t*)malloc(video->audio_buffer_size);
+        if (!video->audio_buffer) {
+            RC2D_log(RC2D_LOG_ERROR, "Impossible d'allouer buffer audio initial");
+            rc2d_video_close(video);
+            return -1;
+        }
+        video->audio_buffer_used = 0;
+
+        AVPacket* packet = av_packet_alloc();
+        while (av_read_frame(video->format_ctx, packet) >= 0) {
+            if (packet->stream_index == video->audio_stream_index) {
+                int ret = avcodec_send_packet(video->audio_codec_ctx, packet);
+                if (ret < 0) {
+                    RC2D_log(RC2D_LOG_ERROR, "FFmpeg: échec avcodec_send_packet audio");
+                    av_packet_unref(packet);
+                    continue;
+                }
+
+                while (ret >= 0) {
+                    ret = avcodec_receive_frame(video->audio_codec_ctx, video->audio_frame);
+                    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+                    if (ret < 0) {
+                        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: échec avcodec_receive_frame audio");
+                        break;
+                    }
+
+                    /* Calculer taille sortie */
+                    int out_samples = swr_get_out_samples(video->swr_ctx, video->audio_frame->nb_samples);
+                    size_t needed = (size_t)out_samples * 4; // S16 stereo = 4 bytes/sample frame
+
+                    /* Realloc si besoin */
+                    if (video->audio_buffer_used + needed > video->audio_buffer_size) {
+                        video->audio_buffer_size *= 2;
+                        video->audio_buffer = (uint8_t*)realloc(video->audio_buffer, video->audio_buffer_size);
+                        if (!video->audio_buffer) {
+                            RC2D_log(RC2D_LOG_ERROR, "Impossible de realloc buffer audio");
+                            av_packet_unref(packet);
+                            rc2d_video_close(video);
+                            av_packet_free(&packet);
+                            return -1;
+                        }
+                    }
+
+                    /* Convertir */
+                    uint8_t *out_buf = video->audio_buffer + video->audio_buffer_used;
+                    ret = swr_convert(video->swr_ctx, &out_buf, out_samples,
+                                      (const uint8_t**)video->audio_frame->data, video->audio_frame->nb_samples);
+                    if (ret < 0) {
+                        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: échec swr_convert");
+                        break;
+                    }
+                    video->audio_buffer_used += (size_t)ret * 4; // Mise à jour used
+                }
+            }
+            av_packet_unref(packet);
+        }
+        av_packet_free(&packet);
+
+        /* Reset stream to start for video */
+        if (av_seek_frame(video->format_ctx, -1, 0, AVSEEK_FLAG_BACKWARD) < 0) {
+            RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible de seek au début pour vidéo");
+            rc2d_video_close(video);
+            return -1;
+        }
+
+        /* Créer MIX_Audio à partir du buffer PCM */
+        if (video->audio_buffer_used > 0) {
+            SDL_AudioSpec spec = { .freq = 44100, .format = SDL_AUDIO_S16, .channels = 2 };
+            video->mix_audio = MIX_LoadRawAudio(rc2d_engine_state.mixer, video->audio_buffer, video->audio_buffer_used, &spec);
+            if (!video->mix_audio) {
+                RC2D_log(RC2D_LOG_ERROR, "MIX_LoadRawAudio a échoué pour audio vidéo: %s", SDL_GetError());
+            } else if (!MIX_SetTrackAudio(video->mix_track, video->mix_audio)) {
+                RC2D_log(RC2D_LOG_ERROR, "MIX_SetTrackAudio a échoué pour audio vidéo: %s", SDL_GetError());
+            }
+        }
+    }
+
+    /* Gérer synchronisation audio si présent */
+    if (video->mix_track && MIX_PlayTrack(video->mix_track, 0)) { // Commencer l'audio si pas déjà démarré
+        Sint64 audio_frames = MIX_GetTrackPlaybackPosition(video->mix_track);
+        if (audio_frames >= 0) {
+            double audio_time = (double)MIX_TrackFramesToMS(video->mix_track, audio_frames) / 1000.0;
+            video->audio_clock = audio_time;
+            if (fabs(video->audio_clock - video->clock_time) > 0.1) {
+                /* Resynchroniser si décalage > 100ms */
+                Sint64 target_frames = MIX_TrackMSToFrames(video->mix_track, (Sint64)(video->clock_time * 1000));
+                MIX_SetTrackPlaybackPosition(video->mix_track, target_frames);
+            }
+        }
+    }
+
     return 0; /* succès */
 }
 
@@ -247,22 +447,24 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
         }
     }
 
-    AVPacket packet;
-    av_init_packet(&packet);
-    packet.data = NULL;
-    packet.size = 0;
+    AVPacket* packet = av_packet_alloc();
+    if (!packet) {
+        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'allouer paquet");
+        return -1;
+    }
 
     /* Décoder jusqu'à obtenir une frame "due" (ou future à préparer), sinon EOF */
-    while (av_read_frame(video->format_ctx, &packet) >= 0) {
-        if (packet.stream_index != video->video_stream_index) {
-            av_packet_unref(&packet);
+    while (av_read_frame(video->format_ctx, packet) >= 0) {
+        if (packet->stream_index != video->video_stream_index) {
+            av_packet_unref(packet);
             continue;
         }
 
-        int sret = avcodec_send_packet(video->codec_ctx, &packet);
-        av_packet_unref(&packet);
+        int sret = avcodec_send_packet(video->codec_ctx, packet);
+        av_packet_unref(packet);
         if (sret < 0) {
             RC2D_log(RC2D_LOG_ERROR, "FFmpeg: échec avcodec_send_packet");
+            av_packet_free(&packet);
             return -1;
         }
 
@@ -271,10 +473,12 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
             if (rret == AVERROR(EAGAIN)) break;   /* besoin de plus de paquets */
             if (rret == AVERROR_EOF) {
                 video->is_finished = 1;
+                av_packet_free(&packet);
                 return 0; /* fin de la vidéo */
             }
             if (rret < 0) {
                 RC2D_log(RC2D_LOG_ERROR, "FFmpeg: échec avcodec_receive_frame");
+                av_packet_free(&packet);
                 return -1;
             }
 
@@ -292,7 +496,7 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
 
             /* Convertir en YUV (dans frame_yuv/ buffer) */
             sws_scale(video->sws_ctx,
-                      (const uint8_t* const*)video->frame->data,
+                      video->frame->data,
                       video->frame->linesize,
                       0, video->height,
                       video->frame_yuv->data,
@@ -302,12 +506,14 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
                 /* Frame future : la garder prête, upload quand due */
                 video->has_pending_frame = 1;
                 video->next_frame_pts    = pts;
+                av_packet_free(&packet);
                 return 1;
             } else {
                 /* Frame due maintenant : upload immédiatement */
                 rc2d_upload_yuv_to_next_texture(video);
                 video->has_pending_frame = 0;
                 video->next_frame_pts = pts + video->frame_duration;
+                av_packet_free(&packet);
                 return 1;
             }
         }
@@ -315,6 +521,10 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
 
     /* Fin du flux (plus de paquets) */
     video->is_finished = 1;
+    if (video->mix_track) {
+        MIX_StopTrack(video->mix_track, 0); // Stop immediately
+    }
+    av_packet_free(&packet);
     return 0;
 }
 
@@ -365,6 +575,33 @@ int rc2d_video_draw(RC2D_Video* video, SDL_Renderer* renderer)
 void rc2d_video_close(RC2D_Video* video)
 {
     if (!video) return;
+
+    /* Libérer ressources audio */
+    if (video->mix_track) {
+        MIX_StopTrack(video->mix_track, 0); // Stop immediately
+        MIX_DestroyTrack(video->mix_track);
+        video->mix_track = NULL;
+    }
+    if (video->mix_audio) {
+        MIX_DestroyAudio(video->mix_audio);
+        video->mix_audio = NULL;
+    }
+    if (video->audio_buffer) {
+        free(video->audio_buffer);
+        video->audio_buffer = NULL;
+    }
+    if (video->swr_ctx) {
+        swr_free(&video->swr_ctx);
+        video->swr_ctx = NULL;
+    }
+    if (video->audio_frame) {
+        av_frame_free(&video->audio_frame);
+        video->audio_frame = NULL;
+    }
+    if (video->audio_codec_ctx) {
+        avcodec_free_context(&video->audio_codec_ctx);
+        video->audio_codec_ctx = NULL;
+    }
 
     /* Détruire textures (ring) */
     for (int i = 0; i < RC2D_TEX_RING; ++i) {
