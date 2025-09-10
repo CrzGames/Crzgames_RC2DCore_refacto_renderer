@@ -47,7 +47,7 @@ extern "C" {
  * \since Cette macro de préprocesseur est disponible depuis RC2D 1.0.0.
  */
 #ifndef RC2D_NET_MODULE_ENABLED
-#define RC2D_NET_MODULE_ENABLED 1
+#define RC2D_NET_MODULE_ENABLED 0
 #endif
 
 /**
@@ -75,7 +75,7 @@ extern "C" {
  * \since Cette macro de préprocesseur est disponible depuis RC2D 1.0.0.
  */
 #ifndef RC2D_ONNX_MODULE_ENABLED
-#define RC2D_ONNX_MODULE_ENABLED 1
+#define RC2D_ONNX_MODULE_ENABLED 0
 #endif
 
 /**
@@ -109,6 +109,19 @@ extern "C" {
  */
 #ifndef RC2D_MEMORY_DEBUG_ENABLED
 #define RC2D_MEMORY_DEBUG_ENABLED 0
+#endif
+
+/**
+ * \brief Si RC2D_VIDEO_MODULE_ENABLED est défini à 1, le support vidéo (enregistrement/lecture) est activé.
+ * 
+ * Cela utilise la bibliothèque FFmpeg pour la gestion des flux vidéo.
+ * FFmpeg est une suite logicielle libre et open-source qui permet de manipuler des fichiers multimédias.
+ * Elle inclut des outils pour l'enregistrement, la conversion, et le streaming de contenu audio et vidéo.
+ * 
+ * \since Cette macro de préprocesseur est disponible depuis RC2D 1.0.0.
+ */
+#ifndef RC2D_VIDEO_MODULE_ENABLED
+#define RC2D_VIDEO_MODULE_ENABLED 0
 #endif
 
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */
