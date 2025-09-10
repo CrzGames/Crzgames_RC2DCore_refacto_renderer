@@ -156,7 +156,7 @@ void rc2d_load(void)
     g_input_pass_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
     g_input_pass_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
     g_input_pass_ui.margin_x    = 0.f;
-    g_input_pass_ui.margin_y    = +20.f; // juste en dessous du champ login
+    g_input_pass_ui.margin_y    = +50.f; // juste en dessous du champ login
     g_input_pass_ui.visible     = true;
     g_input_pass_ui.hittable    = true;
 
@@ -166,7 +166,7 @@ void rc2d_load(void)
     g_button_login_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
     g_button_login_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
     g_button_login_ui.margin_x    = 0.f;
-    g_button_login_ui.margin_y    = +120.f; // encore en dessous
+    g_button_login_ui.margin_y    = -10.f; // encore en dessous
     g_button_login_ui.visible     = true;
     g_button_login_ui.hittable    = true;
 
