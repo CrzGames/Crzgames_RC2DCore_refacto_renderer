@@ -154,7 +154,7 @@ void rc2d_load(void)
     }
 
     // minimap
-    minimap_image = rc2d_graphics_newImageFromStorage("minimap.png", RC2D_STORAGE_TITLE);
+    minimap_image = rc2d_graphics_newImageFromStorage("assets/images/minimap.png", RC2D_STORAGE_TITLE);
 
     SDL_snprintf(full_path, sizeof(full_path), "%sbackground-login.png", base_path);
     g_background_login_texture = IMG_LoadTexture(rc2d_engine_state.renderer, full_path);
