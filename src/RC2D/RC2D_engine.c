@@ -83,6 +83,7 @@ RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void)
 {    
     static RC2D_AppInfo default_app_info = {
         .name = "RC2D Game",
+        .organization = "Crzgames",
         .version = "1.0.0",
         .identifier = "com.example.rc2dgame"
     };
@@ -142,7 +143,6 @@ static bool rc2d_engine_supported_gpu_backends(void)
 
     return true;
 }
-
 
 /**
  * \brief Convertit le mode de présentation SDL_GPU en chaîne de caractères.
@@ -1864,7 +1864,16 @@ static bool rc2d_engine(void)
      * Set les informations de l'application.
      * Dois toujours etre fait avant d'initialiser SDL3
      */
-    SDL_SetAppMetadata(rc2d_engine_state.config->appInfo->name, rc2d_engine_state.config->appInfo->version, rc2d_engine_state.config->appInfo->identifier);
+    if(!SDL_SetAppMetadata(rc2d_engine_state.config->appInfo->name, rc2d_engine_state.config->appInfo->version, rc2d_engine_state.config->appInfo->identifier))
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Erreur : impossible de définir les métadonnées de l'application : %s\n", SDL_GetError());
+        return false;
+    }
+    if(!SDL_SetAppMetadataProperty("organization", rc2d_engine_state.config->appInfo->organization))
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Erreur : impossible de définir la propriété 'organization' de l'application : %s\n", SDL_GetError());
+        return false;
+    }
 
     /**
      * Initialiser la librairie OpenSSL

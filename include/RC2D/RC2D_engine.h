@@ -1032,17 +1032,22 @@ typedef enum RC2D_LogicalPresentationMode {
  */
 typedef struct RC2D_AppInfo {
     /**
-     * Nom de l'application.
+     * Nom de l'application (ex: "My Awesome Game").
      */
     const char* name;
 
     /**
-     * Version de l'application.
+     * Organisation de l'application (ex: "My Company").
+     */
+    const char* organization;
+
+    /**
+     * Version de l'application (ex: "1.0.0").
      */
     const char* version;
 
     /**
-     * Identifiant de l'application.
+     * Identifiant de l'application (ex: "com.mycompany.myawesomegame").
      */
     const char* identifier;
 } RC2D_AppInfo;
@@ -1095,10 +1100,6 @@ typedef struct RC2D_EngineConfig {
     /**
      * \brief Si le rendu doit être effectué en mode pixel art (true) ou en mode classique (false).
      * 
-     * Si c'est true, il y a des choses qui sont différentes :
-     * - MSAA est désactivé (anti-aliasing).
-     * - Le filtrage des textures est désactivé (les textures sont affichées en mode nearest neighbor).
-     * 
      * Par défaut : false (mode classique).
      */
     bool pixelartMode;
@@ -1115,6 +1116,7 @@ typedef struct RC2D_EngineConfig {
      * 
      * Par défaut :
      * - name : "RC2D Game"
+     * - organization : "Crzgames"
      * - version : "1.0.0"
      * - identifier : "com.example.rc2dgame"
      */

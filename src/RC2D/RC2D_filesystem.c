@@ -6,9 +6,13 @@
 
 static char* prefPath = NULL;
 static char* basePath = NULL;
+static char* assetsPathRRES = NULL;
 
 char* rc2d_filesystem_getWritableAppDataPath(const char* nameOrganisation, const char* nameApplication)
 {
+    if (prefPath != NULL)
+        return prefPath;
+
     if (nameOrganisation == NULL || nameApplication == NULL)
     {
         RC2D_log(RC2D_LOG_ERROR, "rc2d_filesystem_getWritableAppDataPath error : nameOrganisation or nameApplication is NULL \n");
@@ -29,6 +33,9 @@ char* rc2d_filesystem_getWritableAppDataPath(const char* nameOrganisation, const
 
 char* rc2d_filesystem_getPathApp(void)
 {
+    if (basePath != NULL)
+        return basePath;
+
     basePath = SDL_GetBasePath();
     
     // NULL sera renvoye en cas d'erreur ou lorsque la plateforme n'implemente pas cette fonctionnalite
@@ -49,6 +56,16 @@ void rc2d_filesystem_quit(void)
 
 char* rc2d_filesystem_getPathAssetsInResourceRRES(void)
 {
-    char* path = "./assets/";
-    return path;
+    if (assetsPathRRES != NULL)
+        return assetsPathRRES;
+
+    // Si le chemin n'a pas encore été généré, le créer
+    assetsPathRRES = SDL_GetBasePath();
+    if (assetsPathRRES == NULL)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_filesystem_getPathAssetsInResourceRRES failed pointer SDL_GetBasePath : %s", SDL_GetError());
+        return NULL;
+    }
+
+    return assetsPathRRES;
 }

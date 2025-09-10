@@ -53,6 +53,18 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     }
 
     /**
+     * Ouvre le dossier de stockage pour l'application avant de commencer le rc2d_load,
+     * si l'utilisateur à besoin d'accéder aux fichiers dès le début.
+     *
+     * - Le storage "Title" est en lecture seule, pour les assets packagés.
+     * - Le storage "User" est en lecture/écriture, pour les données utilisateur.
+     *
+     * Pour rc2d_storage_openTitle : Si 'override_path' est NULL, cela utilise SDL_GetBasePath() comme racine.
+    */
+    rc2d_storage_openTitle(NULL);
+    rc2d_storage_openUser(config->appInfo->organization, config->appInfo->name);
+
+    /**
      * La premiere callback de la boucle de jeu est rc2d_load, qui est appelée avant le début de la boucle de jeu.
      * Cela peut être utilisé pour initialiser des ressources, charger des données, etc.
      */
