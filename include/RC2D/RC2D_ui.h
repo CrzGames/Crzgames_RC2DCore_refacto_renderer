@@ -75,7 +75,93 @@ typedef struct RC2D_UIImage {
     SDL_FRect         last_drawn_rect;   /**< MAJ à chaque draw ; {0,0,0,0} si rien dessiné */
 } RC2D_UIImage;
 
+/**
+ * \brief Dessine un élément UI de type image, positionné par ancre et marges, et mémorise son rectangle rendu.
+ *
+ * Cette fonction calcule la position finale de l’image dans la **zone visible et sûre**
+ * (intersection safe-area ∩ zone visible en OVERSCAN) obtenue via
+ * `rc2d_engine_getVisibleSafeRectRender()`, en fonction de :
+ * - l’**ancre** (`RC2D_UIAnchor`) ;
+ * - le **mode de marge** (`RC2D_UIMarginMode`) ;
+ * - les valeurs de marges `margin_x`, `margin_y` (interprétées en **pixels logiques** ou en **pourcentage**).
+ *
+ * Le rectangle effectivement dessiné est écrit dans `uiImage->last_drawn_rect` (coordonnées **logiques**).
+ * Si le dessin échoue, `last_drawn_rect` est réinitialisé à `{0,0,0,0}`.
+ *
+ * \param uiImage Élément à dessiner (non NULL). Les champs utilisés sont :
+ *  - `image.sdl_texture` : texture SDL (doit être valide),
+ *  - `anchor` : choix de l’ancre (voir \ref RC2D_UIAnchor),
+ *  - `margin_mode` : `RC2D_UI_MARGIN_PIXELS` ou `RC2D_UI_MARGIN_PERCENT`,
+ *  - `margin_x`, `margin_y` : valeur des marges (px logiques ou 0..1),
+ *  - `last_drawn_rect` : mis à jour par la fonction.
+ *
+ * \return `true` en cas de succès, `false` si la texture ou le renderer est invalide,
+ *         si la zone visible est nulle, ou si le rendu SDL échoue.
+ *
+ * \threadsafety Doit être appelée sur le thread principal (rendu SDL).
+ *
+ * \since Disponible depuis RC2D 1.0.0.
+ *
+ * \par Interprétation des marges (rappel rapide)
+ * - Ancre contenant **RIGHT** ⇒ `margin_x` mesure la distance depuis le **bord droit**.
+ * - Ancre contenant **LEFT**  ⇒ `margin_x` mesure la distance depuis le **bord gauche**.
+ * - Ancre contenant **TOP**   ⇒ `margin_y` mesure la distance depuis le **haut**.
+ * - Ancre contenant **BOTTOM**⇒ `margin_y` mesure la distance depuis le **bas**.
+ * - Ancre **CENTER** (sur un axe) ⇒ la marge est un **décalage** depuis le **centre** sur cet axe
+ *   (positif = droite/bas, négatif = gauche/haut).
+ *
+ * \note En mode pourcentage (`RC2D_UI_MARGIN_PERCENT`), `margin_x` est relatif à la **largeur** de la zone visible,
+ *       `margin_y` à sa **hauteur** (valeurs attendues dans [0..1], mais les valeurs négatives/>\!1 sont autorisées
+ *       pour des décalages volontaires).
+ *
+ * \code
+ * // Exemple 1 — Pixels logiques : minimap en bas-droite avec 20 px de marge
+ * RC2D_UIImage minimap = {
+ *     .image       = rc2d_graphics_newImage("minimap.png"),
+ *     .anchor      = RC2D_UI_ANCHOR_BOTTOM_RIGHT,
+ *     .margin_mode = RC2D_UI_MARGIN_PIXELS,
+ *     .margin_x    = 20.0f,   // depuis la droite
+ *     .margin_y    = 20.0f    // depuis le bas
+ * };
+ *
+ * void rc2d_draw(void)
+ * {
+ *     rc2d_ui_drawImage(&minimap); // met à jour minimap.last_drawn_rect
+ * }
+ * \endcode
+ *
+ * \code
+ * // Exemple 2 — Pourcentage : logo en haut-droite, 10%/10%
+ * RC2D_UIImage logo = {
+ *     .image       = rc2d_graphics_newImage("logo.png"),
+ *     .anchor      = RC2D_UI_ANCHOR_TOP_RIGHT,
+ *     .margin_mode = RC2D_UI_MARGIN_PERCENT,
+ *     .margin_x    = 0.10f,   // 10% de la largeur depuis la droite
+ *     .margin_y    = 0.10f    // 10% de la hauteur depuis le haut
+ * };
+ * \endcode
+ *
+ * \code
+ * // Exemple 3 — Hit-test (clic) avec rc2d_collision_pointInAABB
+ * void rc2d_mousepressed(float x, float y, RC2D_MouseButton b, int clicks, SDL_MouseID id)
+ * {
+ *     (void)clicks; (void)id;
+ *     if (b != RC2D_MOUSE_BUTTON_LEFT) return;
+ *
+ *     const SDL_FRect r = minimap.last_drawn_rect;
+ *     if (r.w <= 0.f || r.h <= 0.f) return; // rien de dessiné
+ *
+ *     RC2D_AABB box = { r.x, r.y, r.w, r.h };
+ *     RC2D_Point p = { x, y };
+ *
+ *     if (rc2d_collision_pointInAABB(p, box)) {
+ *         // ... clic sur la minimap
+ *     }
+ * }
+ * \endcode
+ */
 bool rc2d_ui_drawImage(RC2D_UIImage* uiImage);
+
 
 #ifdef __cplusplus
 }
