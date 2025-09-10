@@ -18,9 +18,9 @@
 #include <RC2D/RC2D_memory.h>
 #include <RC2D/RC2D_graphics.h>
 
-static bool title_storage_is_ready        = false;  // SDL_OpenTitleStorage est prêt ?
-static bool user_storage_is_ready         = false;  // SDL_OpenUserStorage est prêt ?
-static bool rc2d_load_has_been_called     = false;  // rc2d_load() a déjà été appelé ?
+static bool title_storage_is_ready = false;  // SDL_OpenTitleStorage est prêt ?
+static bool user_storage_is_ready  = false;  // SDL_OpenUserStorage est prêt ?
+static bool rc2d_load_has_been_called = false;  // rc2d_load() a déjà été appelé ?
 
 /**
  * SDL3 Callback: Initialisation
@@ -245,7 +245,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
  * 
  * Cette fonction est appelée lorsque l'application se termine.
  */
-void SDL_AppQuit(void *appstate, SDL_AppResult result) {
+void SDL_AppQuit(void *appstate, SDL_AppResult result) 
+{
     /**
      * La boucle de jeu est terminée, appelez la fonction de déchargement si elle est définie
      * Cela peut être utilisé pour libérer des ressources ou effectuer d'autres tâches de nettoyage 
