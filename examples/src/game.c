@@ -22,6 +22,7 @@ static SDL_GPURenderState* g_ocean_render_state   = NULL;
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPUSampler*     g_ocean_sampler        = NULL;
 static SDL_Texture*        g_background_login_texture = NULL;
+static SDL_Texture*        g_ocean_minimap_texture = NULL;
 
 /* ========================================================================= */
 /*                            SPLASH SYSTEME                                 */
@@ -45,6 +46,35 @@ static const double        g_fade_seconds = 1.5;
 /* ========================================================================= */
 /*                         HELPERS / PETITES UTILS                           */
 /* ========================================================================= */
+
+// Place la texture en haut-droite du visible_safe_rect, SANS redimensionner.
+// - top_pct, right_pct ∈ [0..1] : marges en % du visible_safe_rect.
+static void gui_draw_top_right_margins(SDL_Renderer* r, SDL_Texture* tex,
+                                       float top_pct, float right_pct)
+{
+    if (!tex) return;
+
+    SDL_FRect V = rc2d_engine_getVisibleSafeRectRender();
+    if (V.w <= 0.f || V.h <= 0.f) return;
+
+    float tw = 0.f, th = 0.f;
+    if (!SDL_GetTextureSize(tex, &tw, &th) || tw <= 0.f || th <= 0.f) return;
+
+    const float mt = V.h * top_pct;   // marge haute (logique)
+    const float mr = V.w * right_pct; // marge droite (logique)
+
+    SDL_FRect dst = {
+        V.x + V.w - mr - tw,  // bord droit - marge - largeur texture
+        V.y + mt,             // bord haut + marge
+        tw, th
+    };
+
+    SDL_RenderTexture(r, tex, NULL, &dst);
+
+    // (debug)
+    SDL_SetRenderDrawColor(r, 255,255,0,255);
+    SDL_RenderRect(r, &dst);
+}
 
 static inline double clamp01(double x)
 {
@@ -75,6 +105,10 @@ void rc2d_unload(void)
     rc2d_video_close(&g_splash_studio);
     rc2d_video_close(&g_splash_game);
 
+    if (g_ocean_minimap_texture) {
+        SDL_DestroyTexture(g_ocean_minimap_texture);
+        g_ocean_minimap_texture = NULL;
+    }
     if (g_background_login_texture) {
         SDL_DestroyTexture(g_background_login_texture);
         g_background_login_texture = NULL;
@@ -111,7 +145,8 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
+    rc2d_window_setSize(1920, 1080);
+    //rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
 
     const char *base_path = SDL_GetBasePath();
     char full_path[512];
@@ -147,6 +182,15 @@ void rc2d_load(void)
     g_ocean_navire_texture = IMG_LoadTexture(rc2d_engine_state.renderer, full_path);
     if (!g_ocean_navire_texture) {
         RC2D_log(RC2D_LOG_ERROR, "Failed to load navire.png: %s", SDL_GetError());
+        SDL_DestroyTexture(g_ocean_tile_texture);
+        g_ocean_tile_texture = NULL;
+        return;
+    }
+
+    SDL_snprintf(full_path, sizeof(full_path), "%sminimap.png", base_path);
+    g_ocean_minimap_texture = IMG_LoadTexture(rc2d_engine_state.renderer, full_path);
+    if (!g_ocean_minimap_texture) {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load minimap.png: %s", SDL_GetError());
         SDL_DestroyTexture(g_ocean_tile_texture);
         g_ocean_tile_texture = NULL;
         return;
@@ -316,5 +360,11 @@ void rc2d_draw(void)
             /* src = NULL -> texture entière ; dst = plein cadre logique */
             SDL_RenderTexture(rc2d_engine_state.renderer, g_background_login_texture, NULL, &dst);
         }
+    }
+
+    /* === DEBUG: visualiser la minimap en haut à droite === */
+    if (g_ocean_minimap_texture) {
+        // 10% du haut, 10% de la droite, taille native
+        gui_draw_top_right_margins(rc2d_engine_state.renderer, g_ocean_minimap_texture, 0.10f, 0.10f);
     }
 }
