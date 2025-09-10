@@ -21,12 +21,12 @@ extern "C" {
  * \since Cette énumération est disponible depuis RC2D 1.0.0.
  */
 typedef enum RC2D_MouseButton {
-    RC2D_MOUSE_UNKNOWN = 0,  /**< Bouton inconnu ou non supporté */
-    RC2D_MOUSE_LEFT    = 1,  /**< Bouton gauche de la souris */
-    RC2D_MOUSE_MIDDLE  = 2,  /**< Bouton du milieu (roulette) */
-    RC2D_MOUSE_RIGHT   = 3,  /**< Bouton droit de la souris */
-    RC2D_MOUSE_X1      = 4,  /**< Bouton latéral 1 de la souris */
-    RC2D_MOUSE_X2      = 5   /**< Bouton latéral 2 de la souris */
+    RC2D_MOUSE_BUTTON_UNKNOWN = 0,  /**< Bouton inconnu ou non supporté */
+    RC2D_MOUSE_BUTTON_LEFT    = 1,  /**< Bouton gauche de la souris */
+    RC2D_MOUSE_BUTTON_MIDDLE  = 2,  /**< Bouton du milieu (roulette) */
+    RC2D_MOUSE_BUTTON_RIGHT   = 3,  /**< Bouton droit de la souris */
+    RC2D_MOUSE_BUTTON_X1      = 4,  /**< Bouton latéral 1 de la souris */
+    RC2D_MOUSE_BUTTON_X2      = 5   /**< Bouton latéral 2 de la souris */
 } RC2D_MouseButton;
 
 /**
@@ -45,13 +45,6 @@ typedef enum RC2D_MouseWheelDirection {
     RC2D_SCROLL_RIGHT       /**< Défilement vers la droite */
 } RC2D_MouseWheelDirection;
 
-
-/**
- * \brief Structure représentant un curseur personnalisé.
- * 
- * \since Cette structure est disponible depuis RC2D 1.0.0.
- */
-typedef struct SDL_Cursor RC2D_Cursor;
 
 /**
  * \brief Enum définissant les différents types de curseurs système.
@@ -172,49 +165,22 @@ typedef enum RC2D_SystemCursor {
     RC2D_SYSTEM_CURSOR_COUNT
 } RC2D_SystemCursor;
 
-/**
- * \brief Enum définissant les différents boutons de la souris.
- * 
- * \since Cette enum est disponible depuis RC2D 1.0.0.
- */
-typedef enum RC2D_MouseButtons {
-    /**
-     * Bouton gauche de la souris.
-     */
-    RC2D_MOUSE_BUTTON_LEFT,
-
-    /**
-     * Bouton du milieu de la souris.
-     */
-    RC2D_MOUSE_BUTTON_MIDDLE,
-
-    /**
-     * Bouton droit de la souris.
-     */
-    RC2D_MOUSE_BUTTON_RIGHT
-} RC2D_MouseButtons;
-
-RC2D_Cursor rc2d_mouse_newCursor(const char* filePath, const int hotx, const int hoty);
-RC2D_Cursor rc2d_mouse_newSystemCursor(const RC2D_SystemCursor systemCursorId);
-void rc2d_mouse_freeCursor(RC2D_Cursor* cursor);
+SDL_Cursor* rc2d_mouse_newSystemCursor(const RC2D_SystemCursor systemCursorId);
+void rc2d_mouse_freeCursor(SDL_Cursor* cursor);
 
 bool rc2d_mouse_isVisible(void);
-bool rc2d_mouse_isCursorSupported(void);
 bool rc2d_mouse_isGrabbed(void);
-bool rc2d_mouse_isDown(const RC2D_MouseButtons button);
+bool rc2d_mouse_isDown(const RC2D_MouseButton button);
 
-RC2D_Cursor rc2d_mouse_getCurrentCursor(void);
-void rc2d_mouse_getPosition(int* x, int* y);
-int rc2d_mouse_getX(void);
-int rc2d_mouse_getY(void);
-bool rc2d_mouse_getRelativeMode(void);
+void rc2d_mouse_getPosition(float* x, float* y);
+float rc2d_mouse_getX(void);
+float rc2d_mouse_getY(void);
 
 void rc2d_mouse_setVisible(const bool visible);
 void rc2d_mouse_setCursor(const RC2D_Cursor* cursor);
-void rc2d_mouse_setPosition(int x, int y);
-void rc2d_mouse_setX(int x);
-void rc2d_mouse_setY(int y);
-void rc2d_mouse_setGrabbed(const bool grabbed);
+void rc2d_mouse_setPosition(float x, float y);
+void rc2d_mouse_setX(float x);
+void rc2d_mouse_setY(float y);
 void rc2d_mouse_setRelativeMode(const bool enabled);
 
 #ifdef __cplusplus

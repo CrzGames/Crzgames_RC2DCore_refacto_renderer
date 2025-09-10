@@ -1502,16 +1502,16 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_mousepressed != NULL) 
         {
-            RC2D_MouseButton button = RC2D_MOUSE_UNKNOWN;
+            RC2D_MouseButton button = RC2D_MOUSE_BUTTON_UNKNOWN;
 
             switch (event->button.button) 
             {
-                case SDL_BUTTON_LEFT:   button = RC2D_MOUSE_LEFT; break;
-                case SDL_BUTTON_MIDDLE: button = RC2D_MOUSE_MIDDLE; break;
-                case SDL_BUTTON_RIGHT:  button = RC2D_MOUSE_RIGHT; break;
-                case SDL_BUTTON_X1:     button = RC2D_MOUSE_X1; break;
-                case SDL_BUTTON_X2:     button = RC2D_MOUSE_X2; break;
-                default:                button = RC2D_MOUSE_UNKNOWN; break;
+                case SDL_BUTTON_LEFT:   button = RC2D_MOUSE_BUTTON_LEFT; break;
+                case SDL_BUTTON_MIDDLE: button = RC2D_MOUSE_BUTTON_MIDDLE; break;
+                case SDL_BUTTON_RIGHT:  button = RC2D_MOUSE_BUTTON_RIGHT; break;
+                case SDL_BUTTON_X1:     button = RC2D_MOUSE_BUTTON_X1; break;
+                case SDL_BUTTON_X2:     button = RC2D_MOUSE_BUTTON_X2; break;
+                default:                button = RC2D_MOUSE_BUTTON_UNKNOWN; break;
             }
 
             rc2d_engine_state.config->callbacks->rc2d_mousepressed(
@@ -1531,16 +1531,16 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_mousereleased != NULL) 
         {
-            RC2D_MouseButton button = RC2D_MOUSE_UNKNOWN;
+            RC2D_MouseButton button = RC2D_MOUSE_BUTTON_UNKNOWN;
 
             switch (event->button.button) 
             {
-                case SDL_BUTTON_LEFT:   button = RC2D_MOUSE_LEFT; break;
-                case SDL_BUTTON_MIDDLE: button = RC2D_MOUSE_MIDDLE; break;
-                case SDL_BUTTON_RIGHT:  button = RC2D_MOUSE_RIGHT; break;
-                case SDL_BUTTON_X1:     button = RC2D_MOUSE_X1; break;
-                case SDL_BUTTON_X2:     button = RC2D_MOUSE_X2; break;
-                default:                button = RC2D_MOUSE_UNKNOWN; break;
+                case SDL_BUTTON_LEFT:   button = RC2D_MOUSE_BUTTON_LEFT; break;
+                case SDL_BUTTON_MIDDLE: button = RC2D_MOUSE_BUTTON_MIDDLE; break;
+                case SDL_BUTTON_RIGHT:  button = RC2D_MOUSE_BUTTON_RIGHT; break;
+                case SDL_BUTTON_X1:     button = RC2D_MOUSE_BUTTON_X1; break;
+                case SDL_BUTTON_X2:     button = RC2D_MOUSE_BUTTON_X2; break;
+                default:                button = RC2D_MOUSE_BUTTON_UNKNOWN; break;
             }
 
             rc2d_engine_state.config->callbacks->rc2d_mousereleased(
