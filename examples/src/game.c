@@ -20,7 +20,7 @@ static SDL_GPURenderState* g_ocean_render_state   = NULL;
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPUSampler*     g_ocean_sampler        = NULL;
 static SDL_Texture*        g_background_login_texture = NULL;
-static SDL_Texture*        g_ocean_minimap_texture = NULL;
+static RC2D_Image          minimap_image = {0};
 
 /* ========================================================================= */
 /*                            SPLASH SYSTEME                                 */
@@ -74,10 +74,7 @@ void rc2d_unload(void)
     rc2d_video_close(&g_splash_studio);
     rc2d_video_close(&g_splash_game);
 
-    if (g_ocean_minimap_texture) {
-        SDL_DestroyTexture(g_ocean_minimap_texture);
-        g_ocean_minimap_texture = NULL;
-    }
+    rc2d_graphics_freeImage(minimap_image);
     if (g_background_login_texture) {
         SDL_DestroyTexture(g_background_login_texture);
         g_background_login_texture = NULL;
@@ -156,14 +153,8 @@ void rc2d_load(void)
         return;
     }
 
-    SDL_snprintf(full_path, sizeof(full_path), "%sminimap.png", base_path);
-    g_ocean_minimap_texture = IMG_LoadTexture(rc2d_engine_state.renderer, full_path);
-    if (!g_ocean_minimap_texture) {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load minimap.png: %s", SDL_GetError());
-        SDL_DestroyTexture(g_ocean_tile_texture);
-        g_ocean_tile_texture = NULL;
-        return;
-    }
+    // minimap
+    minimap_image = rc2d_graphics_newImageFromStorage("minimap.png", RC2D_STORAGE_TITLE);
 
     SDL_snprintf(full_path, sizeof(full_path), "%sbackground-login.png", base_path);
     g_background_login_texture = IMG_LoadTexture(rc2d_engine_state.renderer, full_path);
@@ -339,16 +330,15 @@ void rc2d_draw(void)
         }
 
         // minimap en bas-droite, marge 20 px logiques
-        if (g_ocean_minimap_texture) {
-            RC2D_Image img = { .sdl_texture = g_ocean_minimap_texture };
+        if (minimap_image.sdl_texture) {
             rc2d_ui_drawImageAnchoredPixels(
-                img,
+                minimap_image,
                 RC2D_UI_ANCHOR_BOTTOM_RIGHT,
                 20.0f,  // margin_x_pixels (depuis la droite)
                 20.0f   // margin_y_pixels (depuis le bas)
             );
             rc2d_ui_drawImageAnchoredPercentage(
-                img,
+                minimap_image,
                 RC2D_UI_ANCHOR_BOTTOM_RIGHT,
                 0.20f,  // 20% de la largeur de la zone sûre depuis la droite
                 0.20f   // 20% de la hauteur de la zone sûre depuis le bas
