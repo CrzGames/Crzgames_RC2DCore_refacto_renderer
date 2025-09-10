@@ -1,7 +1,7 @@
 # Format: library=repository:tag ou library=repository:commit_sha
 
-SDL=https://github.com/libsdl-org/SDL.git:7840c9d879209857cf41664b629f667edabc9402
+SDL=https://github.com/libsdl-org/SDL.git:ed6a72a7fdbefb11b3e4e066b98c37d8048d61c2
 SDL_image=https://github.com/libsdl-org/SDL_image.git:release-3.2.4
 SDL_ttf=https://github.com/libsdl-org/SDL_ttf.git:release-3.2.2
-SDL_mixer=https://github.com/libsdl-org/SDL_mixer.git:4dd0ea7230420c12b01da35ee75f92ade9562302
+SDL_mixer=https://github.com/libsdl-org/SDL_mixer.git:d032535780c95820c78311cbbebf17d04ef4f0d7
 Crzgames_Libraries=https://github.com/CrzGames/Crzgames_Libraries.git:6b7609f356a73416d866d702ac5b13ceb4a4d732
