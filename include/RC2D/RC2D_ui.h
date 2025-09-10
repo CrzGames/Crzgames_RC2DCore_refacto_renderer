@@ -145,11 +145,7 @@ typedef struct RC2D_UIImage {
  * // Exemple 3 — Hit-test (clic) avec rc2d_collision_pointInAABB
  * void rc2d_mousepressed(float x, float y, RC2D_MouseButton b, int clicks, SDL_MouseID id)
  * {
- *     (void)clicks; (void)id;
- *     if (b != RC2D_MOUSE_BUTTON_LEFT) return;
- *
  *     const SDL_FRect r = minimap.last_drawn_rect;
- *     if (r.w <= 0.f || r.h <= 0.f) return; // rien de dessiné
  *
  *     RC2D_AABB box = { r.x, r.y, r.w, r.h };
  *     RC2D_Point p = { x, y };
