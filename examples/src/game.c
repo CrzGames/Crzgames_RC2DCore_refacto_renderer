@@ -14,10 +14,10 @@
 /*                              RESSOURCES                                   */
 /* ========================================================================= */
 
-static SDL_Texture*        g_ocean_tile_texture   = NULL;
 static SDL_GPURenderState* g_ocean_render_state   = NULL;
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPUSampler*     g_ocean_sampler        = NULL;
+static RC2D_Image          tile_ocean_image = {0};
 static RC2D_Image          minimap_image = {0};
 static RC2D_Image          background_login_image = {0};
 
@@ -73,22 +73,22 @@ void rc2d_unload(void)
     rc2d_video_close(&g_splash_studio);
     rc2d_video_close(&g_splash_game);
 
-    rc2d_graphics_freeImage(minimap_image);
-    rc2d_graphics_freeImage(background_login_image);
+    rc2d_graphics_freeImage(&minimap_image);
+    rc2d_graphics_freeImage(&background_login_image);
+    rc2d_graphics_freeImage(&tile_ocean_image);
 
-    if (g_ocean_render_state) {
+    if (g_ocean_render_state) 
+    {
         SDL_DestroyGPURenderState(g_ocean_render_state);
         g_ocean_render_state = NULL;
     }
-    if (g_ocean_fragment_shader) {
+    if (g_ocean_fragment_shader) 
+    {
         SDL_ReleaseGPUShader(rc2d_engine_state.gpu_device, (SDL_GPUShader*)g_ocean_fragment_shader);
         g_ocean_fragment_shader = NULL;
     }
-    if (g_ocean_tile_texture) {
-        SDL_DestroyTexture(g_ocean_tile_texture);
-        g_ocean_tile_texture = NULL;
-    }
-    if (g_ocean_sampler) {
+    if (g_ocean_sampler) 
+    {
         SDL_ReleaseGPUSampler(rc2d_engine_state.gpu_device, g_ocean_sampler);
         g_ocean_sampler = NULL;
     }
@@ -110,12 +110,12 @@ void rc2d_load(void)
     const char *base_path = SDL_GetBasePath();
     char full_path[512];
 
-    /* 1) Ouvrir la vidéo du Studio */
+    // splash videos
     SDL_snprintf(full_path, sizeof(full_path), "%sassets/videos/SplashScreen_Studio_1080p.mp4", base_path);
     if (rc2d_video_open(&g_splash_studio, full_path) != 0) {
         RC2D_log(RC2D_LOG_WARN, "Studio splash failed to open, skipping directly to game splash.");
         /* Tente d'ouvrir la 2e directement */
-        SDL_snprintf(full_path, sizeof(full_path), "%sSplashScreen_SeaTyrants_1080p.mp4", base_path);
+        SDL_snprintf(full_path, sizeof(full_path), "%sassets/videos/SplashScreen_SeaTyrants_1080p.mp4", base_path);
         if (rc2d_video_open(&g_splash_game, full_path) != 0) {
             RC2D_log(RC2D_LOG_WARN, "Game splash failed to open, skipping to gameplay.");
             g_splash_state  = SPLASH_DONE;
@@ -127,15 +127,7 @@ void rc2d_load(void)
     } else {
         g_splash_state  = SPLASH_STUDIO;
         g_splash_active = true;
-    }
-
-    /* 2) Ressources jeu (inchangé) */
-    SDL_snprintf(full_path, sizeof(full_path), "%stile.png", base_path);
-    g_ocean_tile_texture = IMG_LoadTexture(rc2d_engine_state.renderer, full_path);
-    if (!g_ocean_tile_texture) {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load tile.png: %s", SDL_GetError());
-        return;
-    }
+    }    
 
     // minimap
     minimap_image = rc2d_graphics_newImageFromStorage("assets/images/minimap.png", RC2D_STORAGE_TITLE);
@@ -143,7 +135,10 @@ void rc2d_load(void)
     // background login
     background_login_image = rc2d_graphics_newImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
 
-    // Shader GPU
+    // tile ocean
+    tile_ocean_image = rc2d_graphics_newImageFromStorage("assets/images/tile.png", RC2D_STORAGE_TITLE);
+
+    // Load shader, sampler, render state
     SDL_GPUSamplerCreateInfo sampler_info = {
         .min_filter = SDL_GPU_FILTER_NEAREST,
         .mag_filter = SDL_GPU_FILTER_NEAREST,
@@ -154,25 +149,21 @@ void rc2d_load(void)
         .props = 0
     };
     g_ocean_sampler = SDL_CreateGPUSampler(rc2d_engine_state.gpu_device, &sampler_info);
-    if (!g_ocean_sampler) {
+    if (!g_ocean_sampler) 
+    {
         RC2D_log(RC2D_LOG_ERROR, "Failed to create sampler: %s", SDL_GetError());
-        SDL_DestroyTexture(g_ocean_tile_texture);
-        g_ocean_tile_texture = NULL;
         return;
     }
 
     g_ocean_fragment_shader = rc2d_gpu_loadGraphicsShader("water.fragment");
-    if (!g_ocean_fragment_shader) {
+    if (!g_ocean_fragment_shader) 
+    {
         RC2D_log(RC2D_LOG_ERROR, "Failed to load water.fragment shader: %s", SDL_GetError());
-        SDL_DestroyTexture(g_ocean_tile_texture);
-        g_ocean_tile_texture = NULL;
-        SDL_ReleaseGPUSampler(rc2d_engine_state.gpu_device, g_ocean_sampler);
-        g_ocean_sampler = NULL;
         return;
     }
 
     SDL_GPUTextureSamplerBinding sampler_binding = {
-        .texture = g_ocean_tile_texture,
+        .texture = tile_ocean_image.sdl_texture,
         .sampler = g_ocean_sampler
     };
     SDL_GPURenderStateCreateInfo rs_info = {
@@ -187,14 +178,9 @@ void rc2d_load(void)
     };
 
     g_ocean_render_state = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs_info);
-    if (!g_ocean_render_state) {
+    if (!g_ocean_render_state) 
+    {
         RC2D_log(RC2D_LOG_ERROR, "SDL_CreateGPURenderState failed: %s", SDL_GetError());
-        SDL_DestroyTexture(g_ocean_tile_texture);
-        g_ocean_tile_texture = NULL;
-        SDL_ReleaseGPUSampler(rc2d_engine_state.gpu_device, g_ocean_sampler);
-        g_ocean_sampler = NULL;
-        SDL_ReleaseGPUShader(rc2d_engine_state.gpu_device, (SDL_GPUShader*)g_ocean_fragment_shader);
-        g_ocean_fragment_shader = NULL;
         return;
     }
 
@@ -207,46 +193,37 @@ void rc2d_load(void)
 
 void rc2d_update(double dt)
 {
-    if (!g_splash_active) {
+    if (!g_splash_active) 
+    {
         /* Update gameplay ici si besoin */
         return;
     }
 
     switch (g_splash_state) {
-    case SPLASH_STUDIO: {
-        int r = rc2d_video_update(&g_splash_studio, dt);
-        if (r <= 0) {
-            /* Ouverture de la 2e vidéo immédiatement après la fin */
-            const char *base_path = SDL_GetBasePath();
-            char full_path[512];
-            SDL_snprintf(full_path, sizeof(full_path), "%sSplashScreen_SeaTyrants_1080p.mp4", base_path);
-
-            if (rc2d_video_open(&g_splash_game, full_path) != 0) {
-                RC2D_log(RC2D_LOG_WARN, "Game splash failed, skipping to game.");
+        case SPLASH_STUDIO: {
+            int r = rc2d_video_update(&g_splash_studio, dt);
+            if (r <= 0) 
+            {
+                /* On peut fermer la 1re vidéo, on passe à la 2e (qui fera son fade-in 6s) */
                 rc2d_video_close(&g_splash_studio);
+                g_splash_state = SPLASH_GAME;
+            }
+        } break;
+
+        case SPLASH_GAME: {
+            int r = rc2d_video_update(&g_splash_game, dt);
+            if (r <= 0) 
+            {
                 g_splash_state  = SPLASH_DONE;
                 g_splash_active = false;
-                return;
+                rc2d_video_close(&g_splash_game);
+                RC2D_log(RC2D_LOG_INFO, "Both splash videos finished, switching to game\n");
             }
-            /* On peut fermer la 1re vidéo, on passe à la 2e (qui fera son fade-in 6s) */
-            rc2d_video_close(&g_splash_studio);
-            g_splash_state = SPLASH_GAME;
-        }
-    } break;
+        } break;
 
-    case SPLASH_GAME: {
-        int r = rc2d_video_update(&g_splash_game, dt);
-        if (r <= 0) {
-            g_splash_state  = SPLASH_DONE;
-            g_splash_active = false;
-            rc2d_video_close(&g_splash_game);
-            RC2D_log(RC2D_LOG_INFO, "Both splash videos finished, switching to game\n");
-        }
-    } break;
-
-    case SPLASH_DONE:
-        /* Update gameplay ici */
-        break;
+        case SPLASH_DONE:
+            /* Update gameplay ici */
+            break;
     }
 }
 

@@ -182,13 +182,13 @@ RC2D_Image rc2d_graphics_newImageFromStorage(const char* storage_path, RC2D_Stor
  * Libère les données d'une image.
  * @param imageData - Données de l'image à libérer.
  */
-void rc2d_graphics_freeImageData(RC2D_ImageData imageData);
+void rc2d_graphics_freeImageData(RC2D_ImageData* imageData);
 
 /**
  * Libère une image.
  * @param image - Image à libérer.
  */
-void rc2d_graphics_freeImage(RC2D_Image image);
+void rc2d_graphics_freeImage(RC2D_Image* image);
 
 /**
  * Crée un texte rendu à partir d'une police et d'une chaîne de caractères.

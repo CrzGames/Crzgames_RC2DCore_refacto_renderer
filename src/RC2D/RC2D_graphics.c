@@ -265,12 +265,14 @@ RC2D_ImageData rc2d_graphics_newImageDataFromStorage(const char *storage_path, R
     return imageData;
 }
 
-void rc2d_graphics_freeImageData(RC2D_ImageData imageData) 
+void rc2d_graphics_freeImageData(RC2D_ImageData *imageData) 
 {
-    if (imageData.sdl_surface) 
+    if (!imageData) return;
+
+    if (imageData->sdl_surface) 
     {
-        SDL_DestroySurface(imageData.sdl_surface);
-        imageData.sdl_surface = NULL;
+        SDL_DestroySurface(imageData->sdl_surface);
+        imageData->sdl_surface = NULL;
     }
 }
 
@@ -357,12 +359,14 @@ RC2D_Image rc2d_graphics_newImageFromStorage(const char *storage_path, RC2D_Stor
     return image;
 }
 
-void rc2d_graphics_freeImage(RC2D_Image image) 
+void rc2d_graphics_freeImage(RC2D_Image* image) 
 {
-    if (image.sdl_texture) 
+    if (!image) return;
+
+    if (image->sdl_texture) 
     {
-        SDL_DestroyTexture(image.sdl_texture);
-        image.sdl_texture = NULL;
+        SDL_DestroyTexture(image->sdl_texture);
+        image->sdl_texture = NULL;
     }
 }
 
