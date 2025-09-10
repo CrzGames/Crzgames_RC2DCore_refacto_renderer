@@ -45,7 +45,6 @@ typedef enum RC2D_MouseWheelDirection {
     RC2D_SCROLL_RIGHT       /**< Défilement vers la droite */
 } RC2D_MouseWheelDirection;
 
-
 /**
  * \brief Enum définissant les différents types de curseurs système.
  * 
@@ -165,23 +164,179 @@ typedef enum RC2D_SystemCursor {
     RC2D_SYSTEM_CURSOR_COUNT
 } RC2D_SystemCursor;
 
-SDL_Cursor* rc2d_mouse_newSystemCursor(const RC2D_SystemCursor systemCursorId);
-void rc2d_mouse_freeCursor(SDL_Cursor* cursor);
-
-bool rc2d_mouse_isVisible(void);
+/**
+ * \brief Vérifie si la souris est capturée (grab) par la fenêtre RC2D.
+ *
+ * Lorsque la souris est capturée, ses mouvements sont limités à l’intérieur de la fenêtre.
+ *
+ * \return {bool} true si la souris est capturée, false sinon.
+ *
+ * \threadsafety Cette fonction ne doit être appelée que sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
 bool rc2d_mouse_isGrabbed(void);
+
+/**
+ * \brief Active ou désactive l’affichage du curseur.
+ *
+ * \param {bool} visible true pour afficher le curseur, false pour le cacher.
+ *
+ * \threadsafety Cette fonction ne doit être appelée que sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_mouse_setVisible(const bool visible);
+
+/**
+ * \brief Crée un nouveau curseur système d’après un identifiant RC2D.
+ *
+ * \param {RC2D_SystemCursor} systemCursorId Identifiant du curseur système souhaité.
+ * \return {SDL_Cursor*} Le curseur système créé, ou NULL en cas d’échec.
+ *
+ * \threadsafety Cette fonction ne doit être appelée que sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+SDL_Cursor* rc2d_mouse_newSystemCursor(const RC2D_SystemCursor systemCursorId);
+
+/**
+ * \brief Active/désactive la capture (grab) de la souris par la fenêtre RC2D.
+ *
+ * \param {bool} grabbed true pour capturer la souris, false pour la relâcher.
+ *
+ * \threadsafety Cette fonction ne doit être appelée que sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_window_setGrabbed(bool grabbed);
+
+/**
+ * \brief Vérifie si un bouton de la souris est actuellement pressé.
+ *
+ * \param {RC2D_MouseButton} button Le bouton à vérifier.
+ * \return {bool} true si le bouton est pressé, false sinon.
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
 bool rc2d_mouse_isDown(const RC2D_MouseButton button);
 
-void rc2d_mouse_getPosition(float* x, float* y);
+/**
+ * \brief Récupère la position X actuelle de la souris dans la fenêtre.
+ *
+ * \return {float} La position X de la souris.
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
 float rc2d_mouse_getX(void);
+
+/**
+ * \brief Récupère la position Y actuelle de la souris dans la fenêtre.
+ *
+ * \return {float} La position Y de la souris.
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
 float rc2d_mouse_getY(void);
 
-void rc2d_mouse_setVisible(const bool visible);
-void rc2d_mouse_setCursor(const SDL_Cursor* cursor);
-void rc2d_mouse_setPosition(float x, float y);
-void rc2d_mouse_setX(float x);
-void rc2d_mouse_setY(float y);
+/**
+ * \brief Récupère la position (X,Y) actuelle de la souris dans la fenêtre.
+ *
+ * \param {float*} x Sortie : position X.
+ * \param {float*} y Sortie : position Y.
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_mouse_getPosition(float* x, float* y);
+
+/**
+ * \brief Active/désactive le mode relatif de la souris.
+ *
+ * En mode relatif, le curseur est masqué, limité à la fenêtre, et les mouvements sont
+ * rapportés continuellement même si la souris touche les bords.
+ *
+ * \param {bool} enabled true pour activer le mode relatif, false pour le désactiver.
+ *
+ * \threadsafety Cette fonction ne doit être appelée que sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
 void rc2d_mouse_setRelativeMode(const bool enabled);
+
+/**
+ * \brief Déplace le curseur de la souris à la position X donnée (Y conservé).
+ *
+ * \param {float} x Nouvelle position X du curseur.
+ *
+ * \threadsafety Cette fonction ne doit être appelée que sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_mouse_setX(float x);
+
+/**
+ * \brief Déplace le curseur de la souris à la position Y donnée (X conservé).
+ *
+ * \param {float} y Nouvelle position Y du curseur.
+ *
+ * \threadsafety Cette fonction ne doit être appelée que sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_mouse_setY(float y);
+
+/**
+ * \brief Indique si le curseur est actuellement visible.
+ *
+ * \return {bool} true si le curseur est visible, false sinon.
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+bool rc2d_mouse_isVisible(void);
+
+/**
+ * \brief Détruit et libère un curseur SDL.
+ *
+ * \param {SDL_Cursor*} cursor Le curseur à détruire (NULL toléré).
+ *
+ * \threadsafety Cette fonction ne doit être appelée que sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_mouse_freeCursor(SDL_Cursor* cursor);
+
+/**
+ * \brief Définit le curseur actuellement utilisé par l’application.
+ *
+ * \param {SDL_Cursor*} cursor Le curseur SDL à activer (non NULL).
+ *
+ * \threadsafety Cette fonction ne doit être appelée que sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_mouse_setCursor(const SDL_Cursor* cursor);
+
+/**
+ * \brief Déplace le curseur de la souris à la position (x,y) donnée dans la fenêtre.
+ *
+ * \param {float} x Position X cible.
+ * \param {float} y Position Y cible.
+ *
+ * \threadsafety Cette fonction ne doit être appelée que sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_mouse_setPosition(float x, float y);
 
 #ifdef __cplusplus
 }

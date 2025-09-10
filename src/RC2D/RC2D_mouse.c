@@ -3,24 +3,12 @@
 #include <RC2D/RC2D_logger.h>
 
 #include <SDL3/SDL_mouse.h>
-#include <SDL3_image/SDL_image.h>
 
-/**
- * Vérifie si la souris est capturée par la fenêtre. Lorsque la souris est capturée,
- * les mouvements du curseur sont limités à l'intérieur de la fenêtre de l'application.
- * 
- * @return True si la souris est capturée, False sinon.
- */
 bool rc2d_mouse_isGrabbed(void) 
 {
     return SDL_GetWindowMouseGrab(rc2d_engine_state.window);
 }
 
-/**
- * Définit la visibilité du curseur de la souris.
- * 
- * @param visible Détermine si le curseur doit être visible (true) ou caché (false).
- */
 void rc2d_mouse_setVisible(const bool visible)
 {
 	if (visible)
@@ -39,17 +27,6 @@ void rc2d_mouse_setVisible(const bool visible)
     }
 }
 
-/**
- * \brief Crée un nouveau curseur système en fonction de l'identifiant spécifié.
- * 
- * Cette fonction permet d’obtenir un curseur système standard
- * correspondant à l’identifiant RC2D fourni.
- * 
- * @param systemCursorId Identifiant du curseur système souhaité.
- * @return Le curseur système créé. Si la création échoue, le curseur retourné sera invalide (NULL).
- * 
- * @since Cette fonction est disponible depuis RC2D 1.0.0.
- */
 SDL_Cursor* rc2d_mouse_newSystemCursor(const RC2D_SystemCursor systemCursorId) 
 {
     SDL_SystemCursor sdlCursorId;
@@ -89,11 +66,6 @@ SDL_Cursor* rc2d_mouse_newSystemCursor(const RC2D_SystemCursor systemCursorId)
     return cursor;
 }
 
-/**
- * Définit si la souris doit être capturée par la fenêtre.
- * 
- * @param grabbed Détermine si la souris doit être capturée (true) ou relâchée (false).
- */
 void rc2d_window_setGrabbed(bool grabbed)
 {
     // Vérifie si la fenêtre est valide
@@ -110,17 +82,6 @@ void rc2d_window_setGrabbed(bool grabbed)
     }
 }
 
-/**
- * @brief Vérifie si un bouton de la souris est actuellement enfoncé.
- *
- * Cette fonction utilise SDL3 pour interroger l'état courant de la souris
- * et détermine si le bouton demandé est pressé.
- *
- * @param button Le bouton de la souris à vérifier (RC2D_MouseButtons).
- * @return true si le bouton spécifié est enfoncé, false sinon.
- *
- * @since This function is available since RC2D 1.0.0.
- */
 bool rc2d_mouse_isDown(const RC2D_MouseButton button)
 {
     SDL_MouseButtonFlags mouseState = SDL_GetMouseState(NULL, NULL);
@@ -142,11 +103,6 @@ bool rc2d_mouse_isDown(const RC2D_MouseButton button)
     }
 }
 
-/**
- * Récupère la position x de la souris.
- * 
- * @return La position x actuelle de la souris.
- */
 float rc2d_mouse_getX(void)
 {
     float x;
@@ -155,11 +111,6 @@ float rc2d_mouse_getX(void)
     return x;
 }
 
-/**
- * Récupère la position y de la souris.
- * 
- * @return La position y actuelle de la souris.
- */
 float rc2d_mouse_getY(void)
 {
     float y;
@@ -168,12 +119,6 @@ float rc2d_mouse_getY(void)
     return y;
 }
 
-/**
- * Récupère à la fois les positions x et y de la souris.
- * 
- * @param x Pointeur vers une variable où stocker la position x actuelle de la souris.
- * @param y Pointeur vers une variable où stocker la position y actuelle de la souris.
- */
 void rc2d_mouse_getPosition(float* x, float* y) 
 {
     if (x == NULL || y == NULL)
@@ -185,14 +130,6 @@ void rc2d_mouse_getPosition(float* x, float* y)
     SDL_GetMouseState(x, y);
 }
 
-/**
- * Lorsque la fenêtre est active et que le mode de souris relatif est activé, 
- * le curseur est masqué, la position de la souris est limitée à la fenêtre et 
- * SDL signalera un mouvement relatif continu de la souris même si la souris 
- * est au bord de la fenêtre
- * 
- * @param enabled Détermine si le mode relatif doit être activé (true) ou désactivé (false).
- */
 void rc2d_mouse_setRelativeMode(const bool enabled) 
 {    
     if(!SDL_SetWindowRelativeMouseMode(rc2d_engine_state.window, enabled))
@@ -201,12 +138,6 @@ void rc2d_mouse_setRelativeMode(const bool enabled)
     }
 }
 
-/**
- * Définit la position X de la souris dans la fenêtre actuelle.
- * Cette fonction déplace le curseur de la souris à la position X spécifiée, en conservant la position Y actuelle.
- * 
- * @param x La nouvelle position X pour le curseur de la souris.
- */
 void rc2d_mouse_setX(float x)
 {
     float currentMouseY;
@@ -214,12 +145,6 @@ void rc2d_mouse_setX(float x)
     SDL_WarpMouseInWindow(rc2d_engine_state.window, x, currentMouseY);
 }
 
-/**
- * Définit la position Y de la souris dans la fenêtre actuelle.
- * Cette fonction déplace le curseur de la souris à la position Y spécifiée, en conservant la position X actuelle.
- * 
- * @param y La nouvelle position Y pour le curseur de la souris.
- */
 void rc2d_mouse_setY(float y)
 {
     float currentMouseX;
@@ -227,21 +152,11 @@ void rc2d_mouse_setY(float y)
     SDL_WarpMouseInWindow(rc2d_engine_state.window, currentMouseX, y);
 }
 
-/**
- * Renvoie si le curseur est actuellement affiché.
- * 
- * @return {bool} True si le curseur est visible, False sinon.
- */
 bool rc2d_mouse_isVisible(void)
 {
     return SDL_CursorVisible();
 }
 
-/**
- * Libère les ressources associées à un curseur.
- * 
- * @param {SDL_Cursor*} cursor - Le curseur à libérer.
- */
 void rc2d_mouse_freeCursor(SDL_Cursor* cursor)
 {
     if(cursor == NULL)
@@ -254,11 +169,6 @@ void rc2d_mouse_freeCursor(SDL_Cursor* cursor)
 	cursor = NULL;
 }
 
-/**
- * Définit le curseur actuellement utilisé.
- * 
- * @param {SDL_Cursor*} cursor - Le curseur à définir comme actif.
- */
 void rc2d_mouse_setCursor(const SDL_Cursor* cursor) 
 {
     if (cursor != NULL) 
@@ -270,12 +180,6 @@ void rc2d_mouse_setCursor(const SDL_Cursor* cursor)
     }
 }
 
-/**
- * Déplacez le curseur de la souris à la position donnée dans la fenêtre.
- * 
- * @param {float} x - La position x cible pour le curseur.
- * @param {float} y - La position y cible pour le curseur.
- */
 void rc2d_mouse_setPosition(float x, float y) 
 {
     // Déplacer le curseur de la souris à la position ajustée
