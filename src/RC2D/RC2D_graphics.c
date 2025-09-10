@@ -4,6 +4,8 @@
 #include <RC2D/RC2D_memory.h>
 #include <RC2D/RC2D_math.h>
 
+#include <SDL3/SDL_iostream.h>
+
 /**
 * Couleur de rendu courante.
 */
@@ -202,16 +204,86 @@ void rc2d_graphics_freeImageData(RC2D_ImageData imageData)
     }
 }
 
-RC2D_Image rc2d_graphics_newImage(const char* path) 
+RC2D_Image rc2d_graphics_newImageFromStorage(const char *storage_path, RC2D_StorageKind storage_kind)
 {
-    RC2D_Image image = {NULL};
+    // Initialisation de l'image vide
+    RC2D_Image image = { NULL };
 
-    image.sdl_texture = IMG_LoadTexture(rc2d_engine_state.renderer, path);
-    if (!image.sdl_texture) 
+    // Validation du chemin
+    if (!storage_path || !*storage_path)
     {
-        RC2D_log(RC2D_LOG_ERROR, "Unable to create texture from %s: %s\n", path, SDL_GetError());
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_newImageFromStorage: invalid storage_path");
+        return image;
     }
 
+    // Vérifier que le stockage est prêt
+    if (storage_kind == RC2D_STORAGE_TITLE && !rc2d_storage_titleReady()) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Title storage not ready when loading '%s'", storage_path);
+        return image;
+    }
+    else if(storage_kind == RC2D_STORAGE_USER && !rc2d_storage_userReady()) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "User storage not ready when loading '%s'", storage_path);
+        return image;
+    }
+
+    // Lire le fichier depuis le stockage Title
+    void *bytes = NULL; 
+    Uint64 len = 0;
+    if (storage_kind == RC2D_STORAGE_TITLE) 
+    {
+        if (!rc2d_storage_titleReadFile(storage_path, &bytes, &len)) 
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to read '%s' from Title storage", storage_path);
+            return image;
+        }
+    }
+    else if (storage_kind == RC2D_STORAGE_USER) 
+    {
+        if (!rc2d_storage_userReadFile(storage_path, &bytes, &len)) 
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to read '%s' from User storage", storage_path);
+            return image;
+        }
+    }
+
+    // Vérifier que le fichier n'est pas vide
+    if (len == 0 || !bytes) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "File '%s' is empty in %s storage", storage_path, (storage_kind == RC2D_STORAGE_TITLE) ? "Title" : "User");
+        return image;
+    }
+
+    // Crée un IO stream en lecture sur le buffer (pas de copie).
+    SDL_IOStream *ioStream = SDL_IOFromConstMem(bytes, (size_t)len);
+    if (!ioStream) 
+    {
+        RC2D_safe_free(bytes);
+        RC2D_log(RC2D_LOG_ERROR, "SDL_IOFromConstMem failed for '%s': %s", storage_path, SDL_GetError());
+        return image;
+    }
+
+    /**
+     * Charger la texture depuis le stream
+     * (SDL va fermer et libérer le stream automatiquement grâce au flag closeio=true)
+     */
+    SDL_Texture *texture = IMG_LoadTexture_IO(rc2d_engine_state.renderer, ioStream, /*closeio=*/true);
+
+    // Libération du buffer mémoire
+    RC2D_safe_free(bytes);
+
+    // Vérification de la texture
+    if (!texture) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "IMG_LoadTexture_IO('%s') failed: %s", storage_path, SDL_GetError());
+        return image;
+    }
+
+    // Initialisation de l'image avec la texture chargée
+    image.sdl_texture = texture;
+
+    // Retour de l'image
     return image;
 }
 

@@ -338,7 +338,7 @@ void rc2d_draw(void)
             SDL_RenderTexture(rc2d_engine_state.renderer, g_background_login_texture, NULL, &dst);
         }
 
-         // minimap en bas-droite, marge 20 px logiques
+        // minimap en bas-droite, marge 20 px logiques
         if (g_ocean_minimap_texture) {
             RC2D_Image img = { .sdl_texture = g_ocean_minimap_texture };
             rc2d_ui_drawImageAnchoredPixels(

@@ -2,6 +2,7 @@
 #define RC2D_GRAPHICS_H
 
 #include <RC2D/RC2D_math.h>
+#include <RC2D/RC2D_storage.h>
 
 #include <SDL3/SDL_render.h>
 #include <SDL3_image/SDL_image.h>
@@ -175,11 +176,12 @@ RC2D_ImageData rc2d_graphics_newImageData(const char* path);
 void rc2d_graphics_freeImageData(RC2D_ImageData imageData);
 
 /**
- * Crée une image à partir d'un fichier.
- * @param path - Chemin vers le fichier image.
+ * Crée une image à partir d'un fichier dans le stockage spécifié.
+ * @param storage_path - Chemin relatif dans le stockage.
+ * @param storage_kind - Type de stockage (RC2D_STORAGE_TITLE ou RC2D_STORAGE_USER).
  * @return RC2D_Image - Structure contenant la texture de l'image.
  */
-RC2D_Image rc2d_graphics_newImage(const char* path);
+RC2D_Image rc2d_graphics_newImageFromStorage(const char* storage_path, RC2D_StorageKind storage_kind);
 
 /**
  * Libère une image.

@@ -9,6 +9,17 @@ extern "C" {
 #endif
 
 /**
+ * \brief Type de conteneur de stockage.
+ *
+ * \typedef {enum} RC2D_StorageKind
+ * \since Cette énumération est disponible depuis RC2D 1.0.0.
+ */
+typedef enum RC2D_StorageKind {
+    RC2D_STORAGE_TITLE = 0,  /**< Contenu packagé, lecture seule. (très souvent le dossier de l’exécutable) */
+    RC2D_STORAGE_USER  = 1   /**< Données utilisateur, lecture/écriture. */
+} RC2D_StorageKind;
+
+/**
  * \brief Ferme les conteneurs "Title" et "User" ouverts, si présents.
  *
  * \details Wrappe SDL_CloseStorage() sur les handles internes détenus par RC2D.
