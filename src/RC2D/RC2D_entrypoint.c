@@ -188,7 +188,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
         /**
         * Pour rc2d_last_frame_time, nous ne voulons pas que le deltatime de la 
-        * premiere image inclue le temps pris par rc2d_load (donc ont le fait ici)
+        * premiere image inclue le temps pris par l'init de l'engine, rc2d_load..etc.
         */
         rc2d_engine_state.last_frame_time = SDL_GetPerformanceCounter();
     }
