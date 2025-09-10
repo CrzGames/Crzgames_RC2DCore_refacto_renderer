@@ -182,16 +182,86 @@ bool rc2d_graphics_points(const int numPoints, const SDL_FPoint *points)
     return true;
 }
 
-RC2D_ImageData rc2d_graphics_newImageData(const char* path) 
+RC2D_ImageData rc2d_graphics_newImageDataFromStorage(const char *storage_path, RC2D_StorageKind storage_kind)
 {
-    RC2D_ImageData imageData = {NULL};
+    // Initialisation de l'image vide
+    RC2D_ImageData imageData = { NULL };
 
-    imageData.sdl_surface = IMG_Load(path);
-    if (!imageData.sdl_surface) 
+    // Validation du chemin
+    if (!storage_path || !*storage_path)
     {
-        RC2D_log(RC2D_LOG_ERROR, "Unable to create surface from %s: %s\n", path, SDL_GetError());
-    } 
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_newImageDataFromStorage: invalid storage_path");
+        return imageData;
+    }
 
+    // Vérifier que le stockage est prêt
+    if (storage_kind == RC2D_STORAGE_TITLE && !rc2d_storage_titleReady()) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Title storage not ready when loading '%s'", storage_path);
+        return imageData;
+    }
+    else if(storage_kind == RC2D_STORAGE_USER && !rc2d_storage_userReady()) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "User storage not ready when loading '%s'", storage_path);
+        return imageData;
+    }
+
+    // Lire le fichier depuis le stockage Title
+    void *bytes = NULL; 
+    Uint64 len = 0;
+    if (storage_kind == RC2D_STORAGE_TITLE) 
+    {
+        if (!rc2d_storage_titleReadFile(storage_path, &bytes, &len)) 
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to read '%s' from Title storage", storage_path);
+            return imageData;
+        }
+    }
+    else if (storage_kind == RC2D_STORAGE_USER) 
+    {
+        if (!rc2d_storage_userReadFile(storage_path, &bytes, &len)) 
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to read '%s' from User storage", storage_path);
+            return imageData;
+        }
+    }
+
+    // Vérifier que le fichier n'est pas vide
+    if (len == 0 || !bytes) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "File '%s' is empty in %s storage", storage_path, (storage_kind == RC2D_STORAGE_TITLE) ? "Title" : "User");
+        return imageData;
+    }
+
+    // Crée un IO stream en lecture sur le buffer (pas de copie).
+    SDL_IOStream *ioStream = SDL_IOFromConstMem(bytes, (size_t)len);
+    if (!ioStream) 
+    {
+        RC2D_safe_free(bytes);
+        RC2D_log(RC2D_LOG_ERROR, "SDL_IOFromConstMem failed for '%s': %s", storage_path, SDL_GetError());
+        return imageData;
+    }
+
+    /**
+     * Charger la surface depuis le stream
+     * (SDL va fermer et libérer le stream automatiquement grâce au flag closeio=true)
+     */
+    SDL_Surface *surface = IMG_Load_IO(ioStream, /*closeio=*/true);
+
+    // Libération du buffer mémoire
+    RC2D_safe_free(bytes);
+
+    // Vérification de la surface
+    if (!surface) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "IMG_LoadSurface_IO('%s') failed: %s", storage_path, SDL_GetError());
+        return imageData;
+    }
+
+    // Initialisation de l'image avec la surface chargée
+    imageData.sdl_surface = surface;
+
+    // Retour de l'image
     return imageData;
 }
 

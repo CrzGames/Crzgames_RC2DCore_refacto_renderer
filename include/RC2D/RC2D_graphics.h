@@ -163,17 +163,12 @@ bool rc2d_graphics_point(const float x, const float y);
 bool rc2d_graphics_points(const int numPoints, const SDL_FPoint *points);
 
 /**
- * Crée une structure de données d'image à partir d'un fichier.
- * @param path - Chemin vers le fichier image.
+ * Crée des données d'image à partir d'un fichier dans le stockage spécifié.
+ * @param storage_path - Chemin relatif dans le stockage.
+ * @param storage_kind - Type de stockage (RC2D_STORAGE_TITLE ou RC2D_STORAGE_USER).
  * @return RC2D_ImageData - Structure contenant les données de l'image.
  */
-RC2D_ImageData rc2d_graphics_newImageData(const char* path);
-
-/**
- * Libère les données d'une image.
- * @param imageData - Données de l'image à libérer.
- */
-void rc2d_graphics_freeImageData(RC2D_ImageData imageData);
+RC2D_ImageData rc2d_graphics_newImageDataFromStorage(const char* storage_path, RC2D_StorageKind storage_kind);
 
 /**
  * Crée une image à partir d'un fichier dans le stockage spécifié.
@@ -182,6 +177,12 @@ void rc2d_graphics_freeImageData(RC2D_ImageData imageData);
  * @return RC2D_Image - Structure contenant la texture de l'image.
  */
 RC2D_Image rc2d_graphics_newImageFromStorage(const char* storage_path, RC2D_StorageKind storage_kind);
+
+/**
+ * Libère les données d'une image.
+ * @param imageData - Données de l'image à libérer.
+ */
+void rc2d_graphics_freeImageData(RC2D_ImageData imageData);
 
 /**
  * Libère une image.
