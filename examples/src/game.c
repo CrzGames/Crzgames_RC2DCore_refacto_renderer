@@ -47,34 +47,55 @@ static const double        g_fade_seconds = 1.5;
 /*                         HELPERS / PETITES UTILS                           */
 /* ========================================================================= */
 
-// Place la texture en haut-droite du visible_safe_rect, SANS redimensionner.
-// - top_pct, right_pct ∈ [0..1] : marges en % du visible_safe_rect.
-static void gui_draw_top_right_margins(SDL_Renderer* r, SDL_Texture* tex,
-                                       float top_pct, float right_pct)
+// --- TOP-RIGHT en POURCENTAGES ---------------------------------------------
+// top_pct, right_pct ∈ [0..1] : marges en % du visible_safe_rect
+static void gui_draw_top_right_pct(SDL_Renderer* r, SDL_Texture* tex,
+                                   float top_pct, float right_pct)
 {
     if (!tex) return;
 
     SDL_FRect V = rc2d_engine_getVisibleSafeRectRender();
     if (V.w <= 0.f || V.h <= 0.f) return;
 
-    float tw = 0.f, th = 0.f;
-    if (!SDL_GetTextureSize(tex, &tw, &th) || tw <= 0.f || th <= 0.f) return;
+    float tw=0.f, th=0.f;
+    if (!SDL_GetTextureSize(tex, &tw, &th) || tw<=0.f || th<=0.f) return;
 
-    const float mt = V.h * top_pct;   // marge haute (logique)
-    const float mr = V.w * right_pct; // marge droite (logique)
+    const float mt = V.h * top_pct;   // marge top logique
+    const float mr = V.w * right_pct; // marge right logique
 
     SDL_FRect dst = {
-        V.x + V.w - mr - tw,  // bord droit - marge - largeur texture
-        V.y + mt,             // bord haut + marge
+        V.x + V.w - mr - tw,  // collé à droite, marge incluse
+        V.y + mt,             // collé en haut, marge incluse
         tw, th
     };
 
     SDL_RenderTexture(r, tex, NULL, &dst);
-
-    // (debug)
-    SDL_SetRenderDrawColor(r, 255,255,0,255);
-    SDL_RenderRect(r, &dst);
+    // (debug) SDL_SetRenderDrawColor(r,255,255,0,255); SDL_RenderRect(r,&dst);
 }
+
+// --- TOP-RIGHT en PIXELS LOGIQUES ------------------------------------------
+// top_px, right_px : marges fixes en pixels LOGIQUES (coords renderer)
+static void gui_draw_top_right_px(SDL_Renderer* r, SDL_Texture* tex,
+                                  float top_px, float right_px)
+{
+    if (!tex) return;
+
+    SDL_FRect V = rc2d_engine_getVisibleSafeRectRender();
+    if (V.w <= 0.f || V.h <= 0.f) return;
+
+    float tw=0.f, th=0.f;
+    if (!SDL_GetTextureSize(tex, &tw, &th) || tw<=0.f || th<=0.f) return;
+
+    SDL_FRect dst = {
+        V.x + V.w - right_px - tw,  //  right_px du bord droit
+        V.y + top_px,               //  top_px du haut
+        tw, th
+    };
+
+    SDL_RenderTexture(r, tex, NULL, &dst);
+    // (debug) SDL_SetRenderDrawColor(r,255,255,0,255); SDL_RenderRect(r,&dst);
+}
+
 
 static inline double clamp01(double x)
 {
@@ -145,7 +166,7 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    rc2d_window_setSize(1920, 1080);
+    rc2d_window_setSize(1280, 720);
     //rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
 
     const char *base_path = SDL_GetBasePath();
@@ -362,9 +383,10 @@ void rc2d_draw(void)
         }
     }
 
-    /* === DEBUG: visualiser la minimap en haut à droite === */
-    if (g_ocean_minimap_texture) {
-        // 10% du haut, 10% de la droite, taille native
-        gui_draw_top_right_margins(rc2d_engine_state.renderer, g_ocean_minimap_texture, 0.10f, 0.10f);
-    }
+    // 10% du haut, 10% de la droite (taille native)
+    gui_draw_top_right_pct(rc2d_engine_state.renderer, g_ocean_minimap_texture, 0.10f, 0.10f);
+
+    // 20 px du haut et 20 px de la droite (taille native)
+    gui_draw_top_right_px(rc2d_engine_state.renderer, g_ocean_minimap_texture, 20.f, 20.f);
+
 }
