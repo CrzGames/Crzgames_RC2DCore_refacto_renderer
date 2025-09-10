@@ -63,6 +63,8 @@ double rc2d_video_currentSeconds(const RC2D_Video* v)
 int rc2d_video_open(RC2D_Video* video, const char* filename)
 {
     /* Init champs */
+    memset(video, 0, sizeof(RC2D_Video)); /* Réinitialisation complète */
+
     video->format_ctx = NULL;
     video->codec_ctx  = NULL;
     video->frame      = NULL;
@@ -105,6 +107,10 @@ int rc2d_video_open(RC2D_Video* video, const char* filename)
     /* Infos audio */
     video->audio_time_base = 0.0;
     video->audio_clock = 0.0;
+
+    /* Fade-out */
+    video->fade_out_start_time = -1.0; /* -1 indique pas de fade-out en cours */
+    video->fade_out_duration = 6.0;    /* 6s par défaut */
 
     /* Ouvrir le fichier */
     if (avformat_open_input(&video->format_ctx, filename, NULL, NULL) < 0) {
@@ -354,6 +360,14 @@ int rc2d_video_open(RC2D_Video* video, const char* filename)
         video->audio_buffer_used = 0;
 
         AVPacket* packet = av_packet_alloc();
+        if (!packet) {
+            RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'allouer paquet audio");
+            free(video->audio_buffer);
+            video->audio_buffer = NULL;
+            rc2d_video_close(video);
+            return -1;
+        }
+
         while (av_read_frame(video->format_ctx, packet) >= 0) {
             if (packet->stream_index == video->audio_stream_index) {
                 int ret = avcodec_send_packet(video->audio_codec_ctx, packet);
@@ -378,14 +392,17 @@ int rc2d_video_open(RC2D_Video* video, const char* filename)
                     /* Realloc si besoin */
                     if (video->audio_buffer_used + needed > video->audio_buffer_size) {
                         video->audio_buffer_size *= 2;
-                        video->audio_buffer = (uint8_t*)realloc(video->audio_buffer, video->audio_buffer_size);
-                        if (!video->audio_buffer) {
+                        uint8_t* new_buffer = (uint8_t*)realloc(video->audio_buffer, video->audio_buffer_size);
+                        if (!new_buffer) {
                             RC2D_log(RC2D_LOG_ERROR, "Impossible de realloc buffer audio");
+                            free(video->audio_buffer);
+                            video->audio_buffer = NULL;
                             av_packet_unref(packet);
                             rc2d_video_close(video);
                             av_packet_free(&packet);
                             return -1;
                         }
+                        video->audio_buffer = new_buffer;
                     }
 
                     /* Convertir */
@@ -423,7 +440,12 @@ int rc2d_video_open(RC2D_Video* video, const char* filename)
     }
 
     /* Gérer synchronisation audio si présent */
-    if (video->mix_track && MIX_PlayTrack(video->mix_track, 0)) { // Commencer l'audio si pas déjà démarré
+    if (video->mix_track && MIX_PlayTrack(video->mix_track, 0)) {
+        if (!rc2d_engine_state.mixer) {
+            RC2D_log(RC2D_LOG_ERROR, "Mixer not initialized before playing track");
+            rc2d_video_close(video);
+            return -1;
+        }
         Sint64 audio_frames = MIX_GetTrackPlaybackPosition(video->mix_track);
         if (audio_frames >= 0) {
             double audio_time = (double)MIX_TrackFramesToMS(video->mix_track, audio_frames) / 1000.0;
@@ -450,6 +472,41 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
     double wall_dt = rc2d_now_wall_dt(video);
     const double alpha = 0.15; /* lissage léger */
     video->clock_time += alpha * wall_dt + (1.0 - alpha) * ((delta_time > 0.0) ? delta_time : wall_dt);
+
+    /* Gérer le fade-out si en cours */
+    if (video->mix_track && video->fade_out_start_time >= 0.0) {
+        if (!rc2d_engine_state.mixer) {
+            RC2D_log(RC2D_LOG_ERROR, "Mixer not initialized during fade-out");
+            return -1;
+        }
+        double elapsed = video->clock_time - video->fade_out_start_time;
+        if (elapsed >= video->fade_out_duration) {
+            /* Fade-out terminé : arrêter la piste */
+            MIX_SetTrackGain(video->mix_track, 0.0f);
+            MIX_StopTrack(video->mix_track, 0);
+            video->mix_track = NULL;
+            video->fade_out_start_time = -1.0; /* Réinitialiser */
+        } else {
+            /* Boucle pour mises à jour fréquentes du gain (toutes les 5ms) */
+            const double update_interval = 0.005; /* 5ms */
+            double t = elapsed;
+            while (t <= video->fade_out_duration && t <= elapsed + update_interval) {
+                float fraction = (float)(t / video->fade_out_duration);
+                float volume = powf(1.0f - fraction, 2.0f); /* Fade-out quadratique */
+                if (volume < 0.0f) volume = 0.0f;
+                if (!MIX_SetTrackGain(video->mix_track, volume)) {
+                    RC2D_log(RC2D_LOG_ERROR, "Failed to set track gain: %s", SDL_GetError());
+                }
+                t += update_interval;
+                if (t <= video->fade_out_duration) {
+                    /* Attendre jusqu'à la prochaine mise à jour */
+                    SDL_Delay((Uint32)(update_interval * 1000));
+                    video->clock_time += update_interval; /* Mettre à jour l'horloge */
+                }
+            }
+            return 0; /* Attendre la fin du fade-out */
+        }
+    }
 
     /* Si une frame est déjà prête mais pas encore due, ne refais rien */
     if (video->has_pending_frame) {
@@ -490,6 +547,9 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
             if (rret == AVERROR(EAGAIN)) break;   /* besoin de plus de paquets */
             if (rret == AVERROR_EOF) {
                 video->is_finished = 1;
+                if (video->mix_track) {
+                    video->fade_out_start_time = video->clock_time; /* Débuter le fade-out */
+                }
                 av_packet_free(&packet);
                 return 0; /* fin de la vidéo */
             }
@@ -539,7 +599,7 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
     /* Fin du flux (plus de paquets) */
     video->is_finished = 1;
     if (video->mix_track) {
-        MIX_StopTrack(video->mix_track, 0); // Stop immediately
+        video->fade_out_start_time = video->clock_time; /* Débuter le fade-out */
     }
     av_packet_free(&packet);
     return 0;
@@ -595,6 +655,7 @@ void rc2d_video_close(RC2D_Video* video)
 
     /* Libérer ressources audio */
     if (video->mix_track) {
+        MIX_SetTrackGain(video->mix_track, 0.0f); /* Assurer volume à 0 */
         MIX_StopTrack(video->mix_track, 0); // Stop immediately
         MIX_DestroyTrack(video->mix_track);
         video->mix_track = NULL;

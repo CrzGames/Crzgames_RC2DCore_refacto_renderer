@@ -224,6 +224,9 @@ typedef struct RC2D_Video {
      */
     SDL_AudioSpec    audio_spec;
 
+    /* Fade-out */
+    double           fade_out_start_time; /* Temps de début du fade-out (en secondes) */
+    double           fade_out_duration;   /* Durée du fade-out (en secondes) */
 } RC2D_Video;
 
 /**
