@@ -73,6 +73,8 @@ typedef struct RC2D_UIImage {
     float             margin_x;          /**< pixels logiques OU pourcentage (0..1) suivant margin_mode */
     float             margin_y;          /**< pixels logiques OU pourcentage (0..1) suivant margin_mode */
     SDL_FRect         last_drawn_rect;   /**< MAJ à chaque draw ; {0,0,0,0} si rien dessiné */
+    bool              visible;           /**< Si false, ne pas dessiner */
+    bool              hittable;          /**< Si false, ne pas détecter les clics */
 } RC2D_UIImage;
 
 /**

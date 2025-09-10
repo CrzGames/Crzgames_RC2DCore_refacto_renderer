@@ -104,6 +104,12 @@ bool rc2d_ui_drawImage(RC2D_UIImage* uiImage)
 {
     if (!uiImage) return false;
 
+    // Si non visible : succès “silencieux”, pas de draw, rect remis à 0
+    if (!uiImage->visible) {
+        uiImage->last_drawn_rect = (SDL_FRect){0,0,0,0};
+        return true; // pas une erreur, juste pas de rendu
+    }
+
     SDL_FRect drawn = {0,0,0,0};
     bool ok = rc2d__draw_anchored(
         uiImage->image,

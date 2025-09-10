@@ -4,6 +4,27 @@
 #include <math.h> // Required for : sqrt, fabs
 #include <float.h> // Required for : FLT_MAX
 
+static bool rc2d_collision_pointInUIImage(const RC2D_UIImage* ui, float x, float y)
+{
+    // Vérifier si l’UIImage est non NULL ET que visible ET hittable sont vrais
+    if (!ui || !ui->visible || !ui->hittable)
+        return false;
+
+    // Vérifier si le dernier rectangle dessiné est valide
+    if (ui->last_drawn_rect.w <= 0.f || ui->last_drawn_rect.h <= 0.f)
+        return false;
+
+    // Créer une boîte AABB à partir du dernier rectangle dessiné de l'image
+    RC2D_AABB box = { ui->last_drawn_rect.x, ui->last_drawn_rect.y,
+                      ui->last_drawn_rect.w, ui->last_drawn_rect.h };
+
+    // Créer un point avec les coordonnées (x, y) fournies
+    RC2D_Point p = { x, y };
+
+    // Utiliser rc2d_collision_pointInAABB pour vérifier si le point est dans la boîte
+    return rc2d_collision_pointInAABB(p, box);
+}
+
 bool rc2d_collision_pointInPolygon(const RC2D_Point point, const RC2D_Polygon* polygon) 
 {
     // Vérifier si le polygone est non NULL et a au moins 3 sommets

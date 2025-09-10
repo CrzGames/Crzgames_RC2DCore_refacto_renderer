@@ -11,6 +11,20 @@ extern "C" {
 #endif
 
 /**
+ * \brief Vérifie si un point logique (x,y) est à l'intérieur du dernier rectangle d’un UIImage.
+ *
+ * \param ui Pointeur vers l’élément UIImage à tester (non NULL).
+ * \param x  Position X du point à tester (coords logiques).
+ * \param y  Position Y du point à tester (coords logiques).
+ * \return true si le point est à l'intérieur du rectangle de l’image
+ *         ET que les propriétés `visible && hittable` sont vraies de la structure `RC2D_UIImage`,
+ *         sinon false.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+bool rc2d_collision_pointInUIImage(const RC2D_UIImage* ui, float x, float y);
+
+/**
  * \brief Vérifie si un point est à l'intérieur d'une boîte englobante alignée sur les axes (AABB).
  *
  * Cette fonction détermine si un point donné se trouve à l'intérieur d'un rectangle
