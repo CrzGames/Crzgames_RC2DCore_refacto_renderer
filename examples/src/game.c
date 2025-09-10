@@ -43,6 +43,13 @@ static const double        g_fade_seconds = 1.5;
 
 
 /* ========================================================================= */
+/*                              RESSOURCES AUDIO                             */
+/* ========================================================================= */
+static MIX_Audio* g_menu_music  = NULL;   // assets/sounds/sound_menu.mp3
+static MIX_Track* g_menu_track  = NULL;   // piste de lecture
+static bool       g_menu_started = false; // évite de rejouer chaque frame
+
+/* ========================================================================= */
 /*                       FADE SCENE LOGIN SCREEN                             */
 /* ========================================================================= */
 static float g_login_fade_alpha = 1.0f; // commence noir opaque (1.0 = 100% noir)
@@ -91,6 +98,20 @@ void rc2d_unload(void)
     rc2d_graphics_freeImageData(&g_input_pass_ui.imageData);
     rc2d_graphics_freeImage(&g_button_login_ui.image);
     rc2d_graphics_freeImageData(&g_button_login_ui.imageData);
+
+    // Audio
+    if (g_menu_track) 
+    {
+        rc2d_track_stop(g_menu_track);
+        rc2d_track_destroy(g_menu_track);
+        g_menu_track = NULL;
+    }
+    if (g_menu_music) 
+    {
+        rc2d_audio_destroy(g_menu_music);
+        g_menu_music = NULL;
+    }
+    g_menu_started = false;
 
     if (g_ocean_render_state) 
     {
@@ -177,6 +198,32 @@ void rc2d_load(void)
     g_button_login_ui.visible     = true;
     g_button_login_ui.hittable    = true;
 
+    /**
+     * Sounds
+    */
+    g_menu_music = rc2d_audio_load("assets/sounds/sound_menu.mp3", /*predecode=*/true);
+    if (!g_menu_music) 
+    {
+        RC2D_log(RC2D_LOG_WARN, "Failed to load menu music: %s", SDL_GetError());
+    } 
+    else 
+    {
+        g_menu_track = rc2d_track_create();
+        if (!g_menu_track) 
+        {
+            RC2D_log(RC2D_LOG_WARN, "Failed to create audio track: %s", SDL_GetError());
+        } 
+        else 
+        {
+            if (!rc2d_track_setAudio(g_menu_track, g_menu_music)) 
+            {
+                RC2D_log(RC2D_LOG_WARN, "track_setAudio failed: %s", SDL_GetError());
+            }
+
+        }
+    }
+    g_menu_started = false;
+
     // background login
     background_login_image = rc2d_graphics_newImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
 
@@ -246,6 +293,19 @@ void rc2d_update(double dt)
             g_login_fade_alpha -= (float)(g_login_fade_speed * dt);
             if (g_login_fade_alpha < 0.0f)
                 g_login_fade_alpha = 0.0f;
+        }
+
+        // Démarrer la musique une seule fois quand on est sur l’écran login
+        if (!g_menu_started && g_menu_track && g_menu_music) 
+        {
+            if (!rc2d_track_play(g_menu_track, -1)) 
+            { // -1 = boucle infinie
+                RC2D_log(RC2D_LOG_WARN, "track_play failed: %s", SDL_GetError());
+            } 
+            else 
+            {
+                g_menu_started = true;
+            }
         }
 
         // ici update gameplay ou UI logique si besoin
