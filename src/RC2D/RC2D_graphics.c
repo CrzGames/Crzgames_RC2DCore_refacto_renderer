@@ -32,17 +32,17 @@ void rc2d_graphics_present(void)
     }
 }
 
-void rc2d_graphics_drawImage(RC2D_Image image, float x, float y, double angle, float scaleX, float scaleY, float offsetX, float offsetY, bool flipHorizontal, bool flipVertical) 
+void rc2d_graphics_drawImage(RC2D_Image* image, float x, float y, double angle, float scaleX, float scaleY, float offsetX, float offsetY, bool flipHorizontal, bool flipVertical) 
 {
     // Vérifier que la texture est valide
-    if (!image.sdl_texture) 
+    if (!image->sdl_texture) 
     {
         RC2D_log(RC2D_LOG_ERROR, "Invalid texture in rc2d_graphics_draw\n");
         return;
     }
 
     // Destination rectangle avec position, taille et scale
-    SDL_FRect rectDest = {x, y, (float)image.sdl_texture->w * scaleX, (float)image.sdl_texture->h * scaleY};
+    SDL_FRect rectDest = {x, y, (float)image->sdl_texture->w * scaleX, (float)image->sdl_texture->h * scaleY};
 
     // Savoir si on doit faire un flip horizontal et/ou vertical
     SDL_FlipMode flip = SDL_FLIP_NONE;
@@ -58,14 +58,14 @@ void rc2d_graphics_drawImage(RC2D_Image image, float x, float y, double angle, f
     // Si offsetX et offsetY sont valides, on les utilise, sinon on centre la rotation
     if (offsetX >= 0 && offsetY >= 0) 
     {
-        if (!SDL_RenderTextureRotated(rc2d_engine_state.renderer, image.sdl_texture, NULL, &rectDest, angle, &pointOffset, flip)) 
+        if (!SDL_RenderTextureRotated(rc2d_engine_state.renderer, image->sdl_texture, NULL, &rectDest, angle, &pointOffset, flip)) 
         {
             RC2D_log(RC2D_LOG_ERROR, "SDL_RenderTextureRotated failed in rc2d_graphics_draw: %s\n", SDL_GetError());
         }
     }
     else 
     {
-        if (!SDL_RenderTextureRotated(rc2d_engine_state.renderer, image.sdl_texture, NULL, &rectDest, angle, NULL, flip)) 
+        if (!SDL_RenderTextureRotated(rc2d_engine_state.renderer, image->sdl_texture, NULL, &rectDest, angle, NULL, flip)) 
         {
             RC2D_log(RC2D_LOG_ERROR, "SDL_RenderTextureRotated failed in rc2d_graphics_draw: %s\n", SDL_GetError());
         }

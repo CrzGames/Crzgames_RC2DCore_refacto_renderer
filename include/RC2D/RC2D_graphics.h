@@ -109,7 +109,7 @@ void rc2d_graphics_present(void);
  * \remarque: Si offsetX et offsetY sont >= 0 sont utilisés comme point de rotation,
  * sinon la rotation se fait autour du centre de l'image (donc passer -1, -1 pour centrer).
  */
-void rc2d_graphics_drawImage(RC2D_Image image, float x, float y, double angle, float scaleX, float scaleY, float offsetX, float offsetY, bool flipHorizontal, bool flipVertical);
+void rc2d_graphics_drawImage(RC2D_Image* image, float x, float y, double angle, float scaleX, float scaleY, float offsetX, float offsetY, bool flipHorizontal, bool flipVertical);
 
 /**
  * Dessine un rectangle à l'écran.

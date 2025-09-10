@@ -284,18 +284,7 @@ void rc2d_draw(void)
         // minimap en bas-droite, marge 20 px logiques
         if (minimap_image.sdl_texture) 
         {
-            rc2d_ui_drawImageAnchoredPixels(
-                minimap_image,
-                RC2D_UI_ANCHOR_BOTTOM_RIGHT,
-                20.0f,  // margin_x_pixels (depuis la droite)
-                20.0f   // margin_y_pixels (depuis le bas)
-            );
-            rc2d_ui_drawImageAnchoredPercentage(
-                minimap_image,
-                RC2D_UI_ANCHOR_BOTTOM_RIGHT,
-                0.20f,  // 20% de la largeur de la zone sûre depuis la droite
-                0.20f   // 20% de la hauteur de la zone sûre depuis le bas
-            );
+
         }
     }
 }
