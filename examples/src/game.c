@@ -45,56 +45,6 @@ static const double        g_fade_seconds = 1.5;
 /*                         HELPERS / PETITES UTILS                           */
 /* ========================================================================= */
 
-// --- TOP-RIGHT en POURCENTAGES ---------------------------------------------
-// top_pct, right_pct ∈ [0..1] : marges en % du visible_safe_rect
-static void gui_draw_top_right_pct(SDL_Renderer* r, SDL_Texture* tex,
-                                   float top_pct, float right_pct)
-{
-    if (!tex) return;
-
-    SDL_FRect V = rc2d_engine_getVisibleSafeRectRender();
-    if (V.w <= 0.f || V.h <= 0.f) return;
-
-    float tw=0.f, th=0.f;
-    if (!SDL_GetTextureSize(tex, &tw, &th) || tw<=0.f || th<=0.f) return;
-
-    const float mt = V.h * top_pct;   // marge top logique
-    const float mr = V.w * right_pct; // marge right logique
-
-    SDL_FRect dst = {
-        V.x + V.w - mr - tw,  // collé à droite, marge incluse
-        V.y + mt,             // collé en haut, marge incluse
-        tw, th
-    };
-
-    SDL_RenderTexture(r, tex, NULL, &dst);
-    // (debug) SDL_SetRenderDrawColor(r,255,255,0,255); SDL_RenderRect(r,&dst);
-}
-
-// --- TOP-RIGHT en PIXELS LOGIQUES ------------------------------------------
-// top_px, right_px : marges fixes en pixels LOGIQUES (coords renderer)
-static void gui_draw_top_right_px(SDL_Renderer* r, SDL_Texture* tex,
-                                  float top_px, float right_px)
-{
-    if (!tex) return;
-
-    SDL_FRect V = rc2d_engine_getVisibleSafeRectRender();
-    if (V.w <= 0.f || V.h <= 0.f) return;
-
-    float tw=0.f, th=0.f;
-    if (!SDL_GetTextureSize(tex, &tw, &th) || tw<=0.f || th<=0.f) return;
-
-    SDL_FRect dst = {
-        V.x + V.w - right_px - tw,  //  right_px du bord droit
-        V.y + top_px,               //  top_px du haut
-        tw, th
-    };
-
-    SDL_RenderTexture(r, tex, NULL, &dst);
-    // (debug) SDL_SetRenderDrawColor(r,255,255,0,255); SDL_RenderRect(r,&dst);
-}
-
-
 static inline double clamp01(double x)
 {
     if (x < 0.0) return 0.0;
@@ -164,7 +114,7 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    rc2d_window_setSize(1280, 720);
+    //rc2d_window_setSize(1280, 720);
     //rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
 
     const char *base_path = SDL_GetBasePath();
@@ -340,8 +290,10 @@ void rc2d_update(double dt)
 
 void rc2d_draw(void)
 {
-    if (g_splash_active) {
-        if (g_splash_state == SPLASH_STUDIO) {
+    if (g_splash_active) 
+    {
+        if (g_splash_state == SPLASH_STUDIO) 
+        {
             /* 1) Dessiner la vidéo du studio */
             rc2d_video_draw(&g_splash_studio);
 
@@ -349,29 +301,35 @@ void rc2d_draw(void)
             const double total = rc2d_video_totalSeconds(&g_splash_studio);   /* total (s) */
             const double now   = rc2d_video_currentSeconds(&g_splash_studio); /* courant (s) */
 
-            if (total > 0.0) {
+            if (total > 0.0) 
+            {
                 const double remaining = total - now;
-                if (remaining <= g_fade_seconds) {
+                if (remaining <= g_fade_seconds) 
+                {
                     double a = 1.0 - (remaining / g_fade_seconds); /* 0->1 quand on approche de la fin */
                     draw_fullscreen_black_with_alpha(rc2d_engine_state.renderer, a);
                 }
             }
         }
-        else if (g_splash_state == SPLASH_GAME) {
+        else if (g_splash_state == SPLASH_GAME) 
+        {
             /* 1) Dessiner la vidéo du jeu */
             rc2d_video_draw(&g_splash_game);
 
             /* 2) Calculer l’alpha du voile noir sur les 6 premières secondes (fade-in) */
             const double now = rc2d_video_currentSeconds(&g_splash_game);
-            if (now < g_fade_seconds) {
+            if (now < g_fade_seconds) 
+            {
                 double a = 1.0 - (now / g_fade_seconds); /* 1->0 sur 6s */
                 draw_fullscreen_black_with_alpha(rc2d_engine_state.renderer, a);
             }
         }
-        /* SPLASH_DONE n’affiche rien ici */
-    } else {
+    } 
+    else 
+    {
         /* --- Rendu jeu : fond de login plein écran logique --- */
-        if (g_background_login_texture) {
+        if (g_background_login_texture) 
+        {
             int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode;
             SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &lw, &lh, &mode);
 
@@ -380,13 +338,6 @@ void rc2d_draw(void)
             SDL_RenderTexture(rc2d_engine_state.renderer, g_background_login_texture, NULL, &dst);
         }
     }
-
-    // 10% du haut, 10% de la droite (taille native)
-    gui_draw_top_right_pct(rc2d_engine_state.renderer, g_ocean_minimap_texture, 0.10f, 0.10f);
-
-    // 20 px du haut et 20 px de la droite (taille native)
-    gui_draw_top_right_px(rc2d_engine_state.renderer, g_ocean_minimap_texture, 20.f, 20.f);
-
 }
 
 void rc2d_mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SDL_MouseID mouseID)
