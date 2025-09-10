@@ -171,7 +171,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         } 
         else 
         {
-            RC2D_log(RC2D_LOG_WARN, "[Bootstrap] No rc2d_load() callback provided.");
+            RC2D_log(RC2D_LOG_WARN, "No rc2d_load() function defined, skipping load step.");
         }
 
         // Indique que rc2d_load() a été appelé pour ne pas le rappeler
