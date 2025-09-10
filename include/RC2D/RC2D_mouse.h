@@ -177,7 +177,7 @@ float rc2d_mouse_getX(void);
 float rc2d_mouse_getY(void);
 
 void rc2d_mouse_setVisible(const bool visible);
-void rc2d_mouse_setCursor(const RC2D_Cursor* cursor);
+void rc2d_mouse_setCursor(const SDL_Cursor* cursor);
 void rc2d_mouse_setPosition(float x, float y);
 void rc2d_mouse_setX(float x);
 void rc2d_mouse_setY(float y);

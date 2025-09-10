@@ -5,8 +5,6 @@
 #include <SDL3/SDL_mouse.h>
 #include <SDL3_image/SDL_image.h>
 
-static RC2D_Cursor* currentCursor = NULL;
-
 /**
  * Vérifie si la souris est capturée par la fenêtre. Lorsque la souris est capturée,
  * les mouvements du curseur sont limités à l'intérieur de la fenêtre de l'application.
@@ -106,7 +104,7 @@ void rc2d_window_setGrabbed(bool grabbed)
     }
 
     // Définit la capture de souris de la fenêtre
-    (!SDL_SetWindowMouseGrab(rc2d_engine_state.window, grabbed))
+    if(!SDL_SetWindowMouseGrab(rc2d_engine_state.window, grabbed))
     {
         RC2D_log(RC2D_LOG_ERROR, "Impossible de définir la capture de souris : %s\n", SDL_GetError());
     }
@@ -259,19 +257,16 @@ void rc2d_mouse_freeCursor(SDL_Cursor* cursor)
 /**
  * Définit le curseur actuellement utilisé.
  * 
- * @param {RC2D_Cursor*} cursor - Le curseur à définir comme actif.
+ * @param {SDL_Cursor*} cursor - Le curseur à définir comme actif.
  */
-void rc2d_mouse_setCursor(const RC2D_Cursor* cursor) 
+void rc2d_mouse_setCursor(const SDL_Cursor* cursor) 
 {
-    if (cursor->sdl_cursor != NULL) 
+    if (cursor != NULL) 
 	{
-        if(!SDL_SetCursor(cursor->sdl_cursor))
+        if(!SDL_SetCursor(cursor))
         {
             RC2D_log(RC2D_LOG_ERROR, "SDL_SetCursor failed in rc2d_mouse_setCursor: %s\n", SDL_GetError());
         }
-
-        // Mettre à jour le curseur current
-        currentCursor = cursor;
     }
 }
 
