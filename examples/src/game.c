@@ -3,13 +3,6 @@
 #include <RC2D/RC2D.h>
 #include <RC2D/RC2D_internal.h>
 
-#include <SDL3_image/SDL_image.h>
-#include <SDL3/SDL.h>
-
-#ifndef AV_TIME_BASE
-#include <libavutil/avutil.h>
-#endif
-
 /* ========================================================================= */
 /*                              RESSOURCES                                   */
 /* ========================================================================= */
@@ -289,7 +282,8 @@ void rc2d_draw(void)
         }
 
         // minimap en bas-droite, marge 20 px logiques
-        if (minimap_image.sdl_texture) {
+        if (minimap_image.sdl_texture) 
+        {
             rc2d_ui_drawImageAnchoredPixels(
                 minimap_image,
                 RC2D_UI_ANCHOR_BOTTOM_RIGHT,
