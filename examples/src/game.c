@@ -11,8 +11,9 @@ static SDL_GPURenderState* g_ocean_render_state   = NULL;
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPUSampler*     g_ocean_sampler        = NULL;
 static RC2D_Image          tile_ocean_image = {0};
-static RC2D_Image          minimap_image = {0};
 static RC2D_Image          background_login_image = {0};
+static RC2D_Image          minimap_image = {0};
+static RC2D_ImageData      minimap_imageData = {0};
 static RC2D_UIImage        g_minimap_ui = {0};
 
 /* ========================================================================= */
@@ -120,7 +121,9 @@ void rc2d_load(void)
      * Load Image minimap + set UI params
     */
     minimap_image = rc2d_graphics_newImageFromStorage("assets/images/minimap.png", RC2D_STORAGE_TITLE);
+    minimap_imageData = rc2d_graphics_newImageDataFromStorage("assets/images/minimap.png", RC2D_STORAGE_TITLE);
 
+    g_minimap_ui.imageData   = minimap_imageData;
     g_minimap_ui.image       = minimap_image;
     g_minimap_ui.anchor      = RC2D_UI_ANCHOR_BOTTOM_RIGHT;
     g_minimap_ui.margin_mode = RC2D_UI_MARGIN_PIXELS; // ou RC2D_UI_MARGIN_PERCENT

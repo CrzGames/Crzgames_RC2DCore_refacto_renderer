@@ -67,7 +67,8 @@ typedef enum RC2D_UIAnchor {
  * \note last_drawn_rect est en coordonnées LOGIQUES renderer.
  */
 typedef struct RC2D_UIImage {
-    RC2D_Image        image;             /**< Texture SDL de l’image (propriété appelant) */
+    RC2D_Image        image;             /**< Texture GPU (SDL_Texture) pour le rendu */
+    RC2D_ImageData    imageData;         /**< Surface CPU (SDL_Surface) pour les collisions pixel-perfect */
     RC2D_UIAnchor     anchor;            /**< Ancre */
     RC2D_UIMarginMode margin_mode;       /**< Pixels ou % */
     float             margin_x;          /**< pixels logiques OU pourcentage (0..1) suivant margin_mode */

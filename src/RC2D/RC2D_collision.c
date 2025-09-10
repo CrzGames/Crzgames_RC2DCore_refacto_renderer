@@ -6,24 +6,38 @@
 
 bool rc2d_collision_pointInUIImage(const RC2D_UIImage* ui, float x, float y)
 {
-    // Vérifier si l’UIImage est non NULL ET que visible ET hittable sont vrais
     if (!ui || !ui->visible || !ui->hittable)
         return false;
 
-    // Vérifier si le dernier rectangle dessiné est valide
-    if (ui->last_drawn_rect.w <= 0.f || ui->last_drawn_rect.h <= 0.f)
+    const SDL_FRect r = ui->last_drawn_rect;
+    if (r.w <= 0.f || r.h <= 0.f)
         return false;
 
-    // Créer une boîte AABB à partir du dernier rectangle dessiné de l'image
-    RC2D_AABB box = { ui->last_drawn_rect.x, ui->last_drawn_rect.y,
-                      ui->last_drawn_rect.w, ui->last_drawn_rect.h };
+    // Test AABB de base (rapide)
+    if (x < r.x || y < r.y || x > r.x + r.w || y > r.y + r.h)
+        return false;
 
-    // Créer un point avec les coordonnées (x, y) fournies
-    RC2D_Point p = { x, y };
+    // Pixel-perfect : transformer coords logiques -> coords surface
+    SDL_Surface* surf = ui->imageData.sdl_surface;
+    if (!surf) return false;
 
-    // Utiliser rc2d_collision_pointInAABB pour vérifier si le point est dans la boîte
-    return rc2d_collision_pointInAABB(p, box);
+    const float local_x = (x - r.x) * ((float)surf->w / r.w);
+    const float local_y = (y - r.y) * ((float)surf->h / r.h);
+
+    if (local_x < 0 || local_y < 0 ||
+        local_x >= surf->w || local_y >= surf->h)
+        return false;
+
+    // Récupérer le pixel (RGBA32 garanti)
+    const Uint32* pixels = (Uint32*)surf->pixels;
+    const int pitch = surf->pitch / 4; // en pixels
+    Uint32 pixel = pixels[(int)local_y * pitch + (int)local_x];
+
+    Uint8 alpha = pixel >> 24; // canal alpha
+    return (alpha > 0); // seuil arbitraire
 }
+
+
 
 bool rc2d_collision_pointInPolygon(const RC2D_Point point, const RC2D_Polygon* polygon) 
 {
