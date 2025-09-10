@@ -1,8 +1,9 @@
 #include <RC2D/rc2d_ui.h>
-
 #include <RC2D/RC2D_engine.h>    /* rc2d_engine_getVisibleSafeRectRender */
 #include <RC2D/RC2D_internal.h>  /* rc2d_engine_state.renderer */
 #include <RC2D/RC2D_logger.h>
+
+#include <SDL3/SDL.h>          /* SDL_Texture, SDL_GetTextureSize, SDL_RenderTexture */
 
 static bool rc2d__get_texture_size(SDL_Texture* tex, float* out_w, float* out_h)
 {

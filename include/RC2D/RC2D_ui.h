@@ -3,8 +3,6 @@
 
 #include <RC2D/RC2D_graphics.h>
 
-#include <SDL3/SDL.h>
-
 #include <stdbool.h> // Required for : bool
 
 #ifdef __cplusplus
