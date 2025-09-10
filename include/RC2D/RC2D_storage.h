@@ -44,17 +44,6 @@ bool rc2d_storage_openTitle(const char *override_path);
 bool rc2d_storage_openUser(const char *org, const char *app);
 
 /**
- * \brief Ferme les conteneurs "Title" et "User" ouverts, si présents.
- *
- * \details Wrappe SDL_CloseStorage() sur les handles internes détenus par RC2D.
- *
- * \threadsafety À appeler depuis le thread principal.
- *
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-void rc2d_storage_closeAll(void);
-
-/**
  * \brief Indique si le storage "Title" est prêt.
  *
  * \details Wrap de SDL_StorageReady() sur le handle interne "Title".

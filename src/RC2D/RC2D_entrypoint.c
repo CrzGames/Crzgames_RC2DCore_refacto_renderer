@@ -113,21 +113,63 @@ SDL_AppResult SDL_AppIterate(void *appstate)
      * 
      * Une fois que les dossiers de stockage sont prêts, on peut commencer à lire/écrire des fichiers.
      */
-    if (!title_storage_is_ready) 
+    const bool was_title_ready = title_storage_is_ready;
+    const bool was_user_ready  = user_storage_is_ready;
+
+    // --- STORAGE TITLE ---
+    if (rc2d_storage_titleReady()) 
     {
-        if (rc2d_storage_titleReady()) 
+        // Le dossier de stockage Title est prêt
+        title_storage_is_ready = true;
+
+        // Log seulement la transition de NOT READY -> READY
+        if (!was_title_ready) 
         {
-            title_storage_is_ready = true;
             RC2D_log(RC2D_LOG_INFO, "[Storage] Title storage is ready.");
         }
     }
-    if (!user_storage_is_ready) 
+    else 
     {
-        if (rc2d_storage_userReady()) 
+        // Le dossier de stockage Title n'est pas prêt
+        title_storage_is_ready = false;
+
+        // Log seulement la transition de READY -> NOT READY
+        if (was_title_ready) 
         {
-            user_storage_is_ready = true;
+            RC2D_log(RC2D_LOG_WARN, "[Storage] Title storage became NOT READY. Re-opening...");
+        }
+
+        // Réessaye d'ouvrir le dossier de stockage Title
+        rc2d_storage_openTitle(NULL);
+    }
+    // --- STORAGE USER ---
+    if (rc2d_storage_userReady()) 
+    {
+        // Le dossier de stockage User est prêt
+        user_storage_is_ready = true;
+
+        // Log seulement la transition de NOT READY -> READY
+        if (!was_user_ready) 
+        {
             RC2D_log(RC2D_LOG_INFO, "[Storage] User storage is ready.");
         }
+    }
+    else 
+    {
+        // Le dossier de stockage User n'est pas prêt
+        user_storage_is_ready = false;
+
+        // Log seulement la transition de READY -> NOT READY
+        if (was_user_ready) 
+        {
+            RC2D_log(RC2D_LOG_WARN, "[Storage] User storage became NOT READY. Re-opening...");
+        }
+
+        // Réessaye d'ouvrir le dossier de stockage User
+        rc2d_storage_openUser(
+            rc2d_engine_state.config->appInfo->organization,
+            rc2d_engine_state.config->appInfo->name
+        );
     }
 
     /**
@@ -144,9 +186,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     if (!rc2d_load_has_been_called) 
     {
         // On vérifie si les deux dossiers de stockage sont prêts
-        const bool all_required_storage_ready = title_storage_is_ready && user_storage_is_ready;
-
-        if (!all_required_storage_ready) 
+        if (!(title_storage_is_ready && user_storage_is_ready)) 
         {
             /**
              * Si les dossiers de stockage ne sont pas prêts, on attend.

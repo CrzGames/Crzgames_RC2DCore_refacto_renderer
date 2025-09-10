@@ -139,6 +139,17 @@ typedef struct RC2D_EngineState {
 extern RC2D_EngineState rc2d_engine_state;
 
 /**
+ * \brief Ferme les conteneurs "Title" et "User" ouverts, si présents.
+ *
+ * \details Wrappe SDL_CloseStorage() sur les handles internes détenus par RC2D.
+ *
+ * \threadsafety À appeler depuis le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_storage_closeAll(void);
+
+/**
  * \brief Hot-reload des shaders graphiques (fragment).
  * 
  * Cette fonction utilise SDL_GetPathInfo pour obtenir les informations sur le fichier
