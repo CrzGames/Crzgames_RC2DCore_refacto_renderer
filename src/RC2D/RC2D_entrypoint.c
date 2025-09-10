@@ -198,12 +198,11 @@ SDL_AppResult SDL_AppIterate(void *appstate)
      * 
      * Ordre de la boucle principale de l'application :
      * 1. Calculer le delta time pour la frame actuelle.
-     * 2. Appeler les fonctions internes de hot reload des shaders / pipeline graphics.
+     * 2. Appeler les fonctions internes de hot reload des shaders.
      * 3. Appeler la fonction de mise à jour du jeu.
-     * 4. Effacer l'écran (créer le commandBuffer courant, aquire la swapchain, etc.).
-     * 5. Appeler la fonction de dessin du jeu.
-     * 6. Présenter le rendu à l'écran.
-     * 7. Terminer le calcul du delta time pour la frame actuelle.
+     * 4. Appeler la fonction de dessin du jeu.
+     * 5. Présenter le rendu à l'écran.
+     * 6. Terminer le calcul du delta time pour la frame actuelle.
      */
     rc2d_engine_deltatime_start();
     #if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
