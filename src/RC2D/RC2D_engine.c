@@ -1869,7 +1869,7 @@ static bool rc2d_engine(void)
         RC2D_log(RC2D_LOG_ERROR, "Erreur : impossible de définir les métadonnées de l'application : %s\n", SDL_GetError());
         return false;
     }
-    if(!SDL_SetAppMetadataProperty("organization", rc2d_engine_state.config->appInfo->organization))
+    if(!SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, rc2d_engine_state.config->appInfo->organization))
     {
         RC2D_log(RC2D_LOG_ERROR, "Erreur : impossible de définir la propriété 'organization' de l'application : %s\n", SDL_GetError());
         return false;

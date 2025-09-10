@@ -39,7 +39,11 @@ const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[])
     config->callbacks->rc2d_mousepressed = rc2d_mousepressed;
     config->logicalPresentationMode = RC2D_LOGICAL_PRESENTATION_OVERSCAN;
     config->pixelartMode = false;
-    
+    config->appInfo->name = "My Game";
+    config->appInfo->organization = "My Company";
+    config->appInfo->version = "0.1.0";
+    config->appInfo->identifier = "com.mycompany.mygame";
+
     RC2D_assert_release(config != NULL, RC2D_LOG_CRITICAL, "RC2D_EngineConfig config is NULL. Cannot setup the engine.");
 
     return config;
