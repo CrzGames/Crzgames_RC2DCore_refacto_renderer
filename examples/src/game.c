@@ -2,8 +2,6 @@
 
 #include <RC2D/RC2D.h>
 #include <RC2D/RC2D_internal.h>
-#include <RC2D/RC2D_video.h>
-#include <RC2D/RC2D_logger.h>
 
 #include <SDL3_image/SDL_image.h>
 #include <SDL3/SDL.h>
@@ -389,4 +387,9 @@ void rc2d_draw(void)
     // 20 px du haut et 20 px de la droite (taille native)
     gui_draw_top_right_px(rc2d_engine_state.renderer, g_ocean_minimap_texture, 20.f, 20.f);
 
+}
+
+void rc2d_mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SDL_MouseID mouseID)
+{
+    RC2D_log(RC2D_LOG_INFO, "Mouse pressed at (%.1f, %.1f), button=%d, clicks=%d, mouseID=%d\n", x, y, button, clicks, mouseID);
 }

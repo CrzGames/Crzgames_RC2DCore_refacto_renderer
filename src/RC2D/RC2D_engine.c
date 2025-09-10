@@ -869,8 +869,46 @@ void rc2d_engine_deltatime_end(void)
     }
 }
 
+/**
+ * \brief Convertit les coordonnées des événements d'entrée en coordonnées de rendu.
+ *
+ * Cette fonction convertit les coordonnées des événements d'entrée (souris, tactile, stylet..etc)
+ * en coordonnées de rendu en utilisant le renderer GPU actuel.
+ * 
+ * \param {SDL_Event*} event - L'événement SDL à convertir.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+static void rc2d_engine_convertEventToRender(SDL_Event* event)
+{
+    switch (event->type) {
+        case SDL_EVENT_MOUSE_MOTION:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+        case SDL_EVENT_MOUSE_WHEEL:
+        case SDL_EVENT_FINGER_DOWN:
+        case SDL_EVENT_FINGER_UP:
+        case SDL_EVENT_FINGER_MOTION:
+        case SDL_EVENT_FINGER_CANCELED:
+            if(!SDL_ConvertEventToRenderCoordinates(rc2d_engine_state.renderer, event)) 
+            {
+                RC2D_log(RC2D_LOG_ERROR, "Erreur lors de la conversion des coordonnées de l'événement en coordonnées de rendu : %s", SDL_GetError());
+            }
+            break;
+        default: break;
+    }
+}
+
 SDL_AppResult rc2d_engine_processevent(SDL_Event *event) 
 {
+    /**
+     * Convertit les coordonnées de l'événement en coordonnées de rendu.
+     * Utile pour les événements d'entrée (souris, tactile, stylet..etc)
+     * afin qu'ils correspondent correctement à la zone de rendu actuelle.
+     * \note Doit être appelé avant de traiter l'événement.
+     */
+    rc2d_engine_convertEventToRender(event);
+
     // Quit program
     if (event->type == SDL_EVENT_QUIT)
     {
@@ -1774,17 +1812,16 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
             };
             rc2d_engine_state.config->callbacks->rc2d_dropposition(&info);
         }
-
-        // System Theme Changed
-        else if (event->type == SDL_EVENT_SYSTEM_THEME_CHANGED)
+    }
+    // System Theme Changed
+    else if (event->type == SDL_EVENT_SYSTEM_THEME_CHANGED)
+    {
+        if (rc2d_engine_state.config != NULL && 
+            rc2d_engine_state.config->callbacks != NULL && 
+            rc2d_engine_state.config->callbacks->rc2d_systemthemechanged != NULL) 
         {
-            if (rc2d_engine_state.config != NULL && 
-                rc2d_engine_state.config->callbacks != NULL && 
-                rc2d_engine_state.config->callbacks->rc2d_systemthemechanged != NULL) 
-            {
-                SDL_SystemTheme theme = SDL_GetSystemTheme();
-                rc2d_engine_state.config->callbacks->rc2d_systemthemechanged(theme);
-            }
+            SDL_SystemTheme theme = SDL_GetSystemTheme();
+            rc2d_engine_state.config->callbacks->rc2d_systemthemechanged(theme);
         }
     }
 
