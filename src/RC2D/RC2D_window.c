@@ -336,6 +336,11 @@ void rc2d_window_setSize(const int width, const int height)
     {
         RC2D_log(RC2D_LOG_ERROR, "Impossible de définir la taille de la fenêtre : %s\n", SDL_GetError());
     }
+
+    if(!SDL_SetWindowPosition(rc2d_engine_state.window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED))
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Impossible de définir la position de la fenêtre : %s\n", SDL_GetError());
+    }
 }
 
 int rc2d_window_getDisplayCount(void) 
