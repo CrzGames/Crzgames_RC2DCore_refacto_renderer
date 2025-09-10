@@ -13,6 +13,7 @@ static SDL_GPUSampler*     g_ocean_sampler        = NULL;
 static RC2D_Image          tile_ocean_image = {0};
 static RC2D_Image          minimap_image = {0};
 static RC2D_Image          background_login_image = {0};
+static RC2D_UIImage        g_minimap_ui = {0};
 
 /* ========================================================================= */
 /*                            SPLASH SYSTEME                                 */
@@ -115,8 +116,17 @@ void rc2d_load(void)
         g_splash_active = true;
     }    
 
-    // minimap
+    /**
+     * Load Image minimap + set UI params
+    */
     minimap_image = rc2d_graphics_newImageFromStorage("assets/images/minimap.png", RC2D_STORAGE_TITLE);
+
+    g_minimap_ui.image       = minimap_image;
+    g_minimap_ui.anchor      = RC2D_UI_ANCHOR_BOTTOM_RIGHT;
+    g_minimap_ui.margin_mode = RC2D_UI_MARGIN_PIXELS; // ou RC2D_UI_MARGIN_PERCENT
+    g_minimap_ui.margin_x    = 20.f;  // depuis la droite
+    g_minimap_ui.margin_y    = 20.f;  // depuis le bas
+    g_minimap_ui.last_drawn_rect = (SDL_FRect){0,0,0,0};
 
     // background login
     background_login_image = rc2d_graphics_newImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
@@ -270,7 +280,7 @@ void rc2d_draw(void)
     } 
     else 
     {
-        /* --- Rendu jeu : fond de login plein écran logique --- */
+        /* --- Rendu du jeu --- */
         if (background_login_image.sdl_texture) 
         {
             int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode;
@@ -279,12 +289,13 @@ void rc2d_draw(void)
             SDL_FRect dst = { 0.0f, 0.0f, (float)lw, (float)lh };
             /* src = NULL -> texture entière ; dst = plein cadre logique */
             SDL_RenderTexture(rc2d_engine_state.renderer, background_login_image.sdl_texture, NULL, &dst);
-        }
 
-        // minimap en bas-droite, marge 20 px logiques
-        if (minimap_image.sdl_texture) 
-        {
 
+            // NEW: dessiner la minimap ancrée
+            if (g_minimap_ui.image.sdl_texture) 
+            {
+                rc2d_ui_drawImage(&g_minimap_ui);
+            }
         }
     }
 }
@@ -292,4 +303,22 @@ void rc2d_draw(void)
 void rc2d_mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SDL_MouseID mouseID)
 {
     RC2D_log(RC2D_LOG_INFO, "Mouse pressed at (%.1f, %.1f), button=%d, clicks=%d, mouseID=%d\n", x, y, button, clicks, mouseID);
+
+    // NEW: hit-test simple sur la minimap (uniquement clic gauche)
+    if (button == RC2D_MOUSE_BUTTON_LEFT) {
+        // Récupérer le rectangle dessiné de la minimap
+        const SDL_FRect r = g_minimap_ui.last_drawn_rect;
+
+        // Créer une boîte AABB pour la minimap
+        RC2D_AABB box = { r.x, r.y, r.w, r.h };
+
+        // x, y de la souris dans un point RC2D_Point
+        RC2D_Point p = { x, y };
+
+        if (rc2d_collision_pointInAABB(p, box)) 
+        {
+            RC2D_log(RC2D_LOG_INFO, "Minimap clicked!\n");
+            // TODO: action sur la minimap
+        }
+    }
 }
