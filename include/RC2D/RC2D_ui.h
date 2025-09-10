@@ -120,11 +120,15 @@ typedef struct RC2D_UIImage {
  * \code
  * // Exemple 1 — Pixels logiques : minimap en bas-droite avec 20 px de marge
  * RC2D_UIImage minimap = {
- *     .image       = rc2d_graphics_newImage("minimap.png"),
+ *     .image       = rc2d_graphics_newImageFromStorage("minimap.png", RC2D_STORAGE_TITLE),
+ *     .imageData   = rc2d_graphics_newImageDataFromStorage("minimap.png", RC2D_STORAGE_TITLE),
+ *     .last_drawn_rect = {0,0,0,0} // initialisé à zéro
  *     .anchor      = RC2D_UI_ANCHOR_BOTTOM_RIGHT,
  *     .margin_mode = RC2D_UI_MARGIN_PIXELS,
  *     .margin_x    = 20.0f,   // depuis la droite
  *     .margin_y    = 20.0f    // depuis le bas
+ *     .visible     = true,
+ *     .hittable    = true
  * };
  *
  * void rc2d_draw(void)
@@ -136,11 +140,15 @@ typedef struct RC2D_UIImage {
  * \code
  * // Exemple 2 — Pourcentage : logo en haut-droite, 10%/10%
  * RC2D_UIImage logo = {
- *     .image       = rc2d_graphics_newImage("logo.png"),
+ *     .imageData   = rc2d_graphics_newImageDataFromStorage("logo.png", RC2D_STORAGE_TITLE),
+ *     .image       = rc2d_graphics_newImageFromStorage("logo.png", RC2D_STORAGE_TITLE),
  *     .anchor      = RC2D_UI_ANCHOR_TOP_RIGHT,
  *     .margin_mode = RC2D_UI_MARGIN_PERCENT,
  *     .margin_x    = 0.10f,   // 10% de la largeur depuis la droite
  *     .margin_y    = 0.10f    // 10% de la hauteur depuis le haut
+ *     .last_drawn_rect = {0,0,0,0} // initialisé à zéro
+ *     .visible     = true,
+ *     .hittable    = true
  * };
  * \endcode
  *
@@ -148,13 +156,9 @@ typedef struct RC2D_UIImage {
  * // Exemple 3 — Hit-test (clic) avec rc2d_collision_pointInAABB
  * void rc2d_mousepressed(float x, float y, RC2D_MouseButton b, int clicks, SDL_MouseID id)
  * {
- *     const SDL_FRect r = minimap.last_drawn_rect;
- *
- *     RC2D_AABB box = { r.x, r.y, r.w, r.h };
- *     RC2D_Point p = { x, y };
- *
- *     if (rc2d_collision_pointInAABB(p, box)) {
- *         // ... clic sur la minimap
+ *     if(b != RC2D_MOUSE_BUTTON_LEFT && rc2d_collision_pointInUIImage(&minimap, x, y))
+ *     {
+ *          RC2D_log(RC2D_LOG_INFO, "Minimap clicked!\n");
  *     }
  * }
  * \endcode
