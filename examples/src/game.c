@@ -41,6 +41,13 @@ static SplashState         g_splash_state = SPLASH_STUDIO;
 /* Durée du fondu (secondes) */
 static const double        g_fade_seconds = 1.5;
 
+
+/* ========================================================================= */
+/*                       FADE SCENE LOGIN SCREEN                             */
+/* ========================================================================= */
+static float g_login_fade_alpha = 1.0f; // commence noir opaque (1.0 = 100% noir)
+static const float g_login_fade_speed = 0.5f; // vitesse du fade (alpha/sec)
+
 /* ========================================================================= */
 /*                         HELPERS / PETITES UTILS                           */
 /* ========================================================================= */
@@ -112,8 +119,8 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    rc2d_window_setSize(1280, 720);
-    //rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
+    //rc2d_window_setSize(1280, 720);
+    rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
 
     const char *base_path = SDL_GetBasePath();
     char full_path[512];
@@ -233,7 +240,15 @@ void rc2d_update(double dt)
 {
     if (!g_splash_active) 
     {
-        /* Update gameplay ici si besoin */
+        /* On décrémente l’alpha du fade jusqu’à 0 */
+        if (g_login_fade_alpha > 0.0f) 
+        {
+            g_login_fade_alpha -= (float)(g_login_fade_speed * dt);
+            if (g_login_fade_alpha < 0.0f)
+                g_login_fade_alpha = 0.0f;
+        }
+
+        // ici update gameplay ou UI logique si besoin
         return;
     }
 
@@ -337,6 +352,16 @@ void rc2d_draw(void)
             rc2d_ui_drawImage(&g_input_login_ui);
             rc2d_ui_drawImage(&g_input_pass_ui);
             rc2d_ui_drawImage(&g_button_login_ui);
+
+            // --- Dessiner le fade noir au-dessus si alpha > 0 ---
+            if (g_login_fade_alpha > 0.0f) 
+            {
+                SDL_SetRenderDrawBlendMode(rc2d_engine_state.renderer, SDL_BLENDMODE_BLEND);
+                SDL_SetRenderDrawColor(rc2d_engine_state.renderer, 0, 0, 0, (Uint8)(g_login_fade_alpha * 255));
+                SDL_FRect full = {0, 0, (float)lw, (float)lh};
+                SDL_RenderFillRect(rc2d_engine_state.renderer, &full);
+                SDL_SetRenderDrawBlendMode(rc2d_engine_state.renderer, SDL_BLENDMODE_NONE);
+            }
         }
     }
 }
@@ -348,7 +373,7 @@ void rc2d_mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SD
     if (button == RC2D_MOUSE_BUTTON_LEFT) 
     {
         if (rc2d_collision_pointInUIImagePixelPerfect(&g_input_login_ui, x, y)) {
-            RC2D_log(RC2D_LOG_INFO, "Clicked in LOGIN input box\n");
+            RC2D_log(RC2D_LOG_INFO, "Clicked in EMAIL input box\n");
             // TODO: focus login
         }
         else if (rc2d_collision_pointInUIImagePixelPerfect(&g_input_pass_ui, x, y)) {
@@ -356,7 +381,7 @@ void rc2d_mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SD
             // TODO: focus password
         }
         else if (rc2d_collision_pointInUIImagePixelPerfect(&g_button_login_ui, x, y)) {
-            RC2D_log(RC2D_LOG_INFO, "Clicked LOGIN button!\n");
+            RC2D_log(RC2D_LOG_INFO, "Clicked LOGIN CONNEXION button!\n");
             // TODO: trigger login
         }
     }
