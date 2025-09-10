@@ -13,7 +13,10 @@ void rc2d_graphics_clear(void)
 {
     if (rc2d_engine_state.renderer) 
     {
+        // Effacer avec la couleur noire par défaut
         SDL_SetRenderDrawColor(rc2d_engine_state.renderer, 0, 0, 0, 255);
+
+        // Effacer l'écran
         SDL_RenderClear(rc2d_engine_state.renderer);
     }
 }
@@ -22,11 +25,12 @@ void rc2d_graphics_present(void)
 {
     if (rc2d_engine_state.renderer) 
     {
+        // Présenter le rendu à l'écran
         SDL_RenderPresent(rc2d_engine_state.renderer);
     }
 }
 
-void rc2d_graphics_draw(RC2D_Image image, float x, float y, double angle, float scaleX, float scaleY, float offsetX, float offsetY, bool flipHorizontal, bool flipVertical) 
+void rc2d_graphics_drawImage(RC2D_Image image, float x, float y, double angle, float scaleX, float scaleY, float offsetX, float offsetY, bool flipHorizontal, bool flipVertical) 
 {
     // Vérifier que la texture est valide
     if (!image.sdl_texture) 
@@ -36,7 +40,7 @@ void rc2d_graphics_draw(RC2D_Image image, float x, float y, double angle, float 
     }
 
     // Destination rectangle avec position, taille et scale
-    SDL_FRect rectDest = {x, y, (float)image.width * scaleX, (float)image.height * scaleY};
+    SDL_FRect rectDest = {x, y, (float)image.sdl_texture->w * scaleX, (float)image.sdl_texture->h * scaleY};
 
     // Savoir si on doit faire un flip horizontal et/ou vertical
     SDL_FlipMode flip = SDL_FLIP_NONE;
@@ -56,7 +60,7 @@ void rc2d_graphics_draw(RC2D_Image image, float x, float y, double angle, float 
         {
             RC2D_log(RC2D_LOG_ERROR, "SDL_RenderTextureRotated failed in rc2d_graphics_draw: %s\n", SDL_GetError());
         }
-    } 
+    }
     else 
     {
         if (!SDL_RenderTextureRotated(rc2d_engine_state.renderer, image.sdl_texture, NULL, &rectDest, angle, NULL, flip)) 
@@ -178,18 +182,13 @@ bool rc2d_graphics_points(const int numPoints, const SDL_FPoint *points)
 
 RC2D_ImageData rc2d_graphics_newImageData(const char* path) 
 {
-    RC2D_ImageData imageData = {NULL, 0, 0};
+    RC2D_ImageData imageData = {NULL};
 
     imageData.sdl_surface = IMG_Load(path);
     if (!imageData.sdl_surface) 
     {
         RC2D_log(RC2D_LOG_ERROR, "Unable to create surface from %s: %s\n", path, SDL_GetError());
     } 
-    else 
-    {
-        imageData.width = imageData.sdl_surface->w;
-        imageData.height = imageData.sdl_surface->h;
-    }
 
     return imageData;
 }
@@ -205,16 +204,12 @@ void rc2d_graphics_freeImageData(RC2D_ImageData imageData)
 
 RC2D_Image rc2d_graphics_newImage(const char* path) 
 {
-    RC2D_Image image = {NULL, 0, 0};
+    RC2D_Image image = {NULL};
 
     image.sdl_texture = IMG_LoadTexture(rc2d_engine_state.renderer, path);
     if (!image.sdl_texture) 
     {
         RC2D_log(RC2D_LOG_ERROR, "Unable to create texture from %s: %s\n", path, SDL_GetError());
-    }
-    else
-    {
-        SDL_GetTextureSize(image.sdl_texture, &image.width, &image.height);
     }
 
     return image;
@@ -227,11 +222,6 @@ void rc2d_graphics_freeImage(RC2D_Image image)
         SDL_DestroyTexture(image.sdl_texture);
         image.sdl_texture = NULL;
     }
-}
-
-RC2D_Text rc2d_graphics_newText(RC2D_Font font, const char* textString, RC2D_Color coloredText) 
-{
-
 }
 
 void rc2d_graphic_setFont(TTF_Font* font, TTF_FontStyleFlags style)

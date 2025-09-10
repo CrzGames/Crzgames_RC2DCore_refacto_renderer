@@ -885,8 +885,8 @@ static void rc2d_engine_convertEventToRender(SDL_Event* event)
         case SDL_EVENT_MOUSE_MOTION:
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
         case SDL_EVENT_MOUSE_BUTTON_UP:
-        case SDL_EVENT_MOUSE_WHEEL:
-        case SDL_EVENT_FINGER_DOWN:
+        case SDL_EVENT_MOUSE_WHEEL: 
+        case SDL_EVENT_FINGER_DOWN: 
         case SDL_EVENT_FINGER_UP:
         case SDL_EVENT_FINGER_MOTION:
         case SDL_EVENT_FINGER_CANCELED:

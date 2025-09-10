@@ -1,6 +1,8 @@
 #ifndef RC2D_GRAPHICS_H
 #define RC2D_GRAPHICS_H
 
+#include <RC2D/RC2D_math.h>
+
 #include <SDL3/SDL_render.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
@@ -41,31 +43,19 @@ typedef struct RC2D_Color {
 /**
  * Structure représentant une image.
  * @typedef {object} RC2D_Image
- * @property {number} width - Largeur de l'image.
- * @property {number} height - Hauteur de l'image.
  * @property {SDL_Texture} sdl_texture - Pointeur vers la texture SDL de l'image.
  */
 typedef struct RC2D_Image {
-    int width;
-    int height;
     SDL_Texture* sdl_texture;
 } RC2D_Image;
 
 /**
  * Structure représentant les données d'une image.
  * @typedef {object} RC2D_ImageData
- * @property {number} width - Largeur de l'image en pixels.
- * @property {number} height - Hauteur de l'image en pixels.
  * @property {SDL_Surface} sdl_surface - Pointeur vers la surface SDL contenant les données de l'image.
- * @property {number} pixelFormat - Format des pixels de l'image (ex: SDL_PIXELFORMAT_RGBA8888).
- * @property {Uint8*} mask - Pointeur vers un tableau de masques (1 pour solide, 0 pour transparent).
  */
 typedef struct RC2D_ImageData {
-    int width;
-    int height;
     SDL_Surface* sdl_surface;
-    int pixelFormat;
-    Uint8* mask;
 } RC2D_ImageData;
 
 /**
@@ -114,10 +104,11 @@ void rc2d_graphics_present(void);
  * @param offsetY - Décalage y pour le centre de rotation.
  * @param flipHorizontal - Applique un retournement horizontal.
  * @param flipVertical - Applique un retournement vertical.
- * 
- * \remarque: offsetX et offsetY si ils sont à 1.0, centreront la rotation.
+ *
+ * \remarque: Si offsetX et offsetY sont >= 0 sont utilisés comme point de rotation,
+ * sinon la rotation se fait autour du centre de l'image (donc passer -1, -1 pour centrer).
  */
-void rc2d_graphics_draw(RC2D_Image image, float x, float y, double angle, float scaleX, float scaleY, float offsetX, float offsetY, bool flipHorizontal, bool flipVertical);
+void rc2d_graphics_drawImage(RC2D_Image image, float x, float y, double angle, float scaleX, float scaleY, float offsetX, float offsetY, bool flipHorizontal, bool flipVertical);
 
 /**
  * Dessine un rectangle à l'écran.
