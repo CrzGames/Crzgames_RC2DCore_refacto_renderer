@@ -6,9 +6,11 @@
 
 bool rc2d_collision_pointInUIImage(const RC2D_UIImage* ui, float x, float y)
 {
+    // Vérifie si l'image UI est valide, visible et cliquable
     if (!ui || !ui->visible || !ui->hittable)
         return false;
 
+    // Récupère le rectangle dessiné de l'UImage
     const SDL_FRect r = ui->last_drawn_rect;
     if (r.w <= 0.f || r.h <= 0.f)
         return false;
@@ -17,27 +19,24 @@ bool rc2d_collision_pointInUIImage(const RC2D_UIImage* ui, float x, float y)
     if (x < r.x || y < r.y || x > r.x + r.w || y > r.y + r.h)
         return false;
 
+    if (!ui->imageData.sdl_surface)
+        return true; // pas de surface CPU, pas de test pixel-perfect
+
     // Pixel-perfect : transformer coords logiques -> coords surface
-    SDL_Surface* surf = ui->imageData.sdl_surface;
-    if (!surf) return false;
-
-    const float local_x = (x - r.x) * ((float)surf->w / r.w);
-    const float local_y = (y - r.y) * ((float)surf->h / r.h);
-
+    const float local_x = (x - r.x) * ((float)ui->imageData.sdl_surface->w / r.w);
+    const float local_y = (y - r.y) * ((float)ui->imageData.sdl_surface->h / r.h);
     if (local_x < 0 || local_y < 0 ||
-        local_x >= surf->w || local_y >= surf->h)
+        local_x >= ui->imageData.sdl_surface->w || local_y >= ui->imageData.sdl_surface->h)
         return false;
 
     // Récupérer le pixel (RGBA32 garanti)
-    const Uint32* pixels = (Uint32*)surf->pixels;
-    const int pitch = surf->pitch / 4; // en pixels
+    const Uint32* pixels = (Uint32*)ui->imageData.sdl_surface->pixels;
+    const int pitch = ui->imageData.sdl_surface->pitch / 4; // en pixels
     Uint32 pixel = pixels[(int)local_y * pitch + (int)local_x];
 
     Uint8 alpha = pixel >> 24; // canal alpha
-    return (alpha > 0); // seuil arbitraire
+    return (alpha > 32); // seuil arbitraire
 }
-
-
 
 bool rc2d_collision_pointInPolygon(const RC2D_Point point, const RC2D_Polygon* polygon) 
 {
