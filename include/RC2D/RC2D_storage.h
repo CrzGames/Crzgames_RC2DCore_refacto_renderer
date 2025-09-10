@@ -9,6 +9,39 @@ extern "C" {
 #endif
 
 /**
+ * \brief Ferme les conteneurs "Title" et "User" ouverts, si présents.
+ *
+ * \details Wrappe SDL_CloseStorage() sur les handles internes détenus par RC2D.
+ *
+ * \threadsafety À appeler depuis le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_storage_closeAll(void);
+
+/**
+ * \brief Ferme le conteneur de stockage "Title" (lecture seule, assets packagés).
+ *
+ * \details Wrappe SDL_CloseStorage() sur le handle interne "Title".
+ *
+ * \threadsafety À appeler depuis le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_storage_closeTitle(void);
+
+/**
+ * \brief Ferme le conteneur de stockage "User" (lecture/écriture unique d’un utilisateur).
+ *
+ * \details Wrappe SDL_CloseStorage() sur le handle interne "User".
+ *
+ * \threadsafety À appeler depuis le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+void rc2d_storage_closeUser(void);
+
+/**
  * \brief Ouvre le conteneur de stockage "Title" (lecture seule, assets packagés).
  *
  * \details Cette fonction wrappe SDL_OpenTitleStorage(). Si 'override_path' est NULL,
@@ -83,8 +116,8 @@ bool rc2d_storage_userMkdir(const char *path);
  * \brief Lit entièrement un fichier depuis le storage "Title" dans un buffer alloué.
  *
  * \details Cette fonction interroge d’abord la taille via SDL_GetStorageFileSize(),
- * alloue via SDL_malloc() puis appelle SDL_ReadStorageFile(). À la réussite, \p *out_data
- * contient un buffer à libérer avec SDL_free() et \p *out_len la taille lue.
+ * alloue via RC2D_malloc() puis appelle SDL_ReadStorageFile(). À la réussite, '*out_data'
+ * contient un buffer à libérer avec RC2D_safe_free() et '*out_len' la taille lue.
  *
  * \param path Chemin (style Unix) du fichier à lire depuis le storage title.
  * \param out_data [out] Reçoit un pointeur alloué via RC2D_malloc (à libérer par l’appelant).
@@ -119,7 +152,8 @@ bool rc2d_storage_userReadFile(const char *path, void **out_data, Uint64 *out_le
  * \brief Écrit un buffer en entier dans un fichier du storage "User".
  *
  * \details Wrap direct de SDL_WriteStorageFile(user, path, src, len). Le backend
- * garantit la cohérence à la fermeture du storage (pensez à close après vos batchs).
+ * garantit la cohérence à la fermeture du storage, donc vous pouvez ouvrir/écrire
+ * plusieurs fichiers avant de fermer le storage via rc2d_storage_closeUser().
  *
  * \param path Chemin (style Unix) de destination dans le storage user.
  * \param src  Pointeur vers les données sources en mémoire.

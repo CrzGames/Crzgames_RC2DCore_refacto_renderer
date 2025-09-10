@@ -64,20 +64,38 @@ bool rc2d_storage_openUser(const char *org, const char *app)
 void rc2d_storage_closeAll(void)
 {
     // Ferme les storages s’ils sont ouverts
+    rc2d_storage_closeTitle();
+    rc2d_storage_closeUser();
+}
+
+void rc2d_storage_closeTitle(void)
+{
+    // Ferme le storage title s’il est ouvert
     if (storage_title) 
     {
+        // Ferme le storage title
         if(!SDL_CloseStorage(storage_title))
         {
-            RC2D_log(RC2D_LOG_ERROR, "rc2d_storage_closeAll: SDL_CloseStorage failed: %s", SDL_GetError());
+            RC2D_log(RC2D_LOG_ERROR, "rc2d_storage_closeTitle: SDL_CloseStorage failed: %s", SDL_GetError());
         }
+
+        // Marque le storage title comme fermé
         storage_title = NULL;
     }
+}
+
+void rc2d_storage_closeUser(void)
+{
+    // Ferme le storage user s’il est ouvert
     if (storage_user) 
     {
+        // Ferme le storage user
         if(!SDL_CloseStorage(storage_user))
         {
-            RC2D_log(RC2D_LOG_ERROR, "rc2d_storage_closeAll: SDL_CloseStorage failed: %s", SDL_GetError());
+            RC2D_log(RC2D_LOG_ERROR, "rc2d_storage_closeUser: SDL_CloseStorage failed: %s", SDL_GetError());
         }
+
+        // Marque le storage user comme fermé
         storage_user = NULL;
     }
 }

@@ -9,12 +9,6 @@
 #include <RC2D/RC2D_engine.h>
 #include <RC2D/RC2D_gpu.h>
 
-#if RC2D_DATA_MODULE_ENABLED
-#include <openssl/ssl.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
-#endif
-
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_properties.h>
@@ -23,15 +17,21 @@
 
 #include <SDL3_ttf/SDL_ttf.h>
 
+#include <SDL3_mixer/SDL_mixer.h>
+
+#if RC2D_DATA_MODULE_ENABLED
+#include <openssl/ssl.h>
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#endif // RC2D_DATA_MODULE_ENABLED
+
 #if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
 #include <SDL3_shadercross/SDL_shadercross.h>
-#endif
+#endif // RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
 
 #if RC2D_NET_MODULE_ENABLED
 #include <rcenet/enet.h>
-#endif
-
-#include <SDL3_mixer/SDL_mixer.h>
+#endif // RC2D_NET_MODULE_ENABLED
 
 RC2D_EngineState rc2d_engine_state = {0};
 
