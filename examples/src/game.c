@@ -112,19 +112,12 @@ void rc2d_load(void)
 
     // splash videos
     SDL_snprintf(full_path, sizeof(full_path), "%sassets/videos/SplashScreen_Studio_1080p.mp4", base_path);
-    if (rc2d_video_open(&g_splash_studio, full_path) != 0) {
+    if (rc2d_video_open(&g_splash_studio, full_path) != 0) 
+    {
         RC2D_log(RC2D_LOG_WARN, "Studio splash failed to open, skipping directly to game splash.");
-        /* Tente d'ouvrir la 2e directement */
-        SDL_snprintf(full_path, sizeof(full_path), "%sassets/videos/SplashScreen_SeaTyrants_1080p.mp4", base_path);
-        if (rc2d_video_open(&g_splash_game, full_path) != 0) {
-            RC2D_log(RC2D_LOG_WARN, "Game splash failed to open, skipping to gameplay.");
-            g_splash_state  = SPLASH_DONE;
-            g_splash_active = false;
-        } else {
-            g_splash_state  = SPLASH_GAME; /* on jouera un fade-in automatique sur 6s */
-            g_splash_active = true;
-        }
-    } else {
+    } 
+    else 
+    {
         g_splash_state  = SPLASH_STUDIO;
         g_splash_active = true;
     }    
@@ -204,6 +197,20 @@ void rc2d_update(double dt)
             int r = rc2d_video_update(&g_splash_studio, dt);
             if (r <= 0) 
             {
+                /* Ouverture de la 2e vidéo immédiatement après la fin */
+                const char *base_path = SDL_GetBasePath();
+                char full_path[512];
+                SDL_snprintf(full_path, sizeof(full_path), "%sassets/videos/SplashScreen_SeaTyrants_1080p.mp4", base_path);
+
+                if (rc2d_video_open(&g_splash_game, full_path) != 0) 
+                {
+                    RC2D_log(RC2D_LOG_WARN, "Game splash failed, skipping to game.");
+                    rc2d_video_close(&g_splash_studio);
+                    g_splash_state  = SPLASH_DONE;
+                    g_splash_active = false;
+                    return;
+                }
+
                 /* On peut fermer la 1re vidéo, on passe à la 2e (qui fera son fade-in 6s) */
                 rc2d_video_close(&g_splash_studio);
                 g_splash_state = SPLASH_GAME;
