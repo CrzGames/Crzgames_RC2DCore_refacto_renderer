@@ -87,9 +87,6 @@ typedef struct RC2D_EngineState {
     // SDL : Renderer
     SDL_Renderer* renderer;
 
-    // SDL : Render target (pour le rendu hors écran, si nécessaire)
-    SDL_Texture* render_target;
-
     // SDL_mixer
     MIX_Mixer* mixer;
 

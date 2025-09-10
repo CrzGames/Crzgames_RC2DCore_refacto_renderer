@@ -53,7 +53,6 @@ static void rc2d_engine_stateInit(void) {
 
     // SDL : Renderer
     rc2d_engine_state.renderer = NULL;
-    rc2d_engine_state.render_target = NULL;
 
     // SDL_mixer
     rc2d_engine_state.mixer = NULL;
@@ -1970,23 +1969,6 @@ static bool rc2d_engine(void)
         }
     }
 
-    /**
-     * Créer la texture de rendu (render target) qui servira de surface de dessin principale.
-     * Cette texture est utilisée pour le rendu hors écran avant d'être présentée à l'écran.
-     */
-    rc2d_engine_state.render_target = SDL_CreateTexture(
-        rc2d_engine_state.renderer,
-        SDL_PIXELFORMAT_RGBA32,
-        SDL_TEXTUREACCESS_TARGET,
-        rc2d_engine_state.config->logicalWidth,
-        rc2d_engine_state.config->logicalHeight
-    );
-    if (!rc2d_engine_state.render_target) 
-    {
-        RC2D_log(RC2D_LOG_CRITICAL, "CreateTexture(render_target) failed: %s", SDL_GetError());
-        return false;
-    }
-  
     /**
      * Calcul initial du viewport GPU et de l'échelle de rendu pour l'ensemble de l'application.
      * Cela permet de s'assurer que le rendu est effectué à la bonne échelle et dans la bonne zone de la fenêtre.
