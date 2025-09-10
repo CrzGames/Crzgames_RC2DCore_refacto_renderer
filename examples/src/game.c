@@ -305,20 +305,26 @@ void rc2d_mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SD
     RC2D_log(RC2D_LOG_INFO, "Mouse pressed at (%.1f, %.1f), button=%d, clicks=%d, mouseID=%d\n", x, y, button, clicks, mouseID);
 
     // NEW: hit-test simple sur la minimap (uniquement clic gauche)
-    if (button == RC2D_MOUSE_BUTTON_LEFT) {
-        // Récupérer le rectangle dessiné de la minimap
+    if (button == RC2D_MOUSE_BUTTON_LEFT) 
+    {
+        // On récupère le dernier rectangle dessiné de la minimap
         const SDL_FRect r = g_minimap_ui.last_drawn_rect;
 
-        // Créer une boîte AABB pour la minimap
-        RC2D_AABB box = { r.x, r.y, r.w, r.h };
-
-        // x, y de la souris dans un point RC2D_Point
-        RC2D_Point p = { x, y };
-
-        if (rc2d_collision_pointInAABB(p, box)) 
+        // Si le rectangle est à 0, c’est que la minimap n’a pas été dessinée (pas d’image)
+        if (r.w > 0.f && r.h > 0.f) 
         {
-            RC2D_log(RC2D_LOG_INFO, "Minimap clicked!\n");
-            // TODO: action sur la minimap
+            // On crée une boîte AABB avec les coordonnées du rectangle de la minimap
+            RC2D_AABB box = { r.x, r.y, r.w, r.h };
+
+            // On crée un point avec les coordonnées de la souris lors du clic
+            RC2D_Point p = { x, y };
+            
+            // Test si le point est dans la boîte AABB
+            if (rc2d_collision_pointInAABB(p, box)) 
+            {
+                RC2D_log(RC2D_LOG_INFO, "Minimap clicked!\n");
+                // TODO: action sur la minimap
+            }
         }
     }
 }
