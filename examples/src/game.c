@@ -12,9 +12,15 @@ static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPUSampler*     g_ocean_sampler        = NULL;
 static RC2D_Image          tile_ocean_image = {0};
 static RC2D_Image          background_login_image = {0};
-static RC2D_Image          minimap_image = {0};
-static RC2D_ImageData      minimap_imageData = {0};
-static RC2D_UIImage        g_minimap_ui = {0};
+
+/* ========================================================================= */
+/*                              RESSOURCES UI                                */
+/* ========================================================================= */
+
+static RC2D_UIImage g_logo_ui       = {0};
+static RC2D_UIImage g_input_login_ui = {0};
+static RC2D_UIImage g_input_pass_ui  = {0};
+static RC2D_UIImage g_button_login_ui = {0};
 
 /* ========================================================================= */
 /*                            SPLASH SYSTEME                                 */
@@ -68,9 +74,16 @@ void rc2d_unload(void)
     rc2d_video_close(&g_splash_studio);
     rc2d_video_close(&g_splash_game);
 
-    rc2d_graphics_freeImage(&minimap_image);
     rc2d_graphics_freeImage(&background_login_image);
     rc2d_graphics_freeImage(&tile_ocean_image);
+    rc2d_graphics_freeImage(&g_logo_ui.image);
+    rc2d_graphics_freeImageData(&g_logo_ui.imageData);
+    rc2d_graphics_freeImage(&g_input_login_ui.image);
+    rc2d_graphics_freeImageData(&g_input_login_ui.imageData);
+    rc2d_graphics_freeImage(&g_input_pass_ui.image);
+    rc2d_graphics_freeImageData(&g_input_pass_ui.imageData);
+    rc2d_graphics_freeImage(&g_button_login_ui.image);
+    rc2d_graphics_freeImageData(&g_button_login_ui.imageData);
 
     if (g_ocean_render_state) 
     {
@@ -115,23 +128,47 @@ void rc2d_load(void)
     {
         g_splash_state  = SPLASH_STUDIO;
         g_splash_active = true;
-    }    
+    }
 
-    /**
-     * Load Image minimap + set UI params
-    */
-    minimap_image = rc2d_graphics_newImageFromStorage("assets/images/minimap.png", RC2D_STORAGE_TITLE);
-    minimap_imageData = rc2d_graphics_newImageDataFromStorage("assets/images/minimap.png", RC2D_STORAGE_TITLE);
+    // --- Logo ---
+    g_logo_ui.image     = rc2d_graphics_newImageFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
+    g_logo_ui.imageData = rc2d_graphics_newImageDataFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
+    g_logo_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
+    g_logo_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
+    g_logo_ui.margin_x    = 0.f;
+    g_logo_ui.margin_y    = 40.f; // marge depuis le haut
+    g_logo_ui.visible     = true;
+    g_logo_ui.hittable    = false;
 
-    g_minimap_ui.imageData   = minimap_imageData;
-    g_minimap_ui.image       = minimap_image;
-    g_minimap_ui.anchor      = RC2D_UI_ANCHOR_BOTTOM_RIGHT;
-    g_minimap_ui.margin_mode = RC2D_UI_MARGIN_PIXELS; // ou RC2D_UI_MARGIN_PERCENT
-    g_minimap_ui.margin_x    = 20.f;  // depuis la droite
-    g_minimap_ui.margin_y    = 20.f;  // depuis le bas
-    g_minimap_ui.last_drawn_rect = (SDL_FRect){0,0,0,0};
-    g_minimap_ui.visible     = true;
-    g_minimap_ui.hittable    = true;
+    // --- Input login ---
+    g_input_login_ui.image     = rc2d_graphics_newImageFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
+    g_input_login_ui.imageData = rc2d_graphics_newImageDataFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
+    g_input_login_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
+    g_input_login_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
+    g_input_login_ui.margin_x    = 0.f;
+    g_input_login_ui.margin_y    = -40.f; // placé au-dessus du centre
+    g_input_login_ui.visible     = true;
+    g_input_login_ui.hittable    = true;
+
+    // --- Input password ---
+    g_input_pass_ui.image     = rc2d_graphics_newImageFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
+    g_input_pass_ui.imageData = rc2d_graphics_newImageDataFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
+    g_input_pass_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
+    g_input_pass_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
+    g_input_pass_ui.margin_x    = 0.f;
+    g_input_pass_ui.margin_y    = +20.f; // juste en dessous du champ login
+    g_input_pass_ui.visible     = true;
+    g_input_pass_ui.hittable    = true;
+
+    // --- Bouton login (clé) ---
+    g_button_login_ui.image     = rc2d_graphics_newImageFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
+    g_button_login_ui.imageData = rc2d_graphics_newImageDataFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
+    g_button_login_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
+    g_button_login_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
+    g_button_login_ui.margin_x    = 0.f;
+    g_button_login_ui.margin_y    = +120.f; // encore en dessous
+    g_button_login_ui.visible     = true;
+    g_button_login_ui.hittable    = true;
 
     // background login
     background_login_image = rc2d_graphics_newImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
@@ -295,12 +332,11 @@ void rc2d_draw(void)
             /* src = NULL -> texture entière ; dst = plein cadre logique */
             SDL_RenderTexture(rc2d_engine_state.renderer, background_login_image.sdl_texture, NULL, &dst);
 
-
-            // NEW: dessiner la minimap ancrée
-            if (g_minimap_ui.image.sdl_texture) 
-            {
-                rc2d_ui_drawImage(&g_minimap_ui);
-            }
+            // UI
+            rc2d_ui_drawImage(&g_logo_ui);
+            rc2d_ui_drawImage(&g_input_login_ui);
+            rc2d_ui_drawImage(&g_input_pass_ui);
+            rc2d_ui_drawImage(&g_button_login_ui);
         }
     }
 }
@@ -311,10 +347,17 @@ void rc2d_mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SD
 
     if (button == RC2D_MOUSE_BUTTON_LEFT) 
     {
-        if (rc2d_collision_pointInUIImage(&g_minimap_ui, x, y)) 
-        {
-            RC2D_log(RC2D_LOG_INFO, "Minimap clicked!\n");
-            // TODO: action sur la minimap
+        if (rc2d_collision_pointInUIImagePixelPerfect(&g_input_login_ui, x, y)) {
+            RC2D_log(RC2D_LOG_INFO, "Clicked in LOGIN input box\n");
+            // TODO: focus login
+        }
+        else if (rc2d_collision_pointInUIImagePixelPerfect(&g_input_pass_ui, x, y)) {
+            RC2D_log(RC2D_LOG_INFO, "Clicked in PASSWORD input box\n");
+            // TODO: focus password
+        }
+        else if (rc2d_collision_pointInUIImagePixelPerfect(&g_button_login_ui, x, y)) {
+            RC2D_log(RC2D_LOG_INFO, "Clicked LOGIN button!\n");
+            // TODO: trigger login
         }
     }
 }

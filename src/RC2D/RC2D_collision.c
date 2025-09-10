@@ -4,7 +4,7 @@
 #include <math.h> // Required for : sqrt, fabs
 #include <float.h> // Required for : FLT_MAX
 
-bool rc2d_collision_pointInUIImage(const RC2D_UIImage* ui, float x, float y)
+bool rc2d_collision_pointInUIImagePixelPerfect(const RC2D_UIImage* ui, float x, float y)
 {
     // Vérifie si l'image UI est valide, visible et cliquable
     if (!ui || !ui->visible || !ui->hittable)
