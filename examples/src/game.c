@@ -337,6 +337,23 @@ void rc2d_draw(void)
             /* src = NULL -> texture entière ; dst = plein cadre logique */
             SDL_RenderTexture(rc2d_engine_state.renderer, g_background_login_texture, NULL, &dst);
         }
+
+         // minimap en bas-droite, marge 20 px logiques
+        if (g_ocean_minimap_texture) {
+            RC2D_Image img = { .sdl_texture = g_ocean_minimap_texture };
+            rc2d_ui_drawImageAnchoredPixels(
+                img,
+                RC2D_UI_ANCHOR_BOTTOM_RIGHT,
+                20.0f,  // margin_x_pixels (depuis la droite)
+                20.0f   // margin_y_pixels (depuis le bas)
+            );
+            rc2d_ui_drawImageAnchoredPercentage(
+                img,
+                RC2D_UI_ANCHOR_BOTTOM_RIGHT,
+                0.20f,  // 20% de la largeur de la zone sûre depuis la droite
+                0.20f   // 20% de la hauteur de la zone sûre depuis le bas
+            );
+        }
     }
 }
 

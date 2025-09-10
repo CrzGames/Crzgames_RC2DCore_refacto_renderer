@@ -30,6 +30,7 @@
 // #include <RC2D/RC2D_rres.h>
 #include <RC2D/RC2D_scancode.h>
 // #include <RC2D/RC2D_spine.h>
+#include <RC2D/RC2D_storage.h>
 #include <RC2D/RC2D_system.h>
 #include <RC2D/RC2D_text.h>
 #include <RC2D/RC2D_thread.h>
@@ -37,6 +38,7 @@
 #include <RC2D/RC2D_timer.h>
 #include <RC2D/RC2D_touch.h>
 #include <RC2D/RC2D_tweening.h>
+#include <RC2D/RC2D_ui.h>
 #include <RC2D/RC2D_version.h>
 #include <RC2D/RC2D_video.h>
 #include <RC2D/RC2D_window.h>
