@@ -15,12 +15,11 @@
 /* ========================================================================= */
 
 static SDL_Texture*        g_ocean_tile_texture   = NULL;
-static SDL_Texture*        g_ocean_navire_texture = NULL;
 static SDL_GPURenderState* g_ocean_render_state   = NULL;
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPUSampler*     g_ocean_sampler        = NULL;
-static SDL_Texture*        g_background_login_texture = NULL;
 static RC2D_Image          minimap_image = {0};
+static RC2D_Image          background_login_image = {0};
 
 /* ========================================================================= */
 /*                            SPLASH SYSTEME                                 */
@@ -75,10 +74,8 @@ void rc2d_unload(void)
     rc2d_video_close(&g_splash_game);
 
     rc2d_graphics_freeImage(minimap_image);
-    if (g_background_login_texture) {
-        SDL_DestroyTexture(g_background_login_texture);
-        g_background_login_texture = NULL;
-    }   
+    rc2d_graphics_freeImage(background_login_image);
+
     if (g_ocean_render_state) {
         SDL_DestroyGPURenderState(g_ocean_render_state);
         g_ocean_render_state = NULL;
@@ -90,10 +87,6 @@ void rc2d_unload(void)
     if (g_ocean_tile_texture) {
         SDL_DestroyTexture(g_ocean_tile_texture);
         g_ocean_tile_texture = NULL;
-    }
-    if (g_ocean_navire_texture) {
-        SDL_DestroyTexture(g_ocean_navire_texture);
-        g_ocean_navire_texture = NULL;
     }
     if (g_ocean_sampler) {
         SDL_ReleaseGPUSampler(rc2d_engine_state.gpu_device, g_ocean_sampler);
@@ -118,7 +111,7 @@ void rc2d_load(void)
     char full_path[512];
 
     /* 1) Ouvrir la vidéo du Studio */
-    SDL_snprintf(full_path, sizeof(full_path), "%sSplashScreen_Studio_1080p.mp4", base_path);
+    SDL_snprintf(full_path, sizeof(full_path), "%sassets/videos/SplashScreen_Studio_1080p.mp4", base_path);
     if (rc2d_video_open(&g_splash_studio, full_path) != 0) {
         RC2D_log(RC2D_LOG_WARN, "Studio splash failed to open, skipping directly to game splash.");
         /* Tente d'ouvrir la 2e directement */
@@ -144,23 +137,11 @@ void rc2d_load(void)
         return;
     }
 
-    SDL_snprintf(full_path, sizeof(full_path), "%snavire.png", base_path);
-    g_ocean_navire_texture = IMG_LoadTexture(rc2d_engine_state.renderer, full_path);
-    if (!g_ocean_navire_texture) {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load navire.png: %s", SDL_GetError());
-        SDL_DestroyTexture(g_ocean_tile_texture);
-        g_ocean_tile_texture = NULL;
-        return;
-    }
-
     // minimap
     minimap_image = rc2d_graphics_newImageFromStorage("assets/images/minimap.png", RC2D_STORAGE_TITLE);
 
-    SDL_snprintf(full_path, sizeof(full_path), "%sbackground-login.png", base_path);
-    g_background_login_texture = IMG_LoadTexture(rc2d_engine_state.renderer, full_path);
-    if (!g_background_login_texture) {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load background-login.png: %s", SDL_GetError());
-    }
+    // background login
+    background_login_image = rc2d_graphics_newImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
 
     // Shader GPU
     SDL_GPUSamplerCreateInfo sampler_info = {
@@ -177,8 +158,6 @@ void rc2d_load(void)
         RC2D_log(RC2D_LOG_ERROR, "Failed to create sampler: %s", SDL_GetError());
         SDL_DestroyTexture(g_ocean_tile_texture);
         g_ocean_tile_texture = NULL;
-        SDL_DestroyTexture(g_ocean_navire_texture);
-        g_ocean_navire_texture = NULL;
         return;
     }
 
@@ -187,8 +166,6 @@ void rc2d_load(void)
         RC2D_log(RC2D_LOG_ERROR, "Failed to load water.fragment shader: %s", SDL_GetError());
         SDL_DestroyTexture(g_ocean_tile_texture);
         g_ocean_tile_texture = NULL;
-        SDL_DestroyTexture(g_ocean_navire_texture);
-        g_ocean_navire_texture = NULL;
         SDL_ReleaseGPUSampler(rc2d_engine_state.gpu_device, g_ocean_sampler);
         g_ocean_sampler = NULL;
         return;
@@ -214,8 +191,6 @@ void rc2d_load(void)
         RC2D_log(RC2D_LOG_ERROR, "SDL_CreateGPURenderState failed: %s", SDL_GetError());
         SDL_DestroyTexture(g_ocean_tile_texture);
         g_ocean_tile_texture = NULL;
-        SDL_DestroyTexture(g_ocean_navire_texture);
-        g_ocean_navire_texture = NULL;
         SDL_ReleaseGPUSampler(rc2d_engine_state.gpu_device, g_ocean_sampler);
         g_ocean_sampler = NULL;
         SDL_ReleaseGPUShader(rc2d_engine_state.gpu_device, (SDL_GPUShader*)g_ocean_fragment_shader);
@@ -319,14 +294,14 @@ void rc2d_draw(void)
     else 
     {
         /* --- Rendu jeu : fond de login plein écran logique --- */
-        if (g_background_login_texture) 
+        if (background_login_image.sdl_texture) 
         {
             int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode;
             SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &lw, &lh, &mode);
 
             SDL_FRect dst = { 0.0f, 0.0f, (float)lw, (float)lh };
             /* src = NULL -> texture entière ; dst = plein cadre logique */
-            SDL_RenderTexture(rc2d_engine_state.renderer, g_background_login_texture, NULL, &dst);
+            SDL_RenderTexture(rc2d_engine_state.renderer, background_login_image.sdl_texture, NULL, &dst);
         }
 
         // minimap en bas-droite, marge 20 px logiques
