@@ -1112,7 +1112,7 @@ typedef struct RC2D_EngineConfig {
     RC2D_LogicalPresentationMode logicalPresentationMode;
 
     /**
-     * Informations sur l'application (nom, version, identifier).
+     * Informations sur l'application (nom, organisation, version, identifiant).
      * 
      * Par défaut :
      * - name : "RC2D Game"
