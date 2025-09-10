@@ -126,9 +126,6 @@ typedef struct RC2D_EngineState {
     double delta_time;
     bool game_is_running;
     Uint64 last_frame_time;
-
-    // RC2D : Echelle de rendu
-    float render_scale;
 } RC2D_EngineState;
 
 /**

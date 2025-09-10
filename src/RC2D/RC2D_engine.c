@@ -74,9 +74,6 @@ static void rc2d_engine_stateInit(void) {
     rc2d_engine_state.delta_time = 0.0;
     rc2d_engine_state.game_is_running = true;
     rc2d_engine_state.last_frame_time = 0;
-
-    // Paramètres de rendu
-    rc2d_engine_state.render_scale = 1.0f;
 }
 
 RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void)
