@@ -24,14 +24,14 @@ option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable hot reload shaders with SDL3_s
 # Option pour activer le module RC2D_video (basé sur FFmpeg)
 option(RC2D_VIDEO_MODULE_ENABLED "Enable RC2D_video (FFmpeg-based)" ON)
 
-# Option pour activer le module RC2D_data
-option(RC2D_DATA_MODULE_ENABLED "Enable RC2D_data module" ON)
+# Option pour activer le module RC2D_data (basé sur OpenSSL)
+option(RC2D_DATA_MODULE_ENABLED "Enable RC2D_data (OpenSSL-based)" ON)
 
 # Option pour activer le module RC2D_net (via RCEnet, fork de ENet)
-option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net module" ON)
+option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net (ENet-based)" ON)
 
 # Option pour activer le module RC2D_onnx (via ONNX Runtime)
-option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx module" ON)
+option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" ON)
 
 # Option pour le niveau d'assertion
 option(RC2D_ASSERT_LEVEL "Niveau des assertions (0=none, 1=release, 2=debug, 3=paranoid)" 3)
@@ -142,6 +142,21 @@ set(SDLMIXER_WAVPACK OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_WAVPACK_DSD OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_WAVPACK_SHARED OFF CACHE BOOL "" FORCE)
 
+if(APPLE)
+  if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+    # iOS : Forcer la compilation statique de SDL3_mixer (.dylib non autorisé par Apple pour l'App Store)
+    set(SDLMIXER_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  endif()
+endif()
+
+# SDL3_ttf :
+if(APPLE)
+  if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+    # iOS : Forcer la compilation statique de SDL3_ttf (.dylib non autorisé par Apple pour l'App Store)
+    set(SDLTTF_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  endif()
+endif()
+
 # SDL3_image : Désactiver explicitement tous les formats d'image qui sont activé par défault.
 # Il restera ces formats activé par défault : STB, PNG et SVG
 set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
@@ -158,11 +173,26 @@ set(SDLIMAGE_WEBP OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XCF OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XPM OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
+if (APPLE)
+  if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+    # iOS : Forcer la compilation statique de SDL3_image (.dylib non autorisé par Apple pour l'App Store)
+    set(SDLIMAGE_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  endif()
+endif()
 
 # SDL3 :
 # Il peut vous donner accès à beaucoup plus de contrôleurs de jeu,
 # Mais il nécessite l'autorisation de l'utilisateur avant que votre application puisse communiquer avec le matériel Bluetooth
 set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "" FORCE)
+if (APPLE)
+  if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+    # iOS : Forcer la compilation statique de SDL3 (.dylib non autorisé par Apple pour l'App Store)
+    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+    set(SDL_STATIC  ON  CACHE BOOL "" FORCE)
+    set(SDL3_DIR "${CMAKE_BINARY_DIR}/dependencies/SDL" CACHE PATH "" FORCE)
+    list(PREPEND CMAKE_PREFIX_PATH "${SDL3_DIR}")
+  endif()
+endif()
 
 # SDL3, SDL3_ttf, SDL3_image, SDL3_mixer : 
 # Permet de dire à CMake de ne pas chercher les dépendances dans le système,
@@ -390,32 +420,48 @@ function(rc2d_configure_onnxruntime target_name)
         onnxruntime
       )
     elseif (APPLE)
-      # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/onnxruntime")
+      if(CMAKE_OSX_SYSROOT MATCHES "macosx")
+        # Link le dossier include de ONNX Runtime à la target
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/onnxruntime")
 
-      # Ajouter explicitement la lib .dylib à linker
-      target_link_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/macos/lib/onnxruntime"
-      )
-
-      # Link la librairies ONNX Runtime
-      target_link_libraries(${target_name} PUBLIC
-        onnxruntime
-        "-framework CoreML"
-      )
-
-      # Copier aussi les libraries dynamique dans le répertoire de l'exécutable
-      file(GLOB_RECURSE ONNX_DYLIBS
-        "${CRZGAMES_LIBRARIES}/macos/lib/onnxruntime/*.dylib"
-      )
-      foreach(FILE IN LISTS ONNX_DYLIBS)
-        get_filename_component(FILE_NAME "${FILE}" NAME)
-        add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                  "${FILE}"
-                  "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+        # Ajouter explicitement la lib .dylib à linker
+        target_link_directories(${target_name} PUBLIC
+          "${CRZGAMES_LIBRARIES}/macos/lib/onnxruntime"
         )
-      endforeach()
+
+        # Link la librairies ONNX Runtime
+        target_link_libraries(${target_name} PUBLIC
+          onnxruntime
+          "-framework CoreML"
+        )
+
+        # Copier aussi les libraries dynamique dans le répertoire de l'exécutable
+        file(GLOB_RECURSE ONNX_DYLIBS
+          "${CRZGAMES_LIBRARIES}/macos/lib/onnxruntime/*.dylib"
+        )
+        foreach(FILE IN LISTS ONNX_DYLIBS)
+          get_filename_component(FILE_NAME "${FILE}" NAME)
+          add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${FILE}"
+                    "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+          )
+        endforeach()
+      elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+        # Link le dossier include de ONNX Runtime à la target
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/onnxruntime")
+
+        # Ajouter explicitement la lib .a à linker
+        target_link_directories(${target_name} PUBLIC
+          "${CRZGAMES_LIBRARIES}/ios/lib/onnxruntime/arm64-iphoneos"
+        )
+
+        # Link la librairies ONNX Runtime
+        target_link_libraries(${target_name} PUBLIC
+          onnxruntime
+          "-framework CoreML"
+        )
+      endif()
     elseif (RC2D_PLATFORM STREQUAL "SLR3-SNIPER") # Steam Deck / Steam Linux
       # Link le dossier include de ONNX Runtime à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/include/onnxruntime")
@@ -518,7 +564,7 @@ function(rc2d_configure_shadercross target_name)
     )
 
     # Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est activé, on link la lib shadercross
-    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT ANDROID)
+    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT CMAKE_OSX_SYSROOT MATCHES "iphoneos")
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/macos/include"
@@ -753,17 +799,31 @@ endfunction()
 function(rc2d_configure_openssl target_name)
   if(RC2D_DATA_MODULE_ENABLED)
     if(APPLE)
-      # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include")
+      if(CMAKE_OSX_SYSROOT MATCHES "macosx")
+        # Link le dossier include de OpenSSL à la target
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include")
 
-      # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/lib/OpenSSL")
+        # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/lib/OpenSSL")
 
-      # Link les librairies OpenSSL
-      target_link_libraries(${target_name} PUBLIC
-        ssl    # OpenSSL
-        crypto # OpenSSL
-      )
+        # Link les librairies OpenSSL
+        target_link_libraries(${target_name} PUBLIC
+          ssl    # OpenSSL
+          crypto # OpenSSL
+        )
+      elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+        # Link le dossier include de OpenSSL à la target
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include")
+
+        # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/lib/OpenSSL/arm64-iphoneos")
+
+        # Link les librairies OpenSSL
+        target_link_libraries(${target_name} PUBLIC
+          ssl    # OpenSSL
+          crypto # OpenSSL
+        )
+      endif()
     elseif (ANDROID)
       # Link le dossier include de OpenSSL à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include")
@@ -815,6 +875,27 @@ function(rc2d_configure_openssl target_name)
         crypto # OpenSSL
       )
     endif()
+  endif()
+endfunction()
+
+function(rc2d_link_ios_frameworks target_name)
+  if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+    target_link_libraries(${target_name} PUBLIC
+      "-framework Foundation"
+      "-framework UIKit"
+      "-framework Metal"
+      "-framework MetalKit"
+      "-framework AVFoundation"
+      "-framework CoreAudio"
+      "-framework AudioToolbox"
+      "-framework CoreHaptics"
+      "-framework CoreMotion"
+      "-framework CoreML"
+      "-framework Accelerate"
+      "-framework CoreGraphics"
+      "-framework ImageIO" # Dependencies for SDL3_image
+      "-framework MobileCoreServices" # Dependencies for SDL3_image
+    )
   endif()
 endfunction()
 
@@ -931,6 +1012,9 @@ rc2d_force_link_linux(${PROJECT_NAME})
 # Linker la dépendance RCEnet si le module RC2D_net est activé
 rc2d_configure_rcenet(${PROJECT_NAME})
 
+# Linker les frameworks iOS si on compile pour iOS
+rc2d_link_ios_frameworks(${PROJECT_NAME})
+
 # Pour l'exemple RC2D
 if(RC2D_BUILD_EXAMPLES)
   # Pour Android, on doit obligatoirement mettre "main" comme nom de target, quand c'est un exécutable
@@ -1002,6 +1086,9 @@ if(RC2D_BUILD_EXAMPLES)
 
   # Linker la dépendance RCEnet si le module RC2D_net est activé
   rc2d_configure_rcenet(${RC2D_EXAMPLE_TARGET_NAME})
+
+  # Linker les frameworks iOS si on compile pour iOS
+  rc2d_link_ios_frameworks(${RC2D_EXAMPLE_TARGET_NAME})
 
   # Link les dépendances communes à toutes les plateformes + on link la lib RC2D pour finir
   target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PUBLIC
