@@ -2,7 +2,7 @@
 
 echo -e "\e[32m\nGenerating Xcode project for macOS Apple Silicon arm64...\e[0m"
 
-cmake -S . -B build/macos/arm64 -G Xcode
+cmake -S . -B build/macos/arm64 -G Xcode -DCMAKE_OSX_SYSROOT=macosx
 
 for build_type in Debug Release; do
   echo -e "\e[32m\nBuilding $build_type...\e[0m"

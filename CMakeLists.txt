@@ -211,7 +211,24 @@ function(rc2d_configure_ffmpeg target_name)
       endforeach()
       
     elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx")
+      # Link le dossier include de FFmpeg à la target
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/ffmpeg")
 
+      # Ajouter explicitement la lib .dylib à linker
+      target_link_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES}/macos/lib/ffmpeg"
+      )
+
+      # Link la librairies FFmpeg
+      target_link_libraries(${target_name} PUBLIC
+        avcodec
+        avdevice
+        avfilter
+        avformat
+        avutil
+        swresample
+        swscale
+      )
     elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
 
     elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Steam Deck, Raspberry PI 5 etc.
