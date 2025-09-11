@@ -18,4 +18,4 @@ build
 
 docker-build-output
 
-examples/shaders/tools/
+/examples/shaders/tools/
