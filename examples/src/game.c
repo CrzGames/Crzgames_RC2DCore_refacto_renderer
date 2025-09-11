@@ -157,39 +157,39 @@ void rc2d_load(void)
     g_logo_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
     g_logo_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
     g_logo_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
-    g_logo_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
-    g_logo_ui.margin_x    = 0.f;
-    g_logo_ui.margin_y    = 20.f; // marge depuis le haut
+    g_logo_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
+    g_logo_ui.margin_x    = 0.0f;
+    g_logo_ui.margin_y    = 0.01f; // marge depuis le haut
     g_logo_ui.visible     = true;
     g_logo_ui.hittable    = false;
 
     // --- Input Email ---
     g_input_email_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-email-login.png", RC2D_STORAGE_TITLE);
     g_input_email_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-email-login.png", RC2D_STORAGE_TITLE);
-    g_input_email_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
-    g_input_email_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
-    g_input_email_ui.margin_x    = 0.f;
-    g_input_email_ui.margin_y    = 70.f; // placé au-dessus du centre
+    g_input_email_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
+    g_input_email_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
+    g_input_email_ui.margin_x    = 0.0f;
+    g_input_email_ui.margin_y    = 0.02f; // placé au-dessus du centre
     g_input_email_ui.visible     = true;
     g_input_email_ui.hittable    = true;
 
     // --- Input password ---
     g_input_pass_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-password-login.png", RC2D_STORAGE_TITLE);
     g_input_pass_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-password-login.png", RC2D_STORAGE_TITLE);
-    g_input_pass_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
-    g_input_pass_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
+    g_input_pass_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
+    g_input_pass_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_input_pass_ui.margin_x    = 0.f;
-    g_input_pass_ui.margin_y    = 80.f; // juste en dessous du champ email
+    g_input_pass_ui.margin_y    = 0.03f; // juste en dessous du champ email
     g_input_pass_ui.visible     = true;
     g_input_pass_ui.hittable    = true;
 
     // --- Bouton login (clé) ---
     g_button_login_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
     g_button_login_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
-    g_button_login_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
-    g_button_login_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
+    g_button_login_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
+    g_button_login_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_button_login_ui.margin_x    = 0.f;
-    g_button_login_ui.margin_y    = 60.f; // encore en dessous
+    g_button_login_ui.margin_y    = 0.03f; // encore en dessous
     g_button_login_ui.visible     = true;
     g_button_login_ui.hittable    = true;
 
