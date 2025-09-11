@@ -1717,16 +1717,22 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
             rc2d_engine_state.config->callbacks->rc2d_sensorupdate != NULL) 
         {
             RC2D_SensorEventInfo info = {
-                .sensorID = event->sensor.which,
-                .type = SDL_GetSensorType(event->sensor.which),
-                .name = SDL_GetSensorNameForID(event->sensor.which),
+                .sensorID  = event->sensor.which,
+                .type      = SDL_SENSOR_INVALID,
+                .name      = NULL,
                 .timestamp = event->sensor.sensor_timestamp
             };
-            // Copy sensor data (up to 6 values)
-            for (int i = 0; i < 6; i++) 
-            {
+
+            SDL_Sensor *sensor = SDL_GetSensorFromID(event->sensor.which);
+            if (sensor) {
+                info.type = SDL_GetSensorType(sensor);
+                info.name = SDL_GetSensorName(sensor);
+            }
+
+            for (int i = 0; i < 6; i++) {
                 info.data[i] = event->sensor.data[i];
             }
+
             rc2d_engine_state.config->callbacks->rc2d_sensorupdate(&info);
         }
     }
