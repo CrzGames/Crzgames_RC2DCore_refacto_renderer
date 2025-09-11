@@ -352,7 +352,7 @@ int rc2d_video_open(RC2D_Video* video, const char* filename)
     if (video->audio_stream_index != -1) {
         /* Allouer buffer initial pour PCM (estimation grossière, SDL_realloc si besoin) */
         video->audio_buffer_size = 1024 * 1024; // 1MB initial
-        video->audio_buffer = (uint8_t*)SDL_malloc(video->audio_buffer_size);
+        video->audio_buffer = (uint8_t*)RC2D_malloc(video->audio_buffer_size);
         if (!video->audio_buffer) {
             RC2D_log(RC2D_LOG_ERROR, "Impossible d'allouer buffer audio initial");
             rc2d_video_close(video);
@@ -393,9 +393,9 @@ int rc2d_video_open(RC2D_Video* video, const char* filename)
                     /* Realloc si besoin */
                     if (video->audio_buffer_used + needed > video->audio_buffer_size) {
                         video->audio_buffer_size *= 2;
-                        uint8_t* new_buffer = (uint8_t*)SDL_realloc(video->audio_buffer, video->audio_buffer_size);
+                        uint8_t* new_buffer = (uint8_t*)RC2D_realloc(video->audio_buffer, video->audio_buffer_size);
                         if (!new_buffer) {
-                            RC2D_log(RC2D_LOG_ERROR, "Impossible de SDL_realloc buffer audio");
+                            RC2D_log(RC2D_LOG_ERROR, "Impossible de RC2D_realloc buffer audio");
                             RC2D_free(video->audio_buffer);
                             video->audio_buffer = NULL;
                             av_packet_unref(packet);

@@ -109,6 +109,8 @@ void rc2d_unload(void)
     rc2d_graphics_freeImage(&g_button_login_ui.image);
     rc2d_graphics_freeImageData(&g_button_login_ui.imageData);
 
+    rc2d_graphics_closeFont(&g_ui_font);
+
     // Audio
     if (g_menu_track) 
     {
