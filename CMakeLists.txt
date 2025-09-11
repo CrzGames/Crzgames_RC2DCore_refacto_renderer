@@ -229,7 +229,51 @@ function(rc2d_configure_ffmpeg target_name)
         swresample
         swscale
       )
+
+      # Frameworks macOS requis par FFmpeg et d'autres dépendances
+      target_link_libraries(${target_name} PUBLIC
+          "-framework Security"
+          "-framework CoreFoundation"
+          "-framework VideoToolbox"
+          "-framework CoreMedia"
+          "-framework CoreVideo"     
+          "-framework AudioToolbox"  # for AudioConverter*/AudioFormat*
+          bz2                        # for BZ2_*
+          z                          # for zlib (deflate/inflate/compress)
+          iconv                      # for iconv_*
+      )
     elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+      # Link le dossier include de FFmpeg à la target
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/ffmpeg")
+
+      # Ajouter explicitement la lib .a à linker
+      target_link_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES}/ios/lib/ffmpeg/arm64-iphoneos"
+      )
+
+      # Link la librairies FFmpeg
+      target_link_libraries(${target_name} PUBLIC
+        avcodec
+        avdevice
+        avfilter
+        avformat
+        avutil
+        swresample
+        swscale
+      )
+
+      # Frameworks iOS requis par FFmpeg et d'autres dépendances
+      target_link_libraries(${target_name} PUBLIC
+          "-framework Security"
+          "-framework CoreFoundation"
+          "-framework VideoToolbox"
+          "-framework CoreMedia"
+          "-framework CoreVideo"     
+          "-framework AudioToolbox"  # for AudioConverter*/AudioFormat*
+          bz2                        # for BZ2_*
+          z                          # for zlib (deflate/inflate/compress)
+          iconv                      # for iconv_*
+      )
 
     elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Steam Deck, Raspberry PI 5 etc.
     
@@ -274,7 +318,7 @@ function(rc2d_configure_rcenet target_name)
 
       # Ajouter explicitement la lib .a à linker
       target_link_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/ios/lib/rcenet"
+        "${CRZGAMES_LIBRARIES}/ios/lib/rcenet/arm64-iphoneos"
       )
 
       # Link la librairies RCEnet

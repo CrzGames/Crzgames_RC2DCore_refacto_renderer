@@ -14,6 +14,9 @@ Librairies pour la compression de données
 */
 #include <lz4/lz4.h>      // Required for : Algorithm LZ4
 
+#include <time.h>
+#include <sys/types.h>
+
 /*
 Librairies OpenSSL pour les algorithmes de chiffrement symétrique / asymétrique et de hachage
 */
