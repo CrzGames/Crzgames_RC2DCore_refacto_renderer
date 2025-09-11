@@ -511,12 +511,12 @@ RC2D_Font rc2d_graphics_openFontFromStorage(const char* storage_path, RC2D_Stora
         return font;
     }
 
-    // Libération du buffer mémoire
-    RC2D_safe_free(bytes);
-
     // Initialisation de la structure RC2D_Font
     font.sdl_font = sdl_font;
     font.fontSize = fontSize;
+    font.style      = TTF_STYLE_NORMAL;
+    font.alignment  = TTF_HORIZONTAL_ALIGN_LEFT;
+    font._file_data = bytes;
 
     // Retour de la police créée
     return font;
@@ -555,6 +555,12 @@ void rc2d_graphics_closeFont(RC2D_Font* font)
         TTF_CloseFont(font->sdl_font);
         font->sdl_font = NULL;
     }
+    if (font->_file_data) 
+    {
+        RC2D_safe_free(font->_file_data);
+        font->_file_data = NULL;
+    }
+    font->fontSize  = 0.0f;
 }
 
 /* ------------------------------------------------------------------------- */

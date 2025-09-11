@@ -79,12 +79,14 @@ typedef struct RC2D_Text {
  * @property {float} fontSize - Taille de la police.
  * @property {TTF_FontStyleFlags} style - Style de la police (normal, gras, italique, etc.).
  * @property {TTF_HorizontalAlignment} alignment - Alignement horizontal pour le wrapping du texte.
+ * @property {void*} _file_data - Pointeur vers les données de la police en mémoire (interne).
  */
 typedef struct RC2D_Font {
     TTF_Font* sdl_font;
     float fontSize;
     TTF_FontStyleFlags style;
     TTF_HorizontalAlignment alignment;
+    void* _file_data; // <-- garde le buffer vivant pour rc2d_graphics_closeFont
 } RC2D_Font;
 
 /* ========================================================================= */

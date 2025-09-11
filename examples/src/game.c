@@ -14,6 +14,16 @@ static RC2D_Image          tile_ocean_image = {0};
 static RC2D_Image          background_login_image = {0};
 
 /* ========================================================================= */
+/*                           RESSOURCES TEXTE / FONT                         */
+/* ========================================================================= */
+
+static RC2D_Font g_ui_font = {0};
+static RC2D_Text g_title_text = {0};
+static RC2D_Text g_hint_text  = {0};
+static int g_title_w = 0, g_title_h = 0;
+
+
+/* ========================================================================= */
 /*                              RESSOURCES UI                                */
 /* ========================================================================= */
 
@@ -223,6 +233,75 @@ void rc2d_load(void)
     }
     g_menu_started = false;
 
+    // Ouvrir une police depuis le storage (ex: assets/fonts/Inter-Regular.ttf)
+    g_ui_font = rc2d_graphics_openFontFromStorage("assets/fonts/SIXTY.ttf",
+                                                  RC2D_STORAGE_TITLE,
+                                                  32.0f /* fontSize initial */);
+    if (!g_ui_font.sdl_font) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to open font, text rendering disabled.\n");
+    } 
+    else 
+    {
+        /* Configurer la police via les champs de RC2D_Font (struct-driven) */
+        g_ui_font.style     = TTF_STYLE_BOLD;                 /* ex: bold */
+        g_ui_font.alignment = TTF_HORIZONTAL_ALIGN_LEFT;      /* wrap: gauche */
+
+        /* Appliquer ces réglages à la police SDL_ttf */
+        if (!rc2d_graphics_setFontSize(&g_ui_font)) 
+        {
+            RC2D_log(RC2D_LOG_WARN, "rc2d_graphics_setFontSize failed.\n");
+        }
+        rc2d_graphics_setFontStyle(&g_ui_font);
+        rc2d_graphics_setFontWrapAlignment(&g_ui_font);
+
+        /* 3) Créer des textes persistants */
+        g_title_text = rc2d_graphics_createText(&g_ui_font, "Sea Tyrants");
+        if (!g_title_text.sdl_text) {
+            RC2D_log(RC2D_LOG_ERROR, "createText(title) failed.\n");
+        } else {
+            /* Couleur via le champ color, puis appliquer */
+            g_title_text.color = (RC2D_Color){255, 255, 255, 255};
+            if (!rc2d_graphics_setTextColor(&g_title_text)) {
+                RC2D_log(RC2D_LOG_WARN, "setTextColor(title) failed.\n");
+            }
+            /* Mesure de ce texte persistant */
+            if (!rc2d_graphics_getTextSize(&g_title_text, &g_title_w, &g_title_h)) {
+                RC2D_log(RC2D_LOG_WARN, "getTextSize(title) failed.\n");
+            }
+        }
+
+        g_hint_text = rc2d_graphics_createText(&g_ui_font, "Tap to start — press Enter");
+        if (!g_hint_text.sdl_text) {
+            RC2D_log(RC2D_LOG_ERROR, "createText(hint) failed.\n");
+        } else {
+            g_hint_text.color = (RC2D_Color){255, 220, 120, 255};
+            if (!rc2d_graphics_setTextColor(&g_hint_text)) {
+                RC2D_log(RC2D_LOG_WARN, "setTextColor(hint) failed.\n");
+            }
+            /* Exemple de wrap: largeur max 600px */
+            if (!rc2d_graphics_setTextWrapWidth(&g_hint_text, 600)) {
+                RC2D_log(RC2D_LOG_WARN, "setTextWrapWidth(hint) failed.\n");
+            }
+
+            /* Exemple de MAJ de string “struct-driven” :
+                - on remplace la chaîne en changeant text.string
+                - puis on applique via rc2d_graphics_setTextString(&text) */
+            g_hint_text.string = "Click LOGIN to continue";
+            if (!rc2d_graphics_setTextString(&g_hint_text)) {
+                RC2D_log(RC2D_LOG_WARN, "setTextString(hint) failed.\n");
+            }
+        }
+
+        /* Exemple de mesure ad-hoc d’une chaîne arbitraire via la police (sans TTF_Text) */
+        int w=0, h=0;
+        if (!rc2d_graphics_getStringSize(&g_ui_font, "Measured with font", 18, &w, &h)) {
+            RC2D_log(RC2D_LOG_WARN, "getStringSize(font,\"Measured with font\") failed.\n");
+        } else {
+            RC2D_log(RC2D_LOG_INFO, "Measure sample: %dx%d\n", w, h);
+        }
+    }
+
     // background login
     background_login_image = rc2d_graphics_loadImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
 
@@ -399,6 +478,7 @@ void rc2d_draw(void)
         /* --- Rendu du jeu --- */
         if (background_login_image.sdl_texture) 
         {
+            // BACKGROUND
             int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode;
             SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &lw, &lh, &mode);
 
@@ -406,11 +486,28 @@ void rc2d_draw(void)
             /* src = NULL -> texture entière ; dst = plein cadre logique */
             SDL_RenderTexture(rc2d_engine_state.renderer, background_login_image.sdl_texture, NULL, &dst);
 
+
             // UI
             rc2d_ui_drawImage(&g_logo_ui);
             rc2d_ui_drawImage(&g_input_login_ui);
             rc2d_ui_drawImage(&g_input_pass_ui);
             rc2d_ui_drawImage(&g_button_login_ui);
+
+
+            // TEXT
+            if (g_title_text.sdl_text) {
+                /* Centrer approximativement le titre en haut */
+                float tx = (lw - (float)g_title_w) * 0.5f;
+                float ty = 20.0f;
+                rc2d_graphics_drawText(&g_title_text, tx, ty);
+            }
+            if (g_hint_text.sdl_text) {
+                /* Poser l’aide sous le centre */
+                float hx = 40.0f;
+                float hy = (float)lh * 0.65f;
+                rc2d_graphics_drawText(&g_hint_text, hx, hy);
+            }
+
 
             // --- Dessiner le fade noir au-dessus si alpha > 0 ---
             if (g_login_fade_alpha > 0.0f) 
