@@ -145,7 +145,7 @@ set(SDLMIXER_WAVPACK_SHARED OFF CACHE BOOL "" FORCE)
 if(APPLE)
   if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
     # iOS : Forcer la compilation statique de SDL3_mixer (.dylib non autorisé par Apple pour l'App Store)
-    set(SDLMIXER_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    #set(SDLMIXER_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
   endif()
 endif()
 
@@ -153,7 +153,7 @@ endif()
 if(APPLE)
   if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
     # iOS : Forcer la compilation statique de SDL3_ttf (.dylib non autorisé par Apple pour l'App Store)
-    set(SDLTTF_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    #set(SDLTTF_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
   endif()
 endif()
 
@@ -176,7 +176,7 @@ set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
 if (APPLE)
   if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
     # iOS : Forcer la compilation statique de SDL3_image (.dylib non autorisé par Apple pour l'App Store)
-    set(SDLIMAGE_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    #set(SDLIMAGE_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
   endif()
 endif()
 
@@ -187,10 +187,10 @@ set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "" FORCE)
 if (APPLE)
   if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
     # iOS : Forcer la compilation statique de SDL3 (.dylib non autorisé par Apple pour l'App Store)
-    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-    set(SDL_STATIC  ON  CACHE BOOL "" FORCE)
-    set(SDL3_DIR "${CMAKE_BINARY_DIR}/dependencies/SDL" CACHE PATH "" FORCE)
-    list(PREPEND CMAKE_PREFIX_PATH "${SDL3_DIR}")
+    #set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+    #set(SDL_STATIC  ON  CACHE BOOL "" FORCE)
+    #set(SDL3_DIR "${CMAKE_BINARY_DIR}/dependencies/SDL" CACHE PATH "" FORCE)
+    #list(PREPEND CMAKE_PREFIX_PATH "${SDL3_DIR}")
   endif()
 endif()
 
@@ -308,6 +308,22 @@ function(rc2d_configure_ffmpeg target_name)
     elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Steam Deck, Raspberry PI 5 etc.
     
     elseif (ANDROID)
+      # Link le dossier include de FFmpeg à la target
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/ffmpeg")
+
+      # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/ffmpeg/${ANDROID_ABI}")
+
+      # Link les librairies FFmpeg
+      target_link_libraries(${target_name} PUBLIC
+        avcodec
+        avdevice
+        avfilter
+        avformat
+        avutil
+        swresample
+        swscale
+      )
     endif()
   endif()
 endfunction()
@@ -618,7 +634,7 @@ function(rc2d_configure_shadercross target_name)
     endforeach()
 
     # Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est activé, on link la lib shadercross
-    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT ANDROID)
+    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/windows/include"
@@ -829,7 +845,7 @@ function(rc2d_configure_openssl target_name)
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/OpenSSL/${ANDROID_ABI}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/openssl/${ANDROID_ABI}")
 
       # Link les librairies OpenSSL
       target_link_libraries(${target_name} PUBLIC
@@ -880,21 +896,13 @@ endfunction()
 
 function(rc2d_link_ios_frameworks target_name)
   if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-    target_link_libraries(${target_name} PUBLIC
-      "-framework Foundation"
-      "-framework UIKit"
-      "-framework Metal"
-      "-framework MetalKit"
-      "-framework AVFoundation"
-      "-framework CoreAudio"
-      "-framework AudioToolbox"
-      "-framework CoreHaptics"
-      "-framework CoreMotion"
-      "-framework CoreML"
-      "-framework Accelerate"
-      "-framework CoreGraphics"
-      "-framework ImageIO" # Dependencies for SDL3_image
-      "-framework MobileCoreServices" # Dependencies for SDL3_image
+    target_link_libraries(${target_name} PRIVATE
+      "-framework" "CoreFoundation"
+      "-framework" "CoreText"
+      "-framework" "ImageIO"
+      "-framework" "CoreServices"
+      "-framework" "CoreGraphics"
+      "-framework" "MobileCoreServices"
     )
   endif()
 endfunction()
@@ -1041,8 +1049,7 @@ if(RC2D_BUILD_EXAMPLES)
 
   # Créer un exécutable pour l'exemple
   if(ANDROID)
-    # Pour Android, il faut obligatoirement mettre SHARED et "main" comme nom de target, quand
-    # c'est un exécutable
+    # Pour Android, il faut obligatoirement mettre SHARED et "main" comme nom de target, quand c'est un exécutable
     add_library(${RC2D_EXAMPLE_TARGET_NAME} SHARED ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS})
   else()
     add_executable(${RC2D_EXAMPLE_TARGET_NAME} ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS})
