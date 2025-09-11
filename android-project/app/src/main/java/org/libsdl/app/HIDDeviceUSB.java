@@ -30,7 +30,7 @@ class HIDDeviceUSB implements HIDDevice {
         mRunning = false;
     }
 
-    public String getIdentifier() {
+    String getIdentifier() {
         return String.format("%s/%x/%x/%d", mDevice.getDeviceName(), mDevice.getVendorId(), mDevice.getProductId(), mInterfaceIndex);
     }
 
@@ -52,13 +52,11 @@ class HIDDeviceUSB implements HIDDevice {
     @Override
     public String getSerialNumber() {
         String result = null;
-        if (Build.VERSION.SDK_INT >= 21 /* Android 5.0 (LOLLIPOP) */) {
-            try {
-                result = mDevice.getSerialNumber();
-            }
-            catch (SecurityException exception) {
-                //Log.w(TAG, "App permissions mean we cannot get serial number for device " + getDeviceName() + " message: " + exception.getMessage());
-            }
+        try {
+            result = mDevice.getSerialNumber();
+        }
+        catch (SecurityException exception) {
+            //Log.w(TAG, "App permissions mean we cannot get serial number for device " + getDeviceName() + " message: " + exception.getMessage());
         }
         if (result == null) {
             result = "";
@@ -73,10 +71,8 @@ class HIDDeviceUSB implements HIDDevice {
 
     @Override
     public String getManufacturerName() {
-        String result = null;
-        if (Build.VERSION.SDK_INT >= 21 /* Android 5.0 (LOLLIPOP) */) {
-            result = mDevice.getManufacturerName();
-        }
+        String result;
+        result = mDevice.getManufacturerName();
         if (result == null) {
             result = String.format("%x", getVendorId());
         }
@@ -85,10 +81,8 @@ class HIDDeviceUSB implements HIDDevice {
 
     @Override
     public String getProductName() {
-        String result = null;
-        if (Build.VERSION.SDK_INT >= 21 /* Android 5.0 (LOLLIPOP) */) {
-            result = mDevice.getProductName();
-        }
+        String result;
+        result = mDevice.getProductName();
         if (result == null) {
             result = String.format("%x", getProductId());
         }
@@ -100,7 +94,7 @@ class HIDDeviceUSB implements HIDDevice {
         return mDevice;
     }
 
-    public String getDeviceName() {
+    String getDeviceName() {
         return getManufacturerName() + " " + getProductName() + "(0x" + String.format("%x", getVendorId()) + "/0x" + String.format("%x", getProductId()) + ")";
     }
 

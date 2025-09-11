@@ -5,7 +5,7 @@ plugins {
 def buildWithCMake = project.hasProperty('BUILD_WITH_CMAKE');
 
 android {
-    namespace = "com.crzgames.myapp"
+    namespace = "com.crzgames.testexe"
     compileSdkVersion 36
     defaultConfig {
         minSdkVersion 28
@@ -31,7 +31,7 @@ android {
     }
     if (!project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
         sourceSets.main {
-            jniLibs.srcDir 'libs'
+            jniLibs.srcDirs = ['src/main/jniLibs'] // Path to your prebuilt .so files
         }
 
         externalNativeBuild {
