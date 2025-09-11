@@ -8,6 +8,7 @@ android {
     namespace = "com.crzgames.testexe"
     compileSdkVersion 36
     defaultConfig {
+        applicationId "com.crzgames.testexe"
         minSdkVersion 28
         targetSdkVersion 36
         versionCode 1
