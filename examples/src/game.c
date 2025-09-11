@@ -180,23 +180,23 @@ void rc2d_load(void)
     g_logo_ui.visible     = true;
     g_logo_ui.hittable    = false;
 
-    // --- Input login ---
-    g_input_login_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
-    g_input_login_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
-    g_input_login_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
-    g_input_login_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
-    g_input_login_ui.margin_x    = 0.f;
-    g_input_login_ui.margin_y    = -40.f; // placé au-dessus du centre
+    // --- Input Email ---
+    g_input_email_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-email-login.png", RC2D_STORAGE_TITLE);
+    g_input_email_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-email-login.png", RC2D_STORAGE_TITLE);
+    g_input_email_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
+    g_input_email_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
+    g_input_email_ui.margin_x    = 0.f;
+    g_input_email_ui.margin_y    = -40.f; // placé au-dessus du centre
     g_input_login_ui.visible     = true;
     g_input_login_ui.hittable    = true;
 
     // --- Input password ---
-    g_input_pass_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
-    g_input_pass_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
+    g_input_pass_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-password-login.png", RC2D_STORAGE_TITLE);
+    g_input_pass_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-password-login.png", RC2D_STORAGE_TITLE);
     g_input_pass_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
     g_input_pass_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
     g_input_pass_ui.margin_x    = 0.f;
-    g_input_pass_ui.margin_y    = +50.f; // juste en dessous du champ login
+    g_input_pass_ui.margin_y    = +50.f; // juste en dessous du champ email
     g_input_pass_ui.visible     = true;
     g_input_pass_ui.hittable    = true;
 
@@ -243,7 +243,7 @@ void rc2d_load(void)
     {
         RC2D_log(RC2D_LOG_ERROR, "Failed to open font, text rendering disabled.\n");
     } 
-    else 
+    else
     {
         /* Configurer la police via les champs de RC2D_Font (struct-driven) */
         g_ui_font.style     = TTF_STYLE_BOLD;                 /* ex: bold */
