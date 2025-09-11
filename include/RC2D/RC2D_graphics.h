@@ -60,28 +60,36 @@ typedef struct RC2D_ImageData {
 } RC2D_ImageData;
 
 /**
+ * Structure représentant un texte rendu.
+ * @typedef {object} RC2D_Text
+ * @property {TTF_Text} sdl_text - Pointeur vers le texte rendu SDL.
+ * @property {const char*} string - Chaîne de caractères du texte.
+ * @property {RC2D_Color} color - Couleur du texte.
+ */
+typedef struct RC2D_Text {
+    TTF_Text* sdl_text;
+    const char* string;
+    RC2D_Color color;
+} RC2D_Text;
+
+/**
  * Structure représentant une police de caractères.
  * @typedef {object} RC2D_Font
  * @property {TTF_Font} sdl_font - Pointeur vers la police de caractères SDL.
- * @property {number} size - Taille de la police.
+ * @property {float} fontSize - Taille de la police.
+ * @property {TTF_FontStyleFlags} style - Style de la police (normal, gras, italique, etc.).
+ * @property {TTF_HorizontalAlignment} alignment - Alignement horizontal pour le wrapping du texte.
  */
 typedef struct RC2D_Font {
     TTF_Font* sdl_font;
-    int size;
+    float fontSize;
+    TTF_FontStyleFlags style;
+    TTF_HorizontalAlignment alignment;
 } RC2D_Font;
 
-/**
- * Structure représentant un texte rendu.
- * @typedef {object} RC2D_Text
- * @property {number} width - Largeur du texte.
- * @property {number} height - Hauteur du texte.
- * @property {SDL_Texture} sdl_texture - Pointeur vers la texture SDL du texte.
- */
-typedef struct RC2D_Text {
-    int width;
-    int height;
-    SDL_Texture* sdl_texture;
-} RC2D_Text;
+/* ========================================================================= */
+/*                               GRAPHICS CLASSIC                            */
+/* ========================================================================= */
 
 /**
  * Efface l'écran ou la cible de rendu actuelle avec la couleur de fond.
@@ -168,7 +176,7 @@ bool rc2d_graphics_points(const int numPoints, const SDL_FPoint *points);
  * @param storage_kind - Type de stockage (RC2D_STORAGE_TITLE ou RC2D_STORAGE_USER).
  * @return RC2D_ImageData - Structure contenant les données de l'image.
  */
-RC2D_ImageData rc2d_graphics_newImageDataFromStorage(const char* storage_path, RC2D_StorageKind storage_kind);
+RC2D_ImageData rc2d_graphics_loadImageDataFromStorage(const char* storage_path, RC2D_StorageKind storage_kind);
 
 /**
  * Crée une image à partir d'un fichier dans le stockage spécifié.
@@ -176,7 +184,7 @@ RC2D_ImageData rc2d_graphics_newImageDataFromStorage(const char* storage_path, R
  * @param storage_kind - Type de stockage (RC2D_STORAGE_TITLE ou RC2D_STORAGE_USER).
  * @return RC2D_Image - Structure contenant la texture de l'image.
  */
-RC2D_Image rc2d_graphics_newImageFromStorage(const char* storage_path, RC2D_StorageKind storage_kind);
+RC2D_Image rc2d_graphics_loadImageFromStorage(const char* storage_path, RC2D_StorageKind storage_kind);
 
 /**
  * Libère les données d'une image.
@@ -189,30 +197,6 @@ void rc2d_graphics_freeImageData(RC2D_ImageData* imageData);
  * @param image - Image à libérer.
  */
 void rc2d_graphics_freeImage(RC2D_Image* image);
-
-/**
- * Crée un texte rendu à partir d'une police et d'une chaîne de caractères.
- * @param font - Police de caractères à utiliser.
- * @param textString - Chaîne de caractères à rendre.
- * @param coloredText - Couleur du texte.
- * @return RC2D_Text - Structure contenant la texture du texte.
- */
-RC2D_Text rc2d_graphics_newText(RC2D_Font font, const char* textString, RC2D_Color coloredText);
-
-/**
- * Définit le style de la police de caractères.
- * @param font - Police de caractères à modifier.
- * @param style - Style de la police (par ex. TTF_STYLE_NORMAL).
- */
-void rc2d_graphic_setFont(TTF_Font* font, TTF_FontStyleFlags style);
-
-/**
- * Définit la taille de la police de caractères.
- * @param font - Police de caractères à modifier.
- * @param fontSize - Nouvelle taille de la police.
- * @return bool - Vrai si la modification est réussie, faux sinon.
- */
-bool rc2d_graphic_setFontSize(TTF_Font* font, float fontSize);
 
 /**
  * Définit la couleur de rendu.
@@ -252,9 +236,160 @@ bool rc2d_graphics_setBlendMode(const RC2D_BlendMode blendMode);
  */
 bool rc2d_graphics_scale(float scaleX, float scaleY);
 
+
+/* ========================================================================= */
+/*                                 TEXT / FONT                               */
+/* ========================================================================= */
+
+/**
+ * \brief Ouvre une police de caractères depuis le stockage RC2D.
+ *
+ * Cette fonction charge une police TrueType/OpenType depuis le stockage spécifié
+ * (RC2D_STORAGE_TITLE ou RC2D_STORAGE_USER). Les données du fichier sont lues en mémoire,
+ * puis utilisées pour créer une police SDL_ttf via un flux IO.
+ *
+ * \param {const char*} storage_path Le chemin relatif de la police dans le stockage.
+ * \param {RC2D_StorageKind} storage_kind Le type de stockage (TITLE ou USER).
+ * \param {float} fontSize La taille de la police en points.
+ * \return {RC2D_Font} La structure RC2D_Font initialisée, ou une police vide en cas d’échec.
+ *
+ * \threadsafety Cette fonction doit être appelée sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ *
+ * \see rc2d_graphics_closeFont()
+ */
+RC2D_Font rc2d_graphics_openFontFromStorage(const char* storage_path,
+                                            RC2D_StorageKind storage_kind,
+                                            float fontSize);
+
+/**
+ * \brief Ferme et libère une police de caractères RC2D.
+ *
+ * \param {RC2D_Font*} font La police RC2D à fermer (son TTF_Font interne sera libéré).
+ */
+void rc2d_graphics_closeFont(RC2D_Font* font);
+
+/**
+ * \brief Définit le style appliqué à une police RC2D existante.
+ *
+ * \note Le style appliqué est lu depuis `font->style`.
+ *
+ * \param {RC2D_Font*} font La police RC2D à modifier.
+ */
+void rc2d_graphics_setFontStyle(RC2D_Font* font);
+
+/**
+ * \brief Définit la taille d’une police RC2D existante.
+ *
+ * \note La taille appliquée est lue depuis `font->fontSize`.
+ *
+ * \param {RC2D_Font*} font La police RC2D à modifier.
+ * \return {bool} true si la taille a été appliquée avec succès, false sinon.
+ */
+bool rc2d_graphics_setFontSize(RC2D_Font* font);
+
+/**
+ * \brief Définit l’alignement du wrapping pour une police RC2D.
+ *
+ * \note L’alignement appliqué est lu depuis `font->alignment`.
+ *
+ * \param {RC2D_Font*} font La police RC2D à modifier.
+ */
+void rc2d_graphics_setFontWrapAlignment(RC2D_Font* font);
+
+/**
+ * \brief Crée un objet texte RC2D basé sur une police et une chaîne UTF-8.
+ *
+ * \param {RC2D_Font*} font La police à utiliser.
+ * \param {const char*} string La chaîne UTF-8 initiale (non copiée).
+ * \return {RC2D_Text} Le texte créé, ou un texte vide en cas d’échec.
+ *
+ * \note La chaîne n’est pas copiée : l’appelant doit garantir sa durée de vie.
+ */
+RC2D_Text rc2d_graphics_createText(RC2D_Font* font, const char* string);
+
+/**
+ * \brief Détruit un objet texte RC2D et libère ses ressources.
+ */
+void rc2d_graphics_destroyText(RC2D_Text* text);
+
+/**
+ * \brief Met à jour la chaîne UTF-8 d’un texte RC2D depuis `text->string`.
+ *
+ * \param {RC2D_Text*} text Le texte à modifier.
+ * \return {bool} true si la mise à jour a réussi, false sinon.
+ */
+bool rc2d_graphics_setTextString(RC2D_Text* text);
+
+/**
+ * \brief Ajoute la chaîne UTF-8 pointée par `text->string` à la fin du texte RC2D.
+ *
+ * \param {RC2D_Text*} text Le texte à modifier.
+ * \return {bool} true si l’ajout a réussi, false sinon.
+ */
+bool rc2d_graphics_appendTextString(RC2D_Text* text);
+
+/**
+ * \brief Définit la largeur de wrapping (retour à la ligne) pour un texte.
+ *
+ * \param {RC2D_Text*} text Le texte à modifier.
+ * \param {int} wrapWidth La largeur maximale en pixels. 0 désactive le wrapping.
+ * \return {bool} true si la largeur a été appliquée avec succès, false sinon.
+ */
+bool rc2d_graphics_setTextWrapWidth(RC2D_Text* text, int wrapWidth);
+
+/**
+ * \brief Définit la couleur RGBA d’un texte RC2D depuis `text->color`.
+ *
+ * \param {RC2D_Text*} text Le texte à modifier.
+ * \return {bool} true si la couleur a été appliquée avec succès, false sinon.
+ */
+bool rc2d_graphics_setTextColor(RC2D_Text* text);
+
+/**
+ * \brief Récupère la taille (largeur, hauteur) d’un texte RC2D.
+ */
+bool rc2d_graphics_getTextSize(RC2D_Text* text, int* w, int* h);
+
+/**
+ * \brief Récupère la taille d’une chaîne UTF-8 pour une police RC2D donnée.
+ *
+ * \param {RC2D_Font*} font La police RC2D à utiliser.
+ * \param {const char*} text La chaîne UTF-8 à mesurer.
+ * \param {size_t} length La longueur maximale de la chaîne à mesurer.
+ * \param {int*} w Sortie pour la largeur.
+ * \param {int*} h Sortie pour la hauteur.
+ */
+bool rc2d_graphics_getStringSize(RC2D_Font* font, const char* text,
+                                 size_t length, int *w, int *h);
+
+/**
+ * \brief Récupère la taille d’une chaîne UTF-8 avec wrapping pour une police RC2D donnée.
+ *
+ * \param {RC2D_Font*} font La police RC2D à utiliser.
+ * \param {const char*} text La chaîne UTF-8 à mesurer.
+ * \param {size_t} length La longueur maximale de la chaîne à mesurer.
+ * \param {int} wrapLength La largeur maximale de wrapping en pixels.
+ * \param {int*} w Sortie pour la largeur.
+ * \param {int*} h Sortie pour la hauteur.
+ */
+bool rc2d_graphics_getStringSizeWrapped(RC2D_Font* font, const char* text,
+                                        size_t length, int wrapLength,
+                                        int *w, int *h);
+
+/**
+ * \brief Dessine un objet texte RC2D sur le renderer SDL.
+ *
+ * \param {RC2D_Text*} text Le texte RC2D à dessiner.
+ * \param {float} x La coordonnée X en pixels (du bord gauche vers la droite).
+ * \param {float} y La coordonnée Y en pixels (du bord haut vers le bas).
+ */
+bool rc2d_graphics_drawText(RC2D_Text* text, float x, float y);
+
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */
 #ifdef __cplusplus
 }
 #endif
 
-#endif // RC2D_GRAPHICS_H
+#endif /* RC2D_GRAPHICS_H */

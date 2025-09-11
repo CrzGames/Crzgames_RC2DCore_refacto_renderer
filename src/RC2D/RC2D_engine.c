@@ -438,6 +438,12 @@ static bool rc2d_engine_init_sdlttf(void)
     }
     else
     {
+        if (!rc2d_graphics_createRendererTextEngine()) 
+        {
+            TTF_Quit();
+            return false;
+        }
+
         RC2D_log(RC2D_LOG_INFO, "SDL3_ttf initialisé avec succès.\n");
         return true;
     }
@@ -1882,14 +1888,6 @@ static bool rc2d_engine(void)
     }
 
     /**
-     * Initialiser la librairie SDL3_ttf
-     */
-    if (!rc2d_engine_init_sdlttf())
-    {
-        return false;
-    }
-
-    /**
      * Initialiser la librairie SDL3_mixer
      */
     if (!rc2d_engine_init_sdlmixer())
@@ -1946,6 +1944,14 @@ static bool rc2d_engine(void)
      * Initialiser et créer le renderer GPU avec SDL3_GPU.
      */
     if (!rc2d_engine_create_renderergpu())
+    {
+        return false;
+    }
+
+    /**
+     * Initialiser la librairie SDL3_ttf
+     */
+    if (!rc2d_engine_init_sdlttf())
     {
         return false;
     }
@@ -2075,6 +2081,7 @@ void rc2d_engine_quit(void)
      */
 	rc2d_filesystem_quit();
     rc2d_storage_closeAll();
+    rc2d_graphics_destroyRendererTextEngine();
     //rc2d_touch_freeTouchState();
 #if RC2D_ONNX_MODULE_ENABLED
     rc2d_onnx_cleanup();

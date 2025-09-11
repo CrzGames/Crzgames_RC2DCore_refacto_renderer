@@ -140,8 +140,8 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    //rc2d_window_setSize(1280, 720);
-    rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
+    rc2d_window_setSize(1280, 720);
+    //rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
 
     const char *base_path = SDL_GetBasePath();
     char full_path[512];
@@ -159,8 +159,8 @@ void rc2d_load(void)
     }
 
     // --- Logo ---
-    g_logo_ui.image     = rc2d_graphics_newImageFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
-    g_logo_ui.imageData = rc2d_graphics_newImageDataFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
+    g_logo_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
+    g_logo_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
     g_logo_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_logo_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
     g_logo_ui.margin_x    = 0.f;
@@ -169,8 +169,8 @@ void rc2d_load(void)
     g_logo_ui.hittable    = false;
 
     // --- Input login ---
-    g_input_login_ui.image     = rc2d_graphics_newImageFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
-    g_input_login_ui.imageData = rc2d_graphics_newImageDataFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
+    g_input_login_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
+    g_input_login_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
     g_input_login_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
     g_input_login_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
     g_input_login_ui.margin_x    = 0.f;
@@ -179,8 +179,8 @@ void rc2d_load(void)
     g_input_login_ui.hittable    = true;
 
     // --- Input password ---
-    g_input_pass_ui.image     = rc2d_graphics_newImageFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
-    g_input_pass_ui.imageData = rc2d_graphics_newImageDataFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
+    g_input_pass_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
+    g_input_pass_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-login.png", RC2D_STORAGE_TITLE);
     g_input_pass_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
     g_input_pass_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
     g_input_pass_ui.margin_x    = 0.f;
@@ -189,8 +189,8 @@ void rc2d_load(void)
     g_input_pass_ui.hittable    = true;
 
     // --- Bouton login (clé) ---
-    g_button_login_ui.image     = rc2d_graphics_newImageFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
-    g_button_login_ui.imageData = rc2d_graphics_newImageDataFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
+    g_button_login_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
+    g_button_login_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
     g_button_login_ui.anchor      = RC2D_UI_ANCHOR_CENTER;
     g_button_login_ui.margin_mode = RC2D_UI_MARGIN_PIXELS;
     g_button_login_ui.margin_x    = 0.f;
@@ -219,16 +219,15 @@ void rc2d_load(void)
             {
                 RC2D_log(RC2D_LOG_WARN, "track_setAudio failed: %s", SDL_GetError());
             }
-
         }
     }
     g_menu_started = false;
 
     // background login
-    background_login_image = rc2d_graphics_newImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
+    background_login_image = rc2d_graphics_loadImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
 
     // tile ocean
-    tile_ocean_image = rc2d_graphics_newImageFromStorage("assets/images/tile.png", RC2D_STORAGE_TITLE);
+    tile_ocean_image = rc2d_graphics_loadImageFromStorage("assets/images/tile.png", RC2D_STORAGE_TITLE);
 
     // Load shader, sampler, render state
     SDL_GPUSamplerCreateInfo sampler_info = {

@@ -182,7 +182,7 @@ bool rc2d_graphics_points(const int numPoints, const SDL_FPoint *points)
     return true;
 }
 
-RC2D_ImageData rc2d_graphics_newImageDataFromStorage(const char *storage_path, RC2D_StorageKind storage_kind)
+RC2D_ImageData rc2d_graphics_loadImageDataFromStorage(const char *storage_path, RC2D_StorageKind storage_kind)
 {
     // Initialisation de l'image vide
     RC2D_ImageData imageData = { NULL };
@@ -276,7 +276,7 @@ void rc2d_graphics_freeImageData(RC2D_ImageData *imageData)
     }
 }
 
-RC2D_Image rc2d_graphics_newImageFromStorage(const char *storage_path, RC2D_StorageKind storage_kind)
+RC2D_Image rc2d_graphics_loadImageFromStorage(const char *storage_path, RC2D_StorageKind storage_kind)
 {
     // Initialisation de l'image vide
     RC2D_Image image = { NULL };
@@ -370,26 +370,6 @@ void rc2d_graphics_freeImage(RC2D_Image* image)
     }
 }
 
-void rc2d_graphic_setFont(TTF_Font* font, TTF_FontStyleFlags style)
-{
-    // Changer le style de la police actuelle
-    TTF_SetFontStyle(font, style);
-}
-
-bool rc2d_graphic_setFontSize(TTF_Font* font, float fontSize) 
-{
-    // Changer la taille de la police actuelle
-    if(!TTF_SetFontSize(font, fontSize)) 
-    {
-        // Si le le changement échoue, on log l'erreur et on retourne false
-        RC2D_log(RC2D_LOG_ERROR, "Failed to set font size: %s\n", SDL_GetError());
-        return false;
-    }
-
-    // Succès
-    return true;
-}
-
 bool rc2d_graphics_setColor(const RC2D_Color color)
 {
     // Mise à jour de la couleur courante
@@ -466,5 +446,357 @@ bool rc2d_graphics_scale(float scaleX, float scaleY)
     }
 
     // Succès
+    return true;
+}
+
+RC2D_Font rc2d_graphics_openFontFromStorage(const char* storage_path, RC2D_StorageKind storage_kind, float fontSize)
+{
+    // Initialisation de la police vide
+    RC2D_Font font = {0};
+    
+    // Validation du chemin
+    if (!storage_path || !*storage_path) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_openFontFromStorage: invalid path");
+        return font;
+    }
+
+    // Lis le fichier via tes helpers existants
+    void* bytes = NULL;
+    Uint64 len  = 0;
+    if (storage_kind == RC2D_STORAGE_TITLE) 
+    {
+        if (!rc2d_storage_titleReadFile(storage_path, &bytes, &len)) 
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to read '%s' from Title storage", storage_path);
+            return font;
+        }
+    } 
+    else if (storage_kind == RC2D_STORAGE_USER) 
+    {
+        if (!rc2d_storage_userReadFile(storage_path, &bytes, &len)) 
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to read '%s' from User storage", storage_path);
+            return font;
+        }
+    } 
+    else 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_openFontFromStorage: invalid storage kind");
+        return font;
+    }
+
+    // Vérifier que le fichier n'est pas vide
+    if (len == 0 || !bytes) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "File '%s' is empty in %s storage", storage_path, (storage_kind == RC2D_STORAGE_TITLE) ? "Title" : "User");
+        return font;
+    }
+
+    // Créer un IO stream en lecture sur le buffer (pas de copie).
+    SDL_IOStream* io = SDL_IOFromConstMem(bytes, (size_t)len);
+    if (!io) 
+    {
+        RC2D_safe_free(bytes);
+        RC2D_log(RC2D_LOG_ERROR, "SDL_IOFromConstMem failed: %s", SDL_GetError());
+        return font;
+    }
+
+    // Charger la police depuis le stream (SDL va fermer et libérer le stream automatiquement grâce au flag closeio=true)
+    TTF_Font* sdl_font = TTF_OpenFontIO(io, /*closeio=*/true, fontSize);
+    if (!sdl_font) 
+    {
+        RC2D_safe_free(bytes);
+        RC2D_log(RC2D_LOG_ERROR, "TTF_OpenFontIO('%s') failed: %s", storage_path, SDL_GetError());
+        return font;
+    }
+
+    // Libération du buffer mémoire
+    RC2D_safe_free(bytes);
+
+    // Initialisation de la structure RC2D_Font
+    font.sdl_font = sdl_font;
+    font.fontSize = fontSize;
+
+    // Retour de la police créée
+    return font;
+}
+
+bool rc2d_graphics_createRendererTextEngine(void)
+{
+    // Création du moteur de texte pour le renderer
+    rc2d_engine_state.text_engine = TTF_CreateRendererTextEngine(rc2d_engine_state.renderer);
+    if(!rc2d_engine_state.text_engine) 
+    {
+        // Si la création échoue, on log l'erreur et on retourne false
+        RC2D_log(RC2D_LOG_ERROR, "Erreur lors de la création du moteur de texte SDL3_ttf: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Succès
+    return true;
+}
+
+void rc2d_graphics_destroyRendererTextEngine(void)
+{
+    if (rc2d_engine_state.text_engine)
+    {
+        TTF_DestroyRendererTextEngine(rc2d_engine_state.text_engine);
+        rc2d_engine_state.text_engine = NULL;
+    }
+}
+
+void rc2d_graphics_closeFont(RC2D_Font* font)
+{
+    if (!font) return;
+
+    if (font->sdl_font) 
+    {
+        TTF_CloseFont(font->sdl_font);
+        font->sdl_font = NULL;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/*                          Réglages de la police (RC2D_Font)                */
+/* ------------------------------------------------------------------------- */
+
+void rc2d_graphics_setFontStyle(RC2D_Font* font)
+{
+    // Changer le style de la police actuelle (lu depuis font->style)
+    if (!font || !font->sdl_font) return;
+    TTF_SetFontStyle(font->sdl_font, font->style);
+}
+
+bool rc2d_graphics_setFontSize(RC2D_Font* font)
+{
+    // Changer la taille de la police actuelle (lu depuis font->fontSize)
+    if (!font || !font->sdl_font) return false;
+
+    if(!TTF_SetFontSize(font->sdl_font, font->fontSize)) 
+    {
+        // Si le changement échoue, on log l'erreur et on retourne false
+        RC2D_log(RC2D_LOG_ERROR, "Failed to set font size: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Succès
+    return true;
+}
+
+void rc2d_graphics_setFontWrapAlignment(RC2D_Font* font)
+{
+    // Changer l'alignement du texte pour le wrapping (lu depuis font->alignment)
+    if (!font || !font->sdl_font) return;
+    TTF_SetFontWrapAlignment(font->sdl_font, font->alignment);
+}
+
+/* ------------------------------------------------------------------------- */
+/*                                   Texte                                   */
+/* ------------------------------------------------------------------------- */
+
+RC2D_Text rc2d_graphics_createText(RC2D_Font* font, const char* string)
+{
+    RC2D_Text text = {0};
+
+    // Vérification des paramètres
+    if (!font || !font->sdl_font || !string || !*string) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_createText: invalid font or string");
+        return text;
+    }
+
+    // Création du texte avec la police et la chaîne de caractères spécifiées
+    text.sdl_text = TTF_CreateText(rc2d_engine_state.text_engine, font->sdl_font, string, 0);
+    if (!text.sdl_text) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to create text: %s\n", SDL_GetError());
+        return text;
+    }
+
+    // Mémoriser la chaîne (non copiée) et une couleur par défaut
+    text.string = string;
+    text.color  = (RC2D_Color){255, 255, 255, 255};
+
+    // Retour du texte créé
+    return text;
+}
+
+void rc2d_graphics_destroyText(RC2D_Text* text)
+{
+    // Vérification du paramètre
+    if (!text) return;
+
+    // Destruction du texte s'il existe
+    if (text->sdl_text) 
+    {
+        TTF_DestroyText(text->sdl_text);
+        text->sdl_text = NULL;
+    }
+
+    // On ne libère pas text->string (propriété de l'appelant)
+}
+
+/**
+ * \note Version “struct-driven” : lit la chaîne depuis text->string.
+ */
+bool rc2d_graphics_setTextString(RC2D_Text* text)
+{
+    // Vérification des paramètres
+    if (!text || !text->sdl_text || !text->string) 
+        return false;
+
+    // Mise à jour de la chaîne de caractères du texte
+    if(!TTF_SetTextString(text->sdl_text, text->string, 0))
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to set text string: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Succès
+    return true;
+}
+
+/**
+ * \note Version “struct-driven” : lit la chaîne à appendre depuis text->string.
+ */
+bool rc2d_graphics_appendTextString(RC2D_Text* text)
+{
+    // Vérification des paramètres
+    if (!text || !text->sdl_text || !text->string) 
+        return false;
+
+    // Ajout de la chaîne de caractères au texte
+    if(!TTF_AppendTextString(text->sdl_text, text->string, 0))
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to append text string: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Succès
+    return true;
+}
+
+bool rc2d_graphics_setTextWrapWidth(RC2D_Text* text, int wrapWidth)
+{
+    // Vérification des paramètres
+    if (!text || !text->sdl_text) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_setTextWrapWidth: invalid text or text->sdl_text");
+        return false;
+    }
+
+    // Application de la largeur de wrapping au texte
+    if(!TTF_SetTextWrapWidth(text->sdl_text, wrapWidth)) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to set text wrap width: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Succès
+    return true;
+}
+
+/**
+ * \note Version “struct-driven” : lit la couleur depuis text->color.
+ */
+bool rc2d_graphics_setTextColor(RC2D_Text* text)
+{
+    // Vérification des paramètres
+    if (!text || !text->sdl_text)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_setTextColor: invalid text or text->sdl_text");
+        return false;
+    }
+
+    // Application de la couleur au texte
+    if(!TTF_SetTextColor(text->sdl_text, text->color.r, text->color.g, text->color.b, text->color.a)) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to set text color: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Succès
+    return true;
+}
+
+bool rc2d_graphics_getTextSize(RC2D_Text* text, int* w, int* h)
+{
+    // Vérification des paramètres
+    if (!text || !text->sdl_text || !w || !h) return false;
+
+    // Obtenir la taille du texte
+    if(!TTF_GetTextSize(text->sdl_text, w, h))
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to get text size: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Succès
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/*                        Mesures de chaînes avec police                      */
+/* ------------------------------------------------------------------------- */
+
+bool rc2d_graphics_getStringSize(RC2D_Font* font, const char* text,
+                                 size_t length, int *w, int *h)
+{
+    // Vérification des paramètres
+    if (!font || !font->sdl_font || !text || !w || !h) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_getStringSize: invalid parameters");
+        return false;
+    }
+
+    // Obtenir la taille de la chaîne de caractères avec la police spécifiée
+    if (!TTF_GetStringSize(font->sdl_font, text, length, w, h)) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to get string size: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Succès
+    return true;
+}
+
+bool rc2d_graphics_getStringSizeWrapped(RC2D_Font* font, const char* text,
+                                        size_t length, int wrapLength,
+                                        int *w, int *h)
+{
+    // Vérification des paramètres
+    if (!font || !font->sdl_font || !text || !w || !h) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_getStringSizeWrapped: invalid parameters");
+        return false;
+    }
+
+    // Obtenir la taille de la chaîne de caractères avec la police spécifiée et le wrapping
+    if (!TTF_GetStringSizeWrapped(font->sdl_font, text, length, wrapLength, w, h)) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to get wrapped string size: %s\n", SDL_GetError());
+        return false;
+    }
+
+    // Succès
+    return true;
+}
+
+/* ------------------------------------------------------------------------- */
+/*                                  Draw                                     */
+/* ------------------------------------------------------------------------- */
+
+bool rc2d_graphics_drawText(RC2D_Text* text, float x, float y) 
+{
+    // Vérification des paramètres
+    if (!text || !text->sdl_text) return false;
+
+    if(!TTF_DrawRendererText(text->sdl_text, x, y))
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to draw text: %s\n", SDL_GetError());
+        return false;
+    }
+
     return true;
 }

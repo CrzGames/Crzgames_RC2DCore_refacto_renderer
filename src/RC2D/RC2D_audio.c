@@ -1,6 +1,8 @@
 #include <RC2D/RC2D_audio.h>
 #include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_storage.h>
 #include <RC2D/RC2D_internal.h>
+#include <RC2D/RC2D_memory.h>
 
 #include <SDL3/SDL_properties.h>
 
@@ -29,6 +31,92 @@ MIX_Audio* rc2d_audio_load(const char* path, bool predecode)
     }
 
     RC2D_log(RC2D_LOG_DEBUG, "Audio chargé: '%s' (predecode=%d).", path, (int)predecode);
+    return audio;
+}
+
+MIX_Audio* rc2d_audio_loadAudioFromStorage(const char *storage_path, RC2D_StorageKind storage_kind, bool predecode)
+{
+    // Check si le mixer est initialisé et si le chemin est valide
+    if (!rc2d_engine_state.mixer) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Mixer non initialisé.");
+        return NULL;
+    }
+
+    // Validation du chemin et de la valeur du storage path
+    if (!storage_path || *storage_path == '\0') 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Chemin audio invalide.");
+        return NULL;
+    }
+
+    // Vérifier que le stockage est prêt
+    if (storage_kind == RC2D_STORAGE_TITLE && !rc2d_storage_titleReady()) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Title storage not ready when loading '%s'", storage_path);
+        return NULL;
+    }
+    else if(storage_kind == RC2D_STORAGE_USER && !rc2d_storage_userReady()) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "User storage not ready when loading '%s'", storage_path);
+        return NULL;
+    }
+
+    // Lire le fichier depuis le stockage Title
+    void *bytes = NULL; 
+    Uint64 len = 0;
+    if (storage_kind == RC2D_STORAGE_TITLE) 
+    {
+        if (!rc2d_storage_titleReadFile(storage_path, &bytes, &len)) 
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to read '%s' from Title storage", storage_path);
+            return NULL;
+        }
+    }
+    else if (storage_kind == RC2D_STORAGE_USER) 
+    {
+        if (!rc2d_storage_userReadFile(storage_path, &bytes, &len)) 
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to read '%s' from User storage", storage_path);
+            return NULL;
+        }
+    } 
+    else 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_audio_loadFromStorage: invalid storage kind");
+        return NULL;
+    }
+
+    // Vérifier que le fichier n'est pas vide
+    if (len == 0 || !bytes) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "File '%s' is empty in %s storage", storage_path, (storage_kind == RC2D_STORAGE_TITLE) ? "Title" : "User");
+        return NULL;
+    }
+
+    // Crée un IO stream en lecture sur le buffer (pas de copie).
+    SDL_IOStream *ioStream = SDL_IOFromConstMem(bytes, (size_t)len);
+    if (!ioStream) 
+    {
+        RC2D_safe_free(bytes);
+        RC2D_log(RC2D_LOG_ERROR, "SDL_IOFromConstMem failed for '%s': %s", storage_path, SDL_GetError());
+        return NULL;
+    }
+
+    // Charger l'audio depuis la mémoire
+    MIX_Audio* audio = MIX_LoadAudio_IO(rc2d_engine_state.mixer, ioStream, predecode, /*closeio=*/true);
+
+    // Maintenant que MIX_LoadAudio_IO a fini (et a fermé le stream), on peut libérer le buffer.
+    RC2D_safe_free(bytes);
+
+    // Vérifier que l'audio a bien été chargé
+    if (!audio) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "MIX_LoadAudio_IO('%s') a échoué : %s", storage_path, SDL_GetError());
+        return NULL;
+    }
+    
+    // Succès
     return audio;
 }
 

@@ -12,6 +12,7 @@
 #include <SDL3/SDL_render.h>
 
 #include <SDL3_mixer/SDL_mixer.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 /**
  * IMPORTANT: 
@@ -90,6 +91,9 @@ typedef struct RC2D_EngineState {
     // SDL_mixer
     MIX_Mixer* mixer;
 
+    // SDL_ttf
+    TTF_TextEngine* text_engine;
+
     /**
     * Les données après avoir calculer pour overscan / letterbox +
     * safe area (zone visible et interactive garantie)
@@ -137,6 +141,35 @@ typedef struct RC2D_EngineState {
  * \since Cette variable est disponible depuis RC2D 1.0.0.
  */
 extern RC2D_EngineState rc2d_engine_state;
+
+/**
+ * \brief Crée le moteur de texte SDL_ttf pour le renderer RC2D.
+ *
+ * Le moteur de texte est nécessaire pour créer et dessiner des objets texte.
+ *
+ * \return {bool} true si le moteur a été créé avec succès, false sinon.
+ *
+ * \threadsafety Cette fonction doit être appelée sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ *
+ * \see rc2d_graphics_destroyRendererTextEngine()
+ */
+bool rc2d_graphics_createRendererTextEngine(void);
+
+/**
+ * \brief Détruit le moteur de texte SDL_ttf associé au renderer RC2D.
+ *
+ * Cette fonction doit être appelée avant la fermeture du moteur RC2D pour libérer
+ * correctement les ressources du moteur de texte.
+ *
+ * \threadsafety Cette fonction doit être appelée sur le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ *
+ * \see rc2d_graphics_createRendererTextEngine()
+ */
+void rc2d_graphics_destroyRendererTextEngine(void);
 
 /**
  * \brief Hot-reload des shaders graphiques (fragment).
