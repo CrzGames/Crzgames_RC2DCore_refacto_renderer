@@ -230,7 +230,7 @@ void rc2d_load(void)
         return;
     }
 
-    g_ocean_fragment_shader = rc2d_gpu_loadGraphicsShader("water.fragment");
+    g_ocean_fragment_shader = rc2d_gpu_loadGraphicsShaderFromStorage("assets/water.fragment", RC2D_STORAGE_TITLE);
     if (!g_ocean_fragment_shader) 
     {
         RC2D_log(RC2D_LOG_ERROR, "Failed to load water.fragment shader: %s", SDL_GetError());

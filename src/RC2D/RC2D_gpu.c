@@ -40,12 +40,55 @@ RC2D_GPUDevice* rc2d_gpu_getDevice(void)
     return rc2d_engine_state.gpu_device;
 }
 
-RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename) 
+/**
+ * \brief Charge un shader graphique à partir d'un fichier source HLSL ou d'un fichier binaire précompilé.
+ * 
+ * Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est défini à 1, cela compile le shader à la volée à
+ * partir du fichier source HLSL. Sinon, cela charge le fichier binaire déjà précompilé.
+ * 
+ * L’organisation attendue dans le storage est la suivante :
+ * ```
+ * <racine_storage>/
+ *   assets/
+ *     shaders/
+ *       src/          -> contient les fichiers HLSL sources   (*.vertex.hlsl, *.fragment.hlsl)
+ *       compiled/     -> contient les binaires précompilés    (*.spv, *.msl, *.metallib, *.dxil)
+ *       reflection/   -> contient les fichiers JSON de réflexion (*.json)
+ * ```
+ * 
+ * \param {const char*} storage_path - Nom logique du shader à charger avec suffixe de stage
+ *                                    (par ex. "assets/water.vertex" ou "assets/water.fragment").
+ * \param {RC2D_StorageKind} storage_kind - Type de storage (TITLE ou USER).
+ * \return {RC2D_GPUShader*} Pointeur vers le shader chargé, ou NULL en cas d'erreur.
+ * 
+ * \warning Le pointeur retourné doit être libéré par l'appelant avec SDL_ReleaseGPUShader
+ *          lorsque le shader n'est plus nécessaire.
+ * 
+ * \threadsafety Cette fonction peut être appelée depuis n'importe quel thread.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
+                                                       RC2D_StorageKind storage_kind)
 {
     /**
      * Vérification des paramètres d'entrée
      */
-    RC2D_assert_release(filename != NULL, RC2D_LOG_CRITICAL, "Graphics Shader filename is NULL");
+    RC2D_assert_release(storage_path != NULL && *storage_path != '\0',
+                        RC2D_LOG_CRITICAL,
+                        "rc2d_gpu_loadGraphicsShaderFromStorage: storage_path is NULL or empty");
+
+    // Vérifier que le stockage est prêt
+    if (storage_kind == RC2D_STORAGE_TITLE && !rc2d_storage_titleReady()) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Title storage not ready when loading '%s'", storage_path);
+        return NULL;
+    }
+    else if (storage_kind == RC2D_STORAGE_USER && !rc2d_storage_userReady()) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "User storage not ready when loading '%s'", storage_path);
+        return NULL;
+    }
 
     /**
      * Locker le mutex pour éviter les accès concurrents au cache des shaders graphiques
@@ -57,12 +100,12 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
      */
     for (int i = 0; i < rc2d_engine_state.gpu_graphics_shader_count; i++) 
     {
-        if (SDL_strcmp(rc2d_engine_state.gpu_graphics_shaders_cache[i].filename, filename) == 0) 
+        if (SDL_strcmp(rc2d_engine_state.gpu_graphics_shaders_cache[i].filename, storage_path) == 0) 
         {
             RC2D_GPUShader* graphicsShader = rc2d_engine_state.gpu_graphics_shaders_cache[i].shader;
             SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
 
-            RC2D_log(RC2D_LOG_INFO, "Graphics Shader already loaded from cache: %s", filename);
+            RC2D_log(RC2D_LOG_INFO, "Graphics Shader already loaded from cache: %s", storage_path);
             return graphicsShader;
         }
     }
@@ -73,33 +116,122 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
      */
     SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
 
-    // Récupérer le chemin de base de l'application (où est exécuté l'exécutable)
-    const char* basePath = SDL_GetBasePath();
-    RC2D_assert_release(basePath != NULL, RC2D_LOG_CRITICAL, "SDL_GetBasePath() failed, SDL_Error: %s", SDL_GetError());
-
     /**
      * Déterminer le stage en fonction du suffixe (vertex ou fragment)
-     * On utilise SDL_strstr pour vérifier la présence de ".vertex" ou ".fragment" dans le nom du fichier
+     * On utilise uniquement le basename après le dernier '/' ou '\'
+     * et on vérifie la présence de ".vertex" ou ".fragment" dans le nom du fichier
      */
     SDL_GPUShaderStage stage;
-    if (SDL_strstr(filename, ".vertex")) 
     {
-        stage = SDL_GPU_SHADERSTAGE_VERTEX;
-    } 
-    else if (SDL_strstr(filename, ".fragment")) 
-    {
-        stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
-    } 
-    else 
-    {
-        RC2D_log(RC2D_LOG_CRITICAL, "Unknown shader stage suffix: expected .vertex or .fragment.");
-        return NULL;
+        const char* base = storage_path;
+        const char* s1 = SDL_strrchr(storage_path, '/');
+        const char* s2 = SDL_strrchr(storage_path, '\\');
+        if (s1 || s2) base = (s1 > s2 ? s1 : s2) + 1;
+
+        if (SDL_strstr(base, ".vertex")) 
+        {
+            stage = SDL_GPU_SHADERSTAGE_VERTEX;
+        } 
+        else if (SDL_strstr(base, ".fragment")) 
+        {
+            stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
+        } 
+        else 
+        {
+            RC2D_log(RC2D_LOG_CRITICAL, "Unknown shader stage suffix: expected .vertex or .fragment (in '%s').", base);
+            return NULL;
+        }
     }
 
     /**
-     * fullPath : Chemin d'accès complet au fichier binaire du shader compilé ou au fichier HLSL source.
+     * fullPath : Chemin d'accès "logique storage" au fichier binaire du shader compilé
+     * ou au fichier HLSL source. Ici on construit des chemins RELATIFS AU STORAGE,
+     * pas au filesystem de l'OS (plus de SDL_GetBasePath()).
+     *
+     * Exemple : storage_path = "assets/water.fragment"
+     *   -> offline:   "assets/shaders/compiled/spirv/water.fragment.spv"
+     *   -> reflection:"assets/shaders/reflection/water.fragment.json"
+     *   -> hot reload:"assets/shaders/src/water.fragment.hlsl"
      */
-    char fullPath[512];
+    char dirbuf[256], root_shaders[320], fullPath[512];
+
+    // 1) Basename
+    const char* base = storage_path;
+    const char* s1 = SDL_strrchr(storage_path, '/');
+    const char* s2 = SDL_strrchr(storage_path, '\\');
+    if (s1 || s2) base = (s1 > s2 ? s1 : s2) + 1;
+
+    // 2) Dirname (sans le basename)
+    if (base != storage_path) 
+    {
+        size_t dirlen = (size_t)(base - storage_path); // inclut le slash juste avant base
+        if (dirlen >= sizeof(dirbuf)) dirlen = sizeof(dirbuf) - 1;
+        SDL_memcpy(dirbuf, storage_path, dirlen);
+        dirbuf[dirlen] = '\0';
+    } 
+    else 
+    {
+        dirbuf[0] = '\0';
+    }
+
+    // 3) Normaliser les séparateurs (optionnel mais pratique pour les checks)
+    for (char* p = dirbuf; *p; ++p) 
+    {
+        if (*p == '\\') *p = '/';
+    }
+
+    // 4) Trim des slashs finaux pour éviter "xxx//shaders"
+    {
+        size_t n = SDL_strlen(dirbuf);
+        while (n > 0 && dirbuf[n-1] == '/') 
+        {
+            dirbuf[--n] = '\0';
+        }
+    }
+
+    // 5) Construire la racine des shaders :
+    //    - si dir contient déjà "shaders" comme SEGMENT final → on garde tel quel
+    //    - sinon → on ajoute "/shaders"
+    if (dirbuf[0] == '\0') 
+    {
+        SDL_strlcpy(root_shaders, "shaders", sizeof root_shaders);
+    } 
+    else 
+    {
+        bool ends_with_shaders = false;
+        size_t dlen = SDL_strlen(dirbuf);
+        if (dlen >= 7) 
+        {
+            // match fin de chaîne "/shaders" ou "shaders"
+            const char* tail = dirbuf + (dlen - 7);
+            if (SDL_strcmp(tail, "shaders") == 0) 
+            {
+                ends_with_shaders = true;
+            } 
+            else if (dlen >= 9 && SDL_strcmp(dirbuf + (dlen - 8), "/shaders") == 0) 
+            {
+                ends_with_shaders = true;
+            }
+        }
+
+        if (ends_with_shaders) {
+            SDL_strlcpy(root_shaders, dirbuf, sizeof root_shaders);
+        } 
+        else 
+        {
+            // jointure sûre (évite les doubles '/')
+            if (dlen + 1 + 7 + 1 < sizeof root_shaders) 
+            {
+                SDL_strlcpy(root_shaders, dirbuf, sizeof root_shaders);
+                SDL_strlcat(root_shaders, "/shaders", sizeof root_shaders);
+            } 
+            else 
+            {
+                RC2D_log(RC2D_LOG_ERROR, "Path too long when building shaders root from '%s'", dirbuf);
+                return NULL;
+            }
+        }
+    }
 
 #if !RC2D_GPU_SHADER_HOT_RELOAD_ENABLED // Compilation hors ligne des shaders graphics en HLSL
     /**
@@ -113,10 +245,10 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
     // Le format de shader à utiliser pour la compilation hors ligne
     SDL_GPUShaderFormat format = SDL_GPU_SHADERFORMAT_INVALID;
 
-    // Générer le chemin d'accès au fichier binaire du shader compilé en fonction du backend
+    // Générer le chemin d'accès "storage" au fichier binaire du shader compilé en fonction du backend
     if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_SPIRV) 
     {
-        SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/compiled/spirv/%s.spv", basePath, filename);
+        SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/spirv/%s.spv", root_shaders, base);
         format = SDL_GPU_SHADERFORMAT_SPIRV;
         entrypoint = "main";
     }
@@ -126,23 +258,23 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
      */
     else if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_METALLIB)
     {
-#ifdef RC2D_PLATFORM_IOS
-        SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/compiled/metallib/ios/%s.metallib", basePath, filename);
-#else
-        SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/compiled/metallib/macos/%s.metallib", basePath, filename);
-#endif // RC2D_PLATFORM_IOS
+    #ifdef RC2D_PLATFORM_IOS
+        SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/metallib/ios/%s.metallib", root_shaders, base);
+    #else
+        SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/metallib/macos/%s.metallib", root_shaders, base);
+    #endif
         format = SDL_GPU_SHADERFORMAT_METALLIB;
         entrypoint = "main";
     }
     else if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_MSL)
     {
-        SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/compiled/msl/%s.msl", basePath, filename);
+        SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/msl/%s.msl", root_shaders, base);
         format = SDL_GPU_SHADERFORMAT_MSL;
         entrypoint = "main0"; // SDL_shadercross requiert "main0" pour MSL
     } 
     else if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_DXIL) 
     {
-        SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/compiled/dxil/%s.dxil", basePath, filename);
+        SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/dxil/%s.dxil", root_shaders, base);
         format = SDL_GPU_SHADERFORMAT_DXIL;
         entrypoint = "main";
     } 
@@ -154,13 +286,16 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
 
     /**
      * Charger le fichier du shader compilé
-     * On utilise SDL_LoadFile pour charger le fichier binaire du shader compilé
+     * On utilise l’API Storage (Title/User) pour lire le binaire en mémoire
      */
-    size_t codeShaderCompiledSize = 0;
-    void* codeShaderCompiled = SDL_LoadFile(fullPath, &codeShaderCompiledSize);
-    if (codeShaderCompiled == NULL)
+    void* codeShaderCompiled = NULL;
+    Uint64 codeShaderCompiledSize = 0;
+    if (!((storage_kind == RC2D_STORAGE_TITLE)
+            ? rc2d_storage_titleReadFile(fullPath, &codeShaderCompiled, &codeShaderCompiledSize)
+            : rc2d_storage_userReadFile (fullPath, &codeShaderCompiled, &codeShaderCompiledSize))
+        || !codeShaderCompiled || codeShaderCompiledSize == 0)
     {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load compiled shader: %s, SDL_Error: %s", fullPath, SDL_GetError());
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load compiled shader from storage: %s", fullPath);
         return NULL;
     }
 
@@ -169,13 +304,13 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
      * On génère le chemin d'accès au fichier JSON de réflexion en fonction du nom du shader et de son stage.
      */
     char jsonPath[512];
-    SDL_snprintf(jsonPath, sizeof(jsonPath), "%sshaders/reflection/%s.json", basePath, filename);
+    SDL_snprintf(jsonPath, sizeof(jsonPath), "%s/reflection/%s.json", root_shaders, base);
 
     /**
      * On ouvre le fichier JSON de réflexion pour récupérer les informations de réflexions sur le shader.
-     * On utilise SDL_LoadFile pour charger le fichier JSON de réflexion.
+     * On utilise l’API Storage pour charger le fichier JSON de réflexion.
      * On utilise SDL_sscanf pour extraire les valeurs des champs : samplers, uniform_buffers, storage_buffers et storage_textures.
-     * On ferme le fichier JSON après la lecture.
+     * On libère le contenu JSON après la lecture.
      * 
      * Exemple de contenu JSON attendu :
      * ```json
@@ -191,12 +326,18 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
     Uint32 numUniformBuffers = 0;
     Uint32 numStorageBuffers = 0;
     Uint32 numStorageTextures = 0;
-    void* jsonContent = SDL_LoadFile(jsonPath, NULL);
-    if (jsonContent) 
+    void* jsonContent = NULL;
+    Uint64 jsonLen = 0;
+    if (((storage_kind == RC2D_STORAGE_TITLE)
+            ? rc2d_storage_titleReadFile(jsonPath, &jsonContent, &jsonLen)
+            : rc2d_storage_userReadFile (jsonPath, &jsonContent, &jsonLen))
+        && jsonContent && jsonLen > 0)
     {
-        // Cast le contenu du fichier JSON en chaîne de caractères
-        const char* content = (const char*)jsonContent;
-    
+        // Cast le contenu du fichier JSON en chaîne de caractères (NUL-terminée)
+        char* content = (char*)RC2D_malloc((size_t)jsonLen + 1);
+        SDL_memcpy(content, jsonContent, (size_t)jsonLen);
+        content[jsonLen] = '\0';
+
         // Essayer les différentes clés connues, y compris alternatives
         if (SDL_strstr(content, "\"samplers\""))
             SDL_sscanf(content, "%*[^\"samplers\"]\"samplers\"%*[: ]%u", &numSamplers);
@@ -212,19 +353,21 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
             SDL_sscanf(content, "%*[^\"storage_textures\"]\"storage_textures\"%*[: ]%u", &numStorageTextures);
         else if (SDL_strstr(content, "\"readOnlyStorageTextures\""))
             SDL_sscanf(content, "%*[^\"readOnlyStorageTextures\"]\"readOnlyStorageTextures\"%*[: ]%u", &numStorageTextures);
-    
+
         // Libérer le contenu JSON après la lecture
+        RC2D_safe_free(content);
         RC2D_safe_free(jsonContent);
     }
     else 
     {
-        RC2D_log(RC2D_LOG_ERROR, "Shader reflection file not found: %s, SDL_Error: %s", jsonPath, SDL_GetError());
+        RC2D_log(RC2D_LOG_WARN, "Shader reflection file not found in storage: %s", jsonPath);
+        if (jsonContent) RC2D_safe_free(jsonContent);
     }
     
     // Création du shader GPU avec les informations de réflexion récupérées depuis le fichier JSON
     SDL_GPUShaderCreateInfo info = {
         .code = codeShaderCompiled,
-        .code_size = codeShaderCompiledSize,
+        .code_size = (size_t)codeShaderCompiledSize,
         .entrypoint = entrypoint,
         .format = format,
         .stage = stage,
@@ -245,29 +388,38 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
     if (graphicsShader == NULL) 
     {
         // Si la création du shader graphique échoue, on log l'erreur et on retourne NULL
-        RC2D_log(RC2D_LOG_ERROR, "Failed to create GPU graphics shader from file %s, SDL_Error: %s", filename, SDL_GetError());
+        RC2D_log(RC2D_LOG_ERROR, "Failed to create GPU graphics shader from storage file %s, SDL_Error: %s", fullPath, SDL_GetError());
         return NULL;
     }
-
-#else // Compilation en ligne des shaders graphics en HLSL
+#else
     /**
      * On génère le chemin d'accès au fichier HLSL source en fonction du nom du shader et de son stage pour la compilation en ligne des shaders.
-     * On utilise SDL_snprintf pour formater le chemin d'accès au fichier HLSL source.
+     * On utilise SDL_snprintf pour formater le chemin d'accès "storage" au fichier HLSL source.
      */
-    SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/src/%s.hlsl", basePath, filename);
+    SDL_snprintf(fullPath, sizeof(fullPath), "%s/src/%s.hlsl", root_shaders, base);
 
     /**
      * Charger le fichier HLSL source
-     * On utilise SDL_LoadFile pour charger le fichier HLSL source.
+     * On utilise l’API Storage pour charger le fichier HLSL source.
      */
-    char* codeHLSLSource = SDL_LoadFile(fullPath, NULL);
-    if (codeHLSLSource == NULL)
+    void* codeHLSLSourceBytes = NULL;
+    Uint64 codeHLSLSourceLen = 0;
+    if (!((storage_kind == RC2D_STORAGE_TITLE)
+            ? rc2d_storage_titleReadFile(fullPath, &codeHLSLSourceBytes, &codeHLSLSourceLen)
+            : rc2d_storage_userReadFile (fullPath, &codeHLSLSourceBytes, &codeHLSLSourceLen))
+        || !codeHLSLSourceBytes || codeHLSLSourceLen == 0)
     {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load HLSL shader source: %s, SDL_Error: %s", fullPath, SDL_GetError()); 
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load HLSL shader source from storage: %s", fullPath); 
         return NULL;
     }
 
     // Préparer les informations pour la compilation HLSL vers SPIR-V
+    // (on s’assure d’une chaîne NUL-terminée)
+    char* codeHLSLSource = (char*)RC2D_malloc((size_t)codeHLSLSourceLen + 1);
+    SDL_memcpy(codeHLSLSource, codeHLSLSourceBytes, (size_t)codeHLSLSourceLen);
+    codeHLSLSource[codeHLSLSourceLen] = '\0';
+    RC2D_safe_free(codeHLSLSourceBytes);
+
     SDL_ShaderCross_HLSL_Info hlslInfo = {
         .source = codeHLSLSource,
         .entrypoint = "main",
@@ -275,7 +427,7 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
         .defines = NULL,
         .shader_stage = (SDL_ShaderCross_ShaderStage)stage,
         .enable_debug = true,
-        .name = filename,
+        .name = storage_path,
         .props = 0
     };
 
@@ -289,7 +441,7 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
     // Vérifier si la compilation HLSL vers SPIR-V a réussi
     if (spirvByteCode == NULL || spirvByteCodeSize == 0)
     {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to compile HLSL to SPIR-V: %s", filename);
+        RC2D_log(RC2D_LOG_ERROR, "Failed to compile HLSL to SPIR-V: %s", storage_path);
         return NULL;
     }
 
@@ -299,20 +451,20 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
     );
     if (metadata == NULL)
     {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to reflect graphics shader metadata: %s", filename);
+        RC2D_log(RC2D_LOG_ERROR, "Failed to reflect graphics shader metadata: %s", storage_path);
         RC2D_safe_free(spirvByteCode);
         return NULL;
     }
 
     // Préparer les informations SPIR-V pour la compilation du shader
     SDL_ShaderCross_SPIRV_Info spirvInfo = {
-        .bytecode = spirvByteCode,
+        .bytecode      = spirvByteCode,
         .bytecode_size = spirvByteCodeSize,
-        .entrypoint = "main",
-        .shader_stage = (SDL_ShaderCross_ShaderStage)stage,
-        .enable_debug = true,
-        .name = filename,
-        .props = 0
+        .entrypoint    = "main",
+        .shader_stage  = (SDL_ShaderCross_ShaderStage)stage,
+        .enable_debug  = true,
+        .name          = storage_path,
+        .props         = 0
     };
 
     // Compiler le shader graphique
@@ -330,7 +482,7 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
     // Vérifier si la compilation du shader graphique a réussi
     if (graphicsShader == NULL) 
     {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to create GPU graphics shader from SPIR-V: %s", filename);
+        RC2D_log(RC2D_LOG_ERROR, "Failed to create GPU graphics shader from SPIR-V: %s", storage_path);
         return NULL;
     }
 
@@ -354,245 +506,49 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename)
     // Mettre à jour le cache des shaders graphiques avec le nouveau shader graphique
     rc2d_engine_state.gpu_graphics_shaders_cache = newShaders;
     RC2D_GraphicsShaderEntry* entry = &rc2d_engine_state.gpu_graphics_shaders_cache[rc2d_engine_state.gpu_graphics_shader_count++];
-    entry->filename = RC2D_strdup(filename);
+    entry->filename = RC2D_strdup(storage_path);
     entry->shader = graphicsShader;
-    entry->lastModified = rc2d_gpu_getFileModificationTime(fullPath);
+    entry->lastModified = 0; // Pas de mtime via Storage : laisser 0 ou TODO si tu exposes une API.
 
     /**
      * On unlock le mutex après avoir ajouté le shader graphique au cache.
      * Cela permet aux autres threads d'accéder au cache des shaders graphiques.
      */
     SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
-#endif
+#endif // RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
 
-    RC2D_log(RC2D_LOG_INFO, "Graphics Shader loaded and cached: %s", filename);
-    return graphicsShader;
-}
-
-void rc2d_gpu_hotReloadGraphicsShaders(void)
-{
-#if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
-    /**
-     * Vérifier si les mutex pour les shaders graphiques sont initialisés
-     */
-    if (!rc2d_engine_state.gpu_graphics_shader_mutex)
-    {
-        RC2D_assert_release(false, RC2D_LOG_CRITICAL, "gpu_graphics_shader_mutex is NULL");
-    }
+#if !RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
+    // Branche "offline" : on n’a pas encore inséré dans le cache, on le fait maintenant.
 
     /**
-     * Récupérer le chemin de base de l'application (où est exécuté l'exécutable)
-     */
-    const char* basePath = SDL_GetBasePath();
-    if (basePath == NULL) 
-    {
-        RC2D_assert_release(false, RC2D_LOG_CRITICAL, "SDL_GetBasePath() failed, SDL_Error: %s", SDL_GetError());
-        return;
-    }
-
-    /**
-     * On verrouille les mutex pour éviter les conflits d'accès concurrents
-     * lors de la mise à jour des shaders graphiques
+     * On lock le temps d'ajouter le shader graphique au cache des shaders graphiques,
+     * et pour éviter les accès concurrents.
      */
     SDL_LockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
 
-    /**
-     * Parcourir tous les shaders graphiques dans le cache
-     * et vérifier s'ils ont été modifiés depuis leur dernière compilation.
-     */
-    for (int i = 0; i < rc2d_engine_state.gpu_graphics_shader_count; i++) 
-    {
-        // Récupérer le shader graphique à partir du cache
-        RC2D_GraphicsShaderEntry* entry = &rc2d_engine_state.gpu_graphics_shaders_cache[i];
+    // On réalloue le cache des shaders graphiques pour ajouter le nouveau shader graphique (on dois augmenter la taille du cache)
+    RC2D_GraphicsShaderEntry* newShaders2 = RC2D_realloc(
+        rc2d_engine_state.gpu_graphics_shaders_cache,
+        (rc2d_engine_state.gpu_graphics_shader_count + 1) * sizeof(RC2D_GraphicsShaderEntry)
+    );
 
-        /**
-         * Générer le chemin d'accès complet au fichier HLSL source
-         * 
-         * En utilisant le nom du fichier du shader graphique récupéré du cache,
-         * via `entry->filename`.
-         * 
-         * On utilise SDL_snprintf pour formater le chemin d'accès au fichier HLSL source.
-         */
-        char fullPath[512];
-        SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/src/%s.hlsl", basePath, entry->filename);
+    // Vérifier si la réallocation a réussi
+    RC2D_assert_release(newShaders2 != NULL, RC2D_LOG_CRITICAL, "Failed to realloc shader cache");
 
-        /**
-         * Vérifier si le fichier HLSL source a été modifié depuis la dernière compilation
-         * 
-         * On utilise `rc2d_gpu_getFileModificationTime` pour obtenir le temps de modification du fichier.
-         */
-        SDL_Time currentModified = rc2d_gpu_getFileModificationTime(fullPath);
-
-        // Si le fichier HLSL source a été modifié depuis la dernière compilation
-        if (currentModified > entry->lastModified) 
-        {            
-            // Déterminer le stage
-            SDL_GPUShaderStage stage;
-            if (SDL_strstr(entry->filename, ".vertex")) 
-            {
-                stage = SDL_GPU_SHADERSTAGE_VERTEX;
-            } 
-            else if (SDL_strstr(entry->filename, ".fragment")) 
-            {
-                stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
-            } 
-            else 
-            {
-                RC2D_log(RC2D_LOG_ERROR, "Unknown shader stage for %s during reload", entry->filename);
-                continue;
-            }
-
-            /**
-             * Charger le fichier HLSL
-             * 
-             * Attend un peu que l'os ou l'ide est le temps d'écrire le 
-             * fichier avant de le lire
-             */
-            char* codeHLSLSource = NULL;
-            for (int attempt = 0; attempt < 3; attempt++) {
-                codeHLSLSource = SDL_LoadFile(fullPath, NULL);
-                if (codeHLSLSource != NULL) break;
-                SDL_Delay(20);
-            }
-
-            /**
-             * Si le code HLSL n'a pas pu être chargé après plusieurs tentatives, log l'erreur
-             * et continue avec le prochain shader graphique.
-             */
-            if (!codeHLSLSource) 
-            {
-                RC2D_log(RC2D_LOG_ERROR, "Failed to load HLSL shader source after retries: %s", fullPath);
-                continue;
-            }
-
-            // Préparer les informations HLSL
-            SDL_ShaderCross_HLSL_Info hlslInfo = {
-                .source = codeHLSLSource,
-                .entrypoint = "main",
-                .include_dir = NULL,
-                .defines = NULL,
-                .shader_stage = (SDL_ShaderCross_ShaderStage)stage,
-                .enable_debug = true,
-                .name = entry->filename,
-                .props = 0
-            };
-
-            // Temps de début pour mesurer la compilation
-            Uint64 t0 = SDL_GetPerformanceCounter();
-
-            // Compiler HLSL vers SPIR-V
-            size_t spirvByteCodeSize = 0;
-            void* spirvByteCode = SDL_ShaderCross_CompileSPIRVFromHLSL(&hlslInfo, &spirvByteCodeSize);
-
-            // Libérer le code HLSL source après la compilation
-            RC2D_safe_free(codeHLSLSource);
-
-            // Vérifier si la compilation HLSL vers SPIR-V a réussi
-            if (spirvByteCode == NULL || spirvByteCodeSize == 0)
-            {
-                RC2D_log(RC2D_LOG_ERROR, "Failed to compile HLSL to SPIR-V during reload: %s", entry->filename);
-                continue;
-            }
-
-            // Réfléchir les métadonnées
-            SDL_ShaderCross_GraphicsShaderMetadata* metadata = SDL_ShaderCross_ReflectGraphicsSPIRV(
-                spirvByteCode, 
-                spirvByteCodeSize, 
-                0
-            );
-            // Vérifier si la réflexion des métadonnées a réussi
-            if (!metadata) 
-            {
-                RC2D_log(RC2D_LOG_ERROR, "Failed to reflect graphics shader metadata during reload: %s", entry->filename);
-                RC2D_safe_free(spirvByteCode);
-                continue;
-            }
-
-            // Préparer les informations SPIR-V
-            SDL_ShaderCross_SPIRV_Info spirvInfo = {
-                .bytecode = spirvByteCode,
-                .bytecode_size = spirvByteCodeSize,
-                .entrypoint = "main",
-                .shader_stage = (SDL_ShaderCross_ShaderStage)stage,
-                .enable_debug = true,
-                .name = entry->filename,
-                .props = 0
-            };
-
-            // Compiler le shader
-            SDL_GPUShader* newShader = SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(
-                rc2d_gpu_getDevice(),
-                &spirvInfo,
-                metadata,
-                0
-            );
-
-            // Temps de fin pour mesurer la compilation
-            Uint64 t1 = SDL_GetPerformanceCounter();
-            double compileTimeMs = (double)(t1 - t0) * 1000.0 / SDL_GetPerformanceFrequency();
-
-            // Libérer les ressources allouées pour les métadonnées et le code SPIR-V
-            RC2D_safe_free(metadata);
-            RC2D_safe_free(spirvByteCode);
-
-            if (newShader) 
-            {
-                /**
-                 * Créer un nouvel état de rendu GPU pour le shader
-                 */
-                SDL_GPURenderStateCreateInfo renderStateInfo = {
-                    .fragment_shader = (stage == SDL_GPU_SHADERSTAGE_FRAGMENT) ? newShader : NULL,
-                    .num_sampler_bindings = metadata->num_samplers,
-                    .sampler_bindings = NULL, // À adapter si vous utilisez des samplers
-                    .num_storage_textures = metadata->num_storage_textures,
-                    .storage_textures = NULL, // À adapter si nécessaire
-                    .num_storage_buffers = metadata->num_storage_buffers,
-                    .storage_buffers = NULL, // À adapter si nécessaire
-                    .props = 0
-                };
-
-                SDL_GPURenderState* newRenderState = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &renderStateInfo);
-                if (!newRenderState)
-                {
-                    RC2D_log(RC2D_LOG_ERROR, "Failed to create GPU render state for shader: %s, SDL_Error: %s", entry->filename, SDL_GetError());
-                    SDL_ReleaseGPUShader(rc2d_gpu_getDevice(), newShader);
-                    continue;
-                }
-
-                /**
-                 * Synchronisation : Attendre la fin du rendu en cours
-                 * L'API Renderer GPU gère la synchronisation via SDL_RenderPresent
-                 */
-                //SDL_RenderPresent(rc2d_engine_state.renderer);
-
-                // Libérer l'ancien shader et l'ancien état de rendu
-                if (entry->shader) 
-                {
-                    SDL_ReleaseGPUShader(rc2d_gpu_getDevice(), entry->shader);
-                }
-                if (entry->gpu_render_state)
-                {
-                    SDL_DestroyGPURenderState(entry->gpu_render_state);
-                }
-
-                // Mettre à jour le cache avec le nouveau shader et l'état de rendu
-                entry->shader = newShader;
-                entry->gpu_render_state = newRenderState;
-                entry->lastModified = currentModified;
-
-                RC2D_log(RC2D_LOG_INFO, "Successfully Shader %s reloaded in %.2f ms", entry->filename, compileTimeMs);
-            } 
-            else 
-            {
-                // Log l'erreur si la compilation du shader graphique a échoué
-                RC2D_log(RC2D_LOG_ERROR, "Failed to reload shader: %s", entry->filename);
-            }
-        }
-    }
+    // Mettre à jour le cache des shaders graphiques avec le nouveau shader graphique
+    rc2d_engine_state.gpu_graphics_shaders_cache = newShaders2;
+    RC2D_GraphicsShaderEntry* entry2 = &rc2d_engine_state.gpu_graphics_shaders_cache[rc2d_engine_state.gpu_graphics_shader_count++];
+    entry2->filename = RC2D_strdup(storage_path);
+    entry2->shader = graphicsShader;
+    entry2->lastModified = 0; // TODO: si tu ajoutes rc2d_storage_getFileMTime(), renseigne-le ici.
 
     /**
-     * Unlock les mutex pour permettre l'accès concurrent aux shaders graphiques
+     * On unlock le mutex après avoir ajouté le shader graphique au cache.
+     * Cela permet aux autres threads d'accéder au cache des shaders graphiques.
      */
     SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
-#endif
+#endif // !RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
+
+    RC2D_log(RC2D_LOG_INFO, "Graphics Shader loaded and cached from storage: %s", storage_path);
+    return graphicsShader;
 }

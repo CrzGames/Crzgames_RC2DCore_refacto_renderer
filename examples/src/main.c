@@ -66,7 +66,7 @@ const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[])
     config->pixelartMode = false;
     config->appInfo->name = "SeaTyrants";
     config->appInfo->organization = "Crzgames";
-    config->appInfo->version = "0.1.0";
+    config->appInfo->version = "1.0.0";
     config->appInfo->identifier = "com.crzgames.seatyrants";
 
     RC2D_assert_release(config != NULL, RC2D_LOG_CRITICAL, "RC2D_EngineConfig config is NULL. Cannot setup the engine.");

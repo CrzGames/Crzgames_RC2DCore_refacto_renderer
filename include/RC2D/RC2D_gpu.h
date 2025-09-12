@@ -1,6 +1,8 @@
 #ifndef RC2D_GPU_H
 #define RC2D_GPU_H
 
+#include <RC2D/RC2D_storage.h>
+
 #include <SDL3/SDL_gpu.h>
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
@@ -262,19 +264,47 @@ RC2D_GPUShaderFormat rc2d_gpu_getSupportedShaderFormats(void);
 /**
  * \brief Charge un shader graphique à partir d'un fichier source HLSL ou d'un fichier binaire précompilé.
  * 
- * Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est défini à 1, cela compile le shader à la volée à
- * partir du fichier source HLSL. Sinon, cela charge le fichier binaire déjà précompilé.
+ * Le chemin passé à la fonction ne doit contenir que le "nom logique" du shader, avec son suffixe de stage
+ * (exemple : "water.vertex", "water.fragment"). Il est inutile et incorrect d'inclure "shaders/src" ou 
+ * "shaders/compiled" dans ce chemin : la fonction les ajoute automatiquement.
  * 
- * \param {const char*} filename - Nom du fichier shader à charger (sans l'extension .hlsl).
+ * Selon la configuration :
+ * - Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED = 1 :
+ *   → le shader est compilé à la volée depuis le dossier `shaders/src/` 
+ *     (fichiers attendus : `<nom>.<stage>.hlsl`).
+ * - Sinon (mode compilation hors ligne) :
+ *   → le shader est chargé depuis le dossier `shaders/compiled/<backend>/` 
+ *     (fichiers attendus : `<nom>.<stage>.<ext>` selon le backend, par ex. `.spv`, `.dxil`, `.msl`, `.metallib`).
+ *   → un fichier JSON de réflexion doit également être présent dans `shaders/reflection/` 
+ *     (fichier attendu : `<nom>.<stage>.json`).
+ * 
+ * Exemple d’organisation attendue dans le storage (TITLE ou USER) :
+ * ```
+ * <racine_storage>/
+ *   shaders/
+ *     src/          # sources HLSL (*.vertex.hlsl, *.fragment.hlsl)
+ *     compiled/     # binaires précompilés par backend
+ *       spirv/      # *.spv
+ *       msl/        # *.msl
+ *       metallib/   # *.metallib
+ *       dxil/       # *.dxil
+ *     reflection/   # métadonnées JSON (*.json)
+ * ```
+ * 
+ * \param {const char*} filename - Nom logique du shader à charger avec suffixe de stage
+ *                                (ex. "water.vertex", "water.fragment").
+ * \param {RC2D_StorageKind} storage_kind - Type de storage à utiliser (TITLE ou USER).
  * \return {RC2D_GPUShader*} Pointeur vers le shader chargé, ou NULL en cas d'erreur.
  * 
- * \warning Le pointeur retourné doit être libéré par l'appelant avec SDL_ReleaseGPUShader lorsque le shader n'est plus nécessaire.
+ * \warning Le pointeur retourné doit être libéré par l'appelant avec SDL_ReleaseGPUShader
+ *          lorsque le shader n'est plus nécessaire.
  * 
  * \threadsafety Cette fonction peut être appelée depuis n'importe quel thread.
  * 
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-RC2D_GPUShader* rc2d_gpu_loadGraphicsShader(const char* filename);
+RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* filename,
+                                                       RC2D_StorageKind storage_kind);
 
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */
 #ifdef __cplusplus
