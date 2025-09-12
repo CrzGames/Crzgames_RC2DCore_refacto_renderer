@@ -38,7 +38,6 @@ Windows (.exe) : C:\Users\Corentin\Documents\SeaTyrants\bin\
 macOS (.app bundle) : /Applications/SeaTyrants/SeaTyrants.app/Contents/Resources/
 iOS (.app bundle) : /private/var/containers/Bundle/Application/5E3A643E-4353-44CD-85A1-690E286A944B/SeaTyrants.app/
 Linux : /tmp/.mount_mygame0q6J0j/ (une AppImage est un format d empaquetage qui, lors de son execution, monte le contenu de l image dans un systeme de fichiers temporaire. Cela explique pourquoi vous obtenez un chemin dans /tmp/.)
-HTML5 : /
 */
 char* rc2d_filesystem_getPathApp(void); 
 

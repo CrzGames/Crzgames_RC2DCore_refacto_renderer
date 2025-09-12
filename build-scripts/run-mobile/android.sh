@@ -49,3 +49,11 @@ adb uninstall com.crzgames.testexe # Remplacez 'com.crzgames.testexe' par le nom
 echo -e "\e[32m \n Install APK in real device connected...\e[0m"
 $GRADLE installDebug
 
+adb logcat -c # Clear logcat
+
+# Lancer l'application sur l'appareil connecté
+echo -e "\e[32m \n Launching the application on the connected device...\e[0m"
+adb shell am start -n com.crzgames.testexe/.MyGame
+
+echo -e "\e[32m \n Displaying logcat for SDL and SDL/APP...\e[0m"
+adb logcat -s SDL:V "SDL/APP:V"
