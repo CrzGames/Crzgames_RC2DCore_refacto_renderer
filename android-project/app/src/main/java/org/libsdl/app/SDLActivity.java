@@ -293,27 +293,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      */
     protected String[] getLibraries() {
         return new String[] {
-            /**
-             * Lib : SDL3 and related
-             */
-            "SDL3",
-            "SDL3_image",
-            "SDL3_mixer",
-            "SDL3_ttf",
-            /**
-             * Lib : ffmpeg
-             */
-            "avcodec",
-            "avdevice",
-            "avfilter",
-            "avformat",
-            "avutil",
-            "swresample",
-            "swscale",
-            /**
-             * Lib : onnxruntime
-             */
-            "onnxruntime",
             "main"
         };
     }
