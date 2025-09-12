@@ -155,9 +155,15 @@ static bool read_all(SDL_Storage *storage, const char *path, void **out_data, Ui
 
     // Obtient la taille du fichier
     Uint64 lengthFile = 0;
-    if (!SDL_GetStorageFileSize(storage, path, &lengthFile) || lengthFile == 0) 
+    if (!SDL_GetStorageFileSize(storage, path, &lengthFile)) 
     {
         RC2D_log(RC2D_LOG_ERROR, "read_all: SDL_GetStorageFileSize failed or file is empty: %s", SDL_GetError());
+        return false;
+    }
+
+    if (lengthFile == 0) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "read_all: file is empty");
         return false;
     }
 

@@ -649,25 +649,25 @@ static bool rc2d_engine_create_renderergpu(void)
      * Active le mode de débogage pour le rendu GPU si demandé dans la configuration.
      * Utile pour le développement et le débogage des shaders.
      */
-    SDL_SetHint(SDL_HINT_RENDER_GPU_DEBUG, rc2d_engine_state.config->gpuOptions->debugMode ? "1" : "0");
+    SDL_SetHintWithPriority(SDL_HINT_RENDER_GPU_DEBUG, rc2d_engine_state.config->gpuOptions->debugMode ? "1" : "0", SDL_HINT_OVERRIDE);
 
     /**
     * Une variable contrôlant s'il faut préférer un GPU basse consommation sur les systèmes multi-GPU.
     */ 
-    SDL_SetHint(SDL_HINT_RENDER_GPU_LOW_POWER, rc2d_engine_state.config->gpuOptions->preferLowPower ? "1" : "0");
+    SDL_SetHintWithPriority(SDL_HINT_RENDER_GPU_LOW_POWER, rc2d_engine_state.config->gpuOptions->preferLowPower ? "1" : "0", SDL_HINT_OVERRIDE);
 
     /**
      * Force le backend GPU si demandé dans la configuration.
      */
     switch (rc2d_engine_state.config->gpuOptions->driver) {
         case RC2D_GPU_DRIVER_VULKAN:
-            SDL_SetHint(SDL_HINT_GPU_DRIVER, "vulkan");
+            SDL_SetHintWithPriority(SDL_HINT_GPU_DRIVER, "vulkan", SDL_HINT_OVERRIDE);
             break;
         case RC2D_GPU_DRIVER_METAL:
-            SDL_SetHint(SDL_HINT_GPU_DRIVER, "metal");
+            SDL_SetHintWithPriority(SDL_HINT_GPU_DRIVER, "metal", SDL_HINT_OVERRIDE);
             break;
         case RC2D_GPU_DRIVER_DIRECT3D12:
-            SDL_SetHint(SDL_HINT_GPU_DRIVER, "direct3d12");
+            SDL_SetHintWithPriority(SDL_HINT_GPU_DRIVER, "direct3d12", SDL_HINT_OVERRIDE);
             break;
         case RC2D_GPU_DRIVER_PRIVATE:
             // Rien d'équivalent en public pour un backend privé.
@@ -2043,7 +2043,7 @@ static bool rc2d_engine(void)
      * Une variable contrôlant les orientations autorisées sur iOS/Android.
      */
 #if defined(RC2D_PLATFORM_IOS) || defined(RC2D_PLATFORM_ANDROID)
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+    SDL_SetHintWithPriority(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight", SDL_HINT_OVERRIDE);
 #endif
 
     /**
