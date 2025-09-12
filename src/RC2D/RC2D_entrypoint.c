@@ -1,15 +1,11 @@
 /**
- * IMPORTANT:
- * - Doit être inclus avant tout autre fichier d'en-tête SDL / RC2D.
+ * Ne pas faire dans ce fichier :
+ * #define SDL_MAIN_USE_CALLBACKS
+ * #include <SDL3/SDL_main.h>
  * 
  * - SDL_MAIN_USE_CALLBACKS et <SDL3/SDL_main.h> doivent être inclus UNE SEULE FOIS
- * dans un fichier source (.c/.cpp).
- * 
- * - A partir du moment ou SDL_MAIN_USE_CALLBACKS est défini et <SDL3/SDL_main.h> est inclus,
- * la fonction main() ne doit pas être définie dans le code de l'application.
- */
-#define SDL_MAIN_USE_CALLBACKS
-#include <SDL3/SDL_main.h>
+ * dans un fichier source (.c/.cpp) par l'application qui utilise RC2D.
+*/
 #include <SDL3/SDL.h>
 
 #include <RC2D/RC2D_engine.h>

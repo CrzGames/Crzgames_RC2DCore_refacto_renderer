@@ -20,9 +20,9 @@ option(RC2D_MEMORY_DEBUG_ENABLED "Enable RC2D memory debug tracking (realloc/mal
 
 # Option pour activer la compilation des shaders en ligne (hot reload) pour SDL3_shadercross
 if(ANDROID OR CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-  set(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED OFF CACHE BOOL "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" FORCE)
+  option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
 else()
-  set(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED ON  CACHE BOOL "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" FORCE)
+  option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" ON)
 endif()
 
 # Option pour activer le module RC2D_video (basé sur FFmpeg)
@@ -1053,7 +1053,7 @@ if(RC2D_BUILD_EXAMPLES)
 
   # Créer un exécutable pour l'exemple
   if(ANDROID)
-    # Pour Android, il faut obligatoirement mettre SHARED et "main" comme nom de target, quand c'est un exécutable
+    # Pour Android, il faut obligatoirement mettre SHARED et "main" comme nom de target
     add_library(${RC2D_EXAMPLE_TARGET_NAME} SHARED ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS})
   else()
     add_executable(${RC2D_EXAMPLE_TARGET_NAME} ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS})
