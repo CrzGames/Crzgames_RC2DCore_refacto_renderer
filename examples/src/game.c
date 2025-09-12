@@ -196,7 +196,7 @@ void rc2d_load(void)
     /**
      * Sounds
     */
-    g_menu_music = rc2d_audio_load("assets/sounds/sound_menu.mp3", /*predecode=*/true);
+    g_menu_music = rc2d_audio_loadAudioFromStorage("assets/sounds/sound_menu.mp3", RC2D_STORAGE_TITLE, /*predecode=*/true);
     if (!g_menu_music) 
     {
         RC2D_log(RC2D_LOG_WARN, "Failed to load menu music: %s", SDL_GetError());
@@ -332,7 +332,6 @@ void rc2d_update(double dt)
                 const char *base_path = SDL_GetBasePath();
                 char full_path[512];
                 SDL_snprintf(full_path, sizeof(full_path), "%sassets/videos/SplashScreen_SeaTyrants_1080p.mp4", base_path);
-
                 if (rc2d_video_open(&g_splash_game, full_path) != 0) 
                 {
                     RC2D_log(RC2D_LOG_WARN, "Game splash failed, skipping to game.");

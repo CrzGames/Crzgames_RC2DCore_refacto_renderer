@@ -48,7 +48,9 @@ android {
     sourceSets {
         main {
             assets {
-                srcDirs '../../examples/assets'
+                // Récupére tout le dossier examples et ne garde que le dossier assets à l'intérieur
+                srcDir '../../examples'
+                include 'assets/**'
             }
         }
     }

@@ -1,6 +1,8 @@
 #ifndef RC2D_AUDIO_H
 #define RC2D_AUDIO_H
 
+#include <RC2D/RC2D_storage.h>
+
 #include <stdbool.h>
 
 #include <SDL3_mixer/SDL_mixer.h>
@@ -27,6 +29,27 @@ extern "C" {
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
 MIX_Audio* rc2d_audio_load(const char* path, bool predecode);
+
+/**
+ * \brief Charger un asset audio depuis un dossier de stockage (Title ou User).
+ *
+ * \details
+ * Cette fonction charge un fichier audio (WAV/OGG/MP3/FLAC, etc.) depuis le
+ * dossier de stockage spécifié (Title ou User) pour être joué sur le mixeur
+ * déjà initialisé de l’engine. Si \p predecode est vrai, l’audio est entièrement
+ * décodé en mémoire (plus de RAM, démarrage instantané et seek rapide).
+ *
+ * \param storage_path  Chemin relatif dans le dossier de stockage.
+ * \param storage_kind  Type de dossier de stockage (RC2D_STORAGE_TITLE ou RC2D_STORAGE_USER).
+ * \param predecode     Si vrai, décodage complet en mémoire ; sinon, décodage à la volée.
+ *
+ * \return (MIX_Audio*) Pointeur valide en cas de succès, NULL en cas d’échec.
+ *
+ * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+MIX_Audio* rc2d_audio_loadAudioFromStorage(const char *storage_path, RC2D_StorageKind storage_kind, bool predecode);
 
 /**
  * \brief Détruire un asset audio précédemment chargé.
