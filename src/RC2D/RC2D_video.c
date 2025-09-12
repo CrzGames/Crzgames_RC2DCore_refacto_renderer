@@ -91,7 +91,7 @@ double rc2d_video_currentSeconds(const RC2D_Video* v)
     return (v->clock_time < 0.0) ? 0.0 : v->clock_time;
 }
 
-/* Initialise une vidéo à partir d'un fichier dans le storage et la joue*/
+/* Initialise une vidéo à partir d'un fichier dans le storage et la joue */
 int rc2d_video_openFromStorage(RC2D_Video *video,
                                const char *storage_path,
                                RC2D_StorageKind storage_kind)
@@ -192,13 +192,27 @@ int rc2d_video_openFromStorage(RC2D_Video *video,
                                       /*logctx=*/NULL, /*offset=*/0, /*max_probe_size=*/0);
     if (pret < 0 || !fmt->iformat) {
         RC2D_log(RC2D_LOG_ERROR, "FFmpeg: probe failed for '%s' (%d)", storage_path, pret);
-        avformat_close_input(&fmt);         /* ferme fmt si ouvert */
+        avformat_close_input(&fmt);
         avio_context_free(&avio);
         RC2D_free(opaque);
         SDL_CloseIO(io);
         RC2D_safe_free(bytes);
         return -1;
     }
+
+    /* --- PATCH Android/AVIO : revenir au début + reset du tampon --- */
+    if (SDL_SeekIO(io, 0, SDL_IO_SEEK_SET) < 0) {
+        RC2D_log(RC2D_LOG_ERROR, "Seek to start failed after probe");
+        avformat_close_input(&fmt);
+        avio_context_free(&avio);
+        RC2D_free(opaque);
+        SDL_CloseIO(io);
+        RC2D_safe_free(bytes);
+        return -1;
+    }
+    avio->buf_ptr = avio->buffer;
+    avio->buf_end = avio->buffer;
+    avio->pos     = 0;
 
     /* --- 4) Ouvrir sans URL, en passant l'iformat détecté --- */
     int oret = avformat_open_input(&fmt, /*url=*/NULL, fmt->iformat, /*options=*/NULL);
@@ -214,9 +228,10 @@ int rc2d_video_openFromStorage(RC2D_Video *video,
 
     /* Succès : rattacher au RC2D_Video pour cleanup ultérieur */
     video->format_ctx = fmt;
-    video->avio       = avio;         /* libéré avec avio_context_free */
-    video->sdl_io     = io;           /* libéré avec SDL_CloseIO */
-    video->owned_mem  = bytes;        /* libéré avec RC2D_safe_free */
+    video->avio       = avio;         /* libéré via avio_context_free */
+    video->avio_opaque= opaque;       /* libéré via RC2D_free */
+    video->sdl_io     = io;           /* libéré via SDL_CloseIO */
+    video->owned_mem  = bytes;        /* libéré via RC2D_safe_free */
     video->owned_len  = (size_t)len;
     video->io_size    = (int64_t)len;
 
@@ -754,6 +769,26 @@ int rc2d_video_draw(RC2D_Video* video)
 void rc2d_video_close(RC2D_Video* video)
 {
     if (!video) return;
+
+        /* --- IO custom --- */
+    if (video->format_ctx) {
+        avformat_close_input(&video->format_ctx);
+    }
+    if (video->avio) {
+        avio_context_free(&video->avio);  /* libère aussi avio->buffer (av_malloc) */
+    }
+    if (video->avio_opaque) {
+        RC2D_free(video->avio_opaque);    /* notre struct RC2D_FFmpegIO */
+        video->avio_opaque = NULL;
+    }
+    if (video->sdl_io) {
+        SDL_CloseIO(video->sdl_io);       /* ferme le stream SDL */
+        video->sdl_io = NULL;
+    }
+    if (video->owned_mem) {
+        RC2D_safe_free(video->owned_mem); /* free du buffer mémoire source */
+        video->owned_mem = NULL;
+    }
 
     /* Libérer ressources audio */
     if (video->mix_track) {

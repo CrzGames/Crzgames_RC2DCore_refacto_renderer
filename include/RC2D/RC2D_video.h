@@ -229,12 +229,13 @@ typedef struct RC2D_Video {
     /* Fade-out */
     double           fade_out_start_time; /* Temps de début du fade-out (en secondes) */
     double           fade_out_duration;   /* Durée du fade-out (en secondes) */
-
-    AVIOContext    *avio;          // IO custom FFmpeg
-    SDL_IOStream   *sdl_io;        // stream SDL (mémoire)
-    void           *owned_mem;     // si on possède un buffer mémoire (à libérer)
-    size_t          owned_len;     // taille du buffer
-    int64_t         io_size;       // taille connue (pour AVSEEK_SIZE)
+    /* -------- IO custom -------- */
+    AVIOContext    *avio;         /* tampon FFmpeg */
+    void           *avio_opaque;  /* RC2D_FFmpegIO* alloué avec RC2D_malloc */
+    SDL_IOStream   *sdl_io;       /* IO SDL (mémoire) */
+    void           *owned_mem;    /* buffer mémoire (à libérer) */
+    size_t          owned_len;    /* taille du buffer */
+    int64_t         io_size;      /* taille pour AVSEEK_SIZE */
 } RC2D_Video;
 
 /**

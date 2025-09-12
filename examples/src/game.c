@@ -274,10 +274,6 @@ void rc2d_load(void)
 
 
     // --- Splash videos ---
-    const char *base_path = SDL_GetBasePath();
-    char full_path[512];
-
-    // splash videos
     if (rc2d_video_openFromStorage(&g_splash_studio, "assets/videos/SplashScreen_Studio_1080p.mp4", RC2D_STORAGE_TITLE) != 0)
     {
         RC2D_log(RC2D_LOG_WARN, "Studio splash failed to open, skipping directly to game splash.");
