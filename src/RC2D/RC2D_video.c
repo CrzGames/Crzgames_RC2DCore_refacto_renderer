@@ -11,6 +11,11 @@
 
 /* -- Helpers internes ----------------------------------------------------- */
 
+typedef struct RC2D_FFmpegIO {
+    SDL_IOStream *io;
+    int64_t size; // -1 si inconnue
+} RC2D_FFmpegIO;
+
 static inline double rc2d_now_wall_dt(RC2D_Video* v)
 {
     Uint64 now = SDL_GetPerformanceCounter();
@@ -42,6 +47,32 @@ static inline void rc2d_upload_yuv_to_next_texture(RC2D_Video* v)
     v->tex_index = (v->tex_index + 1) % RC2D_TEX_RING;
 }
 
+static int sdlio_read(void *opaque, uint8_t *buf, int buf_size)
+{
+    RC2D_FFmpegIO *ctx = (RC2D_FFmpegIO *)opaque;
+    Sint64 n = SDL_ReadIO(ctx->io, buf, (Sint64)buf_size);
+    if (n == 0)    return AVERROR_EOF;   // fin
+    if (n < 0)     return AVERROR(EIO);  // erreur
+    return (int)n;
+}
+
+static int64_t sdlio_seek(void *opaque, int64_t offset, int whence)
+{
+    RC2D_FFmpegIO *ctx = (RC2D_FFmpegIO *)opaque;
+
+    if (whence == AVSEEK_SIZE) {
+        return (ctx->size >= 0) ? ctx->size : AVERROR(ENOSYS);
+    }
+
+    int sdlwhence = SDL_IO_SEEK_SET;
+    if (whence == SEEK_CUR) sdlwhence = SDL_IO_SEEK_CUR;
+    else if (whence == SEEK_END) sdlwhence = SDL_IO_SEEK_END;
+
+    Sint64 pos = SDL_SeekIO(ctx->io, offset, sdlwhence);
+    if (pos < 0) return AVERROR(EIO);
+    return (int64_t)pos;
+}
+
 /* -- API ------------------------------------------------------------------ */
 
 /* Récupère la durée totale (secondes) depuis FFmpeg, ou <=0 si inconnue */
@@ -60,69 +91,139 @@ double rc2d_video_currentSeconds(const RC2D_Video* v)
     return (v->clock_time < 0.0) ? 0.0 : v->clock_time;
 }
 
-/* Ouvre et initialise une vidéo pour le splash screen */
-int rc2d_video_open(RC2D_Video* video, const char* filename)
+/* Initialise une vidéo à partir d'un fichier dans le storage et la joue*/
+int rc2d_video_openFromStorage(RC2D_Video *video,
+                               const char *storage_path,
+                               RC2D_StorageKind storage_kind)
 {
-    /* Init champs */
-    memset(video, 0, sizeof(RC2D_Video)); /* Réinitialisation complète */
-
-    video->format_ctx = NULL;
-    video->codec_ctx  = NULL;
-    video->frame      = NULL;
-    video->frame_yuv  = NULL;
-    video->sws_ctx    = NULL;
-    video->buffer     = NULL;
-
+    /* Init champs (état neutre) */
+    memset(video, 0, sizeof(*video));
     for (int i = 0; i < RC2D_TEX_RING; ++i) video->textures[i] = NULL;
-    video->texture    = NULL;
-    video->tex_index  = 0;
+    video->video_stream_index   = -1;
+    video->audio_stream_index   = -1;
+    video->frame_duration       = 1.0 / 30.0;
+    video->fade_out_start_time  = -1.0;
+    video->fade_out_duration    = 6.0;
+    video->perf_freq            = SDL_GetPerformanceFrequency();
+    video->perf_t0              = SDL_GetPerformanceCounter();
 
-    video->video_stream_index = -1;
-    video->width       = 0;
-    video->height      = 0;
+    /* --- 1) Lire le fichier depuis le storage en mémoire --- */
+    void  *bytes = NULL;
+    Uint64 len   = 0;
 
-    video->time_base   = 0.0;
-    video->frame_duration = 1.0 / 30.0;
-
-    video->is_finished = 0;
-    video->clock_time  = 0.0;
-    video->has_pending_frame = 0;
-    video->next_frame_pts    = 0.0;
-
-    video->perf_freq = SDL_GetPerformanceFrequency();
-    video->perf_t0   = SDL_GetPerformanceCounter();
-
-    /* FFmpeg (audio) */
-    video->audio_codec_ctx = NULL;
-    video->audio_stream_index = -1;
-    video->audio_frame = NULL;
-    video->swr_ctx = NULL;
-    video->audio_buffer = NULL;
-    video->audio_buffer_size = 0;
-    video->audio_buffer_used = 0;
-
-    /* RC2D audio */
-    video->mix_audio = NULL;
-    video->mix_track = NULL;
-
-    /* Infos audio */
-    video->audio_time_base = 0.0;
-    video->audio_clock = 0.0;
-
-    /* Fade-out */
-    video->fade_out_start_time = -1.0; /* -1 indique pas de fade-out en cours */
-    video->fade_out_duration = 6.0;    /* 6s par défaut */
-
-    /* Ouvrir le fichier */
-    if (avformat_open_input(&video->format_ctx, filename, NULL, NULL) < 0) {
-        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'ouvrir %s", filename);
+    if (storage_kind == RC2D_STORAGE_TITLE) {
+        if (!rc2d_storage_titleReadFile(storage_path, &bytes, &len)) {
+            RC2D_log(RC2D_LOG_ERROR, "TitleReadFile failed for '%s'", storage_path);
+            return -1;
+        }
+    } else if (storage_kind == RC2D_STORAGE_USER) {
+        if (!rc2d_storage_userReadFile(storage_path, &bytes, &len)) {
+            RC2D_log(RC2D_LOG_ERROR, "UserReadFile failed for '%s'", storage_path);
+            return -1;
+        }
+    } else {
+        RC2D_log(RC2D_LOG_ERROR, "Invalid storage kind for video");
         return -1;
     }
 
+    if (!bytes || len == 0) {
+        RC2D_log(RC2D_LOG_ERROR, "Empty video '%s' in %s storage",
+                 storage_path, (storage_kind==RC2D_STORAGE_TITLE)?"Title":"User");
+        RC2D_safe_free(bytes);
+        return -1;
+    }
+
+    /* --- 2) IO SDL seekable sur le buffer (ne PAS libérer 'bytes' ici) --- */
+    SDL_IOStream *io = SDL_IOFromConstMem(bytes, (size_t)len);
+    if (!io) {
+        RC2D_log(RC2D_LOG_ERROR, "SDL_IOFromConstMem failed: %s", SDL_GetError());
+        RC2D_safe_free(bytes);
+        return -1;
+    }
+
+    /* --- 3) AVIOContext custom (utiliser av_malloc !) --- */
+    const int avio_buf_size = 32 * 1024;
+    uint8_t *avio_buf = (uint8_t *)av_malloc(avio_buf_size);
+    if (!avio_buf) {
+        RC2D_log(RC2D_LOG_ERROR, "av_malloc failed for AVIO buffer");
+        SDL_CloseIO(io);
+        RC2D_safe_free(bytes);
+        return -1;
+    }
+
+    RC2D_FFmpegIO *opaque = (RC2D_FFmpegIO *)RC2D_malloc(sizeof(*opaque));
+    if (!opaque) {
+        RC2D_log(RC2D_LOG_ERROR, "RC2D_malloc failed for opaque");
+        av_free(avio_buf);
+        SDL_CloseIO(io);
+        RC2D_safe_free(bytes);
+        return -1;
+    }
+    opaque->io   = io;
+    opaque->size = (int64_t)len;
+
+    AVIOContext *avio = avio_alloc_context(avio_buf, avio_buf_size,
+                                           /*write_flag=*/0, opaque,
+                                           sdlio_read, /*write=*/NULL, sdlio_seek);
+    if (!avio) {
+        RC2D_log(RC2D_LOG_ERROR, "avio_alloc_context failed");
+        RC2D_free(opaque);
+        av_free(avio_buf);
+        SDL_CloseIO(io);
+        RC2D_safe_free(bytes);
+        return -1;
+    }
+    avio->seekable = AVIO_SEEKABLE_NORMAL;
+
+    /* --- 3.5) AVFormatContext + PROBE pour déterminer le demuxer --- */
+    AVFormatContext *fmt = avformat_alloc_context();
+    if (!fmt) {
+        RC2D_log(RC2D_LOG_ERROR, "avformat_alloc_context failed");
+        avio_context_free(&avio);           /* libère aussi avio_buf */
+        RC2D_free(opaque);
+        SDL_CloseIO(io);
+        RC2D_safe_free(bytes);
+        return -1;
+    }
+    fmt->pb    = avio;
+    fmt->flags |= AVFMT_FLAG_CUSTOM_IO;
+
+    int pret = av_probe_input_buffer2(avio, &fmt->iformat, /*url=*/NULL,
+                                      /*logctx=*/NULL, /*offset=*/0, /*max_probe_size=*/0);
+    if (pret < 0 || !fmt->iformat) {
+        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: probe failed for '%s' (%d)", storage_path, pret);
+        avformat_close_input(&fmt);         /* ferme fmt si ouvert */
+        avio_context_free(&avio);
+        RC2D_free(opaque);
+        SDL_CloseIO(io);
+        RC2D_safe_free(bytes);
+        return -1;
+    }
+
+    /* --- 4) Ouvrir sans URL, en passant l'iformat détecté --- */
+    int oret = avformat_open_input(&fmt, /*url=*/NULL, fmt->iformat, /*options=*/NULL);
+    if (oret < 0) {
+        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: avformat_open_input failed (%d) for '%s'", oret, storage_path);
+        avformat_close_input(&fmt);
+        avio_context_free(&avio);
+        RC2D_free(opaque);
+        SDL_CloseIO(io);
+        RC2D_safe_free(bytes);
+        return -1;
+    }
+
+    /* Succès : rattacher au RC2D_Video pour cleanup ultérieur */
+    video->format_ctx = fmt;
+    video->avio       = avio;         /* libéré avec avio_context_free */
+    video->sdl_io     = io;           /* libéré avec SDL_CloseIO */
+    video->owned_mem  = bytes;        /* libéré avec RC2D_safe_free */
+    video->owned_len  = (size_t)len;
+    video->io_size    = (int64_t)len;
+
     /* Récupérer infos de flux */
     if (avformat_find_stream_info(video->format_ctx, NULL) < 0) {
-        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible de récupérer les infos de flux");
-        avformat_close_input(&video->format_ctx);
+        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: stream info failed");
+        rc2d_video_close(video);
         return -1;
     }
 
@@ -202,7 +303,7 @@ int rc2d_video_open(RC2D_Video* video, const char* filename)
 
     /* Buffer pour frame YUV */
     int yuv_size = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, video->width, video->height, 1);
-    video->buffer = (uint8_t*)av_malloc((size_t)yuv_size);
+    video->buffer = (uint8_t*)RC2D_malloc((size_t)yuv_size);
     if (!video->buffer) {
         RC2D_log(RC2D_LOG_ERROR, "FFmpeg: impossible d'allouer le buffer YUV");
         sws_freeContext(video->sws_ctx);
@@ -234,7 +335,7 @@ int rc2d_video_open(RC2D_Video* video, const char* filename)
                     video->textures[j] = NULL;
                 }
             }
-            av_free(video->buffer);
+            RC2D_free(video->buffer);
             video->buffer = NULL;
             sws_freeContext(video->sws_ctx);
             av_frame_free(&video->frame);
@@ -692,7 +793,7 @@ void rc2d_video_close(RC2D_Video* video)
     video->texture = NULL;
 
     if (video->buffer) {
-        av_free(video->buffer);
+        RC2D_free(video->buffer);
         video->buffer = NULL;
     }
     if (video->sws_ctx) {

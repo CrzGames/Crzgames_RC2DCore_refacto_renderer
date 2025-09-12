@@ -3,6 +3,8 @@
 
 #if RC2D_VIDEO_MODULE_ENABLED
 
+#include <RC2D/RC2D_storage.h>
+
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
@@ -227,6 +229,12 @@ typedef struct RC2D_Video {
     /* Fade-out */
     double           fade_out_start_time; /* Temps de début du fade-out (en secondes) */
     double           fade_out_duration;   /* Durée du fade-out (en secondes) */
+
+    AVIOContext    *avio;          // IO custom FFmpeg
+    SDL_IOStream   *sdl_io;        // stream SDL (mémoire)
+    void           *owned_mem;     // si on possède un buffer mémoire (à libérer)
+    size_t          owned_len;     // taille du buffer
+    int64_t         io_size;       // taille connue (pour AVSEEK_SIZE)
 } RC2D_Video;
 
 /**
@@ -261,25 +269,28 @@ double rc2d_video_totalSeconds(const RC2D_Video* video);
 double rc2d_video_currentSeconds(const RC2D_Video* video);
 
 /**
- * \brief Ouvre et initialise une vidéo (et son audio éventuel).
+ * \brief Ouvre et joue une vidéo depuis le storage (Title ou User).
  *
  * \details
- * - Initialise FFmpeg (format/codec), SWS (YUV420P), textures SDL (IYUV),
- *   et prépare l'audio : décodage complet en mémoire, conversion PCM S16 stéréo
- *   44.1 kHz, création d'une piste mixer.
- * - Si l'audio est présent, il sera prêt à être joué/synchronisé.
+ * - Charge le fichier vidéo depuis le storage (Title ou User) en mémoire.
+ * - Initialise FFmpeg pour décoder la vidéo (et l'audio si présent).
+ * - Prépare les textures SDL pour le rendu.
+ * - Prépare le contexte audio et la piste de mixage si audio présent.
  *
- * \param {RC2D_Video*} video - Contexte vidéo à initialiser (mémoire par l'appelant).
- * \param {const char*} filename - Chemin du fichier vidéo à lire.
- * \return {int} - 0 en cas de succès, -1 en cas d'erreur (logs fournis).
+ * \param {RC2D_Video*} video - Contexte vidéo à initialiser (doit être alloué).
+ * \param {const char*} storage_path - Chemin du fichier dans le storage.
+ * \param {RC2D_StorageKind} storage_kind - Type de storage (Title ou User).
+ * \return {int} - 0 en cas de succès, -1 en cas d'erreur.
  *
- * \threadsafety À appeler sur le thread principal (création des textures SDL).
+ * \threadsafety Doit être appelé sur le thread principal.
  *
  * \since This function is available since RC2D 1.0.0.
  *
  * \see rc2d_video_close
  */
-int rc2d_video_open(RC2D_Video* video, const char* filename);
+int rc2d_video_openFromStorage(RC2D_Video *video,
+                               const char *storage_path,
+                               RC2D_StorageKind storage_kind);
 
 /**
  * \brief Met à jour la lecture (décodage, pacing PTS, drop des frames en retard).
