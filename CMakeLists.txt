@@ -146,21 +146,6 @@ set(SDLMIXER_WAVPACK OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_WAVPACK_DSD OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_WAVPACK_SHARED OFF CACHE BOOL "" FORCE)
 
-if(APPLE)
-  if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-    # iOS : Forcer la compilation statique de SDL3_mixer (.dylib non autorisé par Apple pour l'App Store)
-    #set(SDLMIXER_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-  endif()
-endif()
-
-# SDL3_ttf :
-if(APPLE)
-  if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-    # iOS : Forcer la compilation statique de SDL3_ttf (.dylib non autorisé par Apple pour l'App Store)
-    #set(SDLTTF_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-  endif()
-endif()
-
 # SDL3_image : Désactiver explicitement tous les formats d'image qui sont activé par défault.
 # Il restera ces formats activé par défault : STB, PNG et SVG
 set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
@@ -177,35 +162,29 @@ set(SDLIMAGE_WEBP OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XCF OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XPM OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
-if (APPLE)
-  if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-    # iOS : Forcer la compilation statique de SDL3_image (.dylib non autorisé par Apple pour l'App Store)
-    #set(SDLIMAGE_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-  endif()
-endif()
 
 # SDL3 :
 # Il peut vous donner accès à beaucoup plus de contrôleurs de jeu,
 # Mais il nécessite l'autorisation de l'utilisateur avant que votre application puisse communiquer avec le matériel Bluetooth
 set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "" FORCE)
-if (APPLE)
-  if(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-    # iOS : Forcer la compilation statique de SDL3 (.dylib non autorisé par Apple pour l'App Store)
-    #set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-    #set(SDL_STATIC  ON  CACHE BOOL "" FORCE)
-    #set(SDL3_DIR "${CMAKE_BINARY_DIR}/dependencies/SDL" CACHE PATH "" FORCE)
-    #list(PREPEND CMAKE_PREFIX_PATH "${SDL3_DIR}")
-  endif()
-endif()
+
+set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+set(SDL_STATIC  ON  CACHE BOOL "" FORCE)
+set(SDLMIXER_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(SDLMIXER_BUILD_STATIC_LIBS  ON  CACHE BOOL "" FORCE)
+set(SDLIMAGE_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_BUILD_STATIC_LIBS  ON  CACHE BOOL "" FORCE)
+set(SDLTTF_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(SDLTTF_BUILD_STATIC_LIBS  ON  CACHE BOOL "" FORCE)
 
 # SDL3, SDL3_ttf, SDL3_image, SDL3_mixer : 
 # Permet de dire à CMake de ne pas chercher les dépendances dans le système,
 # mais de les utiliser à partir du répertoire "dependencies", dont également les submodules
 # des repositories de SDL3, SDL3_ttf, SDL3_mixer, SDL3_image
-add_subdirectory(dependencies/SDL EXCLUDE_FROM_ALL)
-add_subdirectory(dependencies/SDL_ttf EXCLUDE_FROM_ALL)
-add_subdirectory(dependencies/SDL_image EXCLUDE_FROM_ALL)
-add_subdirectory(dependencies/SDL_mixer EXCLUDE_FROM_ALL)
+add_subdirectory(dependencies/SDL        )
+add_subdirectory(dependencies/SDL_ttf    EXCLUDE_FROM_ALL)
+add_subdirectory(dependencies/SDL_image  EXCLUDE_FROM_ALL)
+add_subdirectory(dependencies/SDL_mixer  EXCLUDE_FROM_ALL)
 
 # Chemin vers les dépendances
 set(DEPENDENCIES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
