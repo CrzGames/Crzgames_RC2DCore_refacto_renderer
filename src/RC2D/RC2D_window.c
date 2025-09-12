@@ -3,6 +3,7 @@
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_math.h>
 #include <RC2D/RC2D_memory.h>
+#include <RC2D/RC2D_platform_defines.h>
 
 static bool rc2d_is_current_fullscreen = false;
 static RC2D_FullscreenType rc2d_current_fullscreen_type = RC2D_FULLSCREEN_NONE;
@@ -317,6 +318,17 @@ int rc2d_window_getWidth(void)
 
 void rc2d_window_setSize(const int width, const int height)
 {
+    // Plateformes qui ne permettent pas le redimensionnement
+#if defined(RC2D_PLATFORM_ANDROID) || defined(RC2D_PLATFORM_IOS)   || \
+    defined(RC2D_PLATFORM_TVOS)    || defined(RC2D_PLATFORM_VISIONOS) || \
+    defined(RC2D_PLATFORM_XBOXONE) || defined(RC2D_PLATFORM_XBOXSERIES)
+    RC2D_log(RC2D_LOG_WARN,
+             "rc2d_window_setSize(%d, %d) ignoré : la plateforme ne permet pas "
+             "le redimensionnement de fenêtre.\n",
+             width, height);
+    return;
+#endif
+
     // Vérifie si la fenêtre est valide
     if (rc2d_engine_state.window == NULL)
     {
