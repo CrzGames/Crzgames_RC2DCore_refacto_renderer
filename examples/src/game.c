@@ -278,8 +278,7 @@ void rc2d_load(void)
     char full_path[512];
 
     // splash videos
-    SDL_snprintf(full_path, sizeof(full_path), "%sassets/videos/SplashScreen_Studio_1080p.mp4", base_path);
-    if (rc2d_video_open(&g_splash_studio, full_path) != 0) 
+    if (rc2d_video_openFromStorage(&g_splash_studio, "assets/videos/SplashScreen_Studio_1080p.mp4", RC2D_STORAGE_TITLE) != 0)
     {
         RC2D_log(RC2D_LOG_WARN, "Studio splash failed to open, skipping directly to game splash.");
     } 
@@ -329,10 +328,7 @@ void rc2d_update(double dt)
             if (r <= 0) 
             {
                 /* Ouverture de la 2e vidéo immédiatement après la fin */
-                const char *base_path = SDL_GetBasePath();
-                char full_path[512];
-                SDL_snprintf(full_path, sizeof(full_path), "%sassets/videos/SplashScreen_SeaTyrants_1080p.mp4", base_path);
-                if (rc2d_video_open(&g_splash_game, full_path) != 0) 
+                if (rc2d_video_openFromStorage(&g_splash_game, "assets/videos/SplashScreen_SeaTyrants_1080p.mp4", RC2D_STORAGE_TITLE) != 0) 
                 {
                     RC2D_log(RC2D_LOG_WARN, "Game splash failed, skipping to game.");
                     rc2d_video_close(&g_splash_studio);
