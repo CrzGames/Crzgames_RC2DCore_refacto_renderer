@@ -518,6 +518,13 @@ static void rc2d_engine_cleanup_sdlmixer(void)
 static bool rc2d_engine_init_sdl(void)
 {
     /**
+     * Une variable contrôlant les orientations autorisées sur iOS/Android.
+     */
+#if defined(RC2D_PLATFORM_IOS) || defined(RC2D_PLATFORM_ANDROID)
+    SDL_SetHintWithPriority(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight", SDL_HINT_OVERRIDE);
+#endif
+
+    /**
      * IMPORTANT:
      * Obligation pour le Steam Deck, sans le getenv("WAYLAND_DISPLAY") ou getenv("DISPLAY"),
      * l'application ne démarre pas.
@@ -2038,13 +2045,6 @@ static bool rc2d_engine(void)
 	 * Si les hz n'ont pas etait trouve, FPS par default : 60.
      */
     rc2d_engine_update_fps_based_on_monitor();
-
-    /**
-     * Une variable contrôlant les orientations autorisées sur iOS/Android.
-     */
-#if defined(RC2D_PLATFORM_IOS) || defined(RC2D_PLATFORM_ANDROID)
-    SDL_SetHintWithPriority(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight", SDL_HINT_OVERRIDE);
-#endif
 
     /**
      * Initialiser certains modules internes de RC2D
