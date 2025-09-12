@@ -49,15 +49,3 @@ adb uninstall com.crzgames.testexe # Remplacez 'com.crzgames.testexe' par le nom
 echo -e "\e[32m \n Install APK in real device connected...\e[0m"
 $GRADLE installDebug
 
-# Run the application in real device
-echo -e "\e[32m \n Run application in real device now...\e[0m"
-adb shell am start -n com.crzgames.testexe/.MyGame # Change com.crzgames.testexe to your package name
-
-# Vider le Buffer de Logcat (pour les anciens log)
-adb logcat -c
-
-# Start logcat with a filter for your application
-echo -e "\e[32m \n Real-time application log...\e[0m"
-# ====> ÉCOUTER UNIQUEMENT LES LOGS SDL (toutes priorités >= DEBUG)
-# Conseil: laisse tourner, Ctrl+C pour arrêter
-adb logcat org.libsdl.app:D *:S

@@ -32,9 +32,12 @@ android {
     }
     if (!project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
         sourceSets.main {
-            jniLibs.srcDirs = ['src/main/jniLibs'] // Path to your prebuilt .so files
+            jniLibs.srcDirs = [
+                // Ajouts des libs externes .so manquantes (chaque dossier d'une lib doit contenir un dossier par architecture)
+                "../../dependencies/Crzgames_Libraries/android/lib/ffmpeg",
+                "../../dependencies/Crzgames_Libraries/android/lib/onnxruntime"
+            ]
         }
-
         externalNativeBuild {
             cmake {
                 path '../../CMakeLists.txt'
@@ -49,6 +52,7 @@ android {
             }
         }
     }
+
     lint {
         abortOnError = false
     }
