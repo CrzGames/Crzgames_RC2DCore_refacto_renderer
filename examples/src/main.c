@@ -46,7 +46,6 @@ const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[])
     RC2D_log(RC2D_LOG_WARN, "Debug GPU mode forcé OFF sur cette plateforme, car non supportée.\n");
     config->gpuOptions->debugMode = false;
     config->gpuOptions->verbose = false;
-    return;
 #else
     config->gpuOptions->debugMode = true;
     config->gpuOptions->verbose = true;
