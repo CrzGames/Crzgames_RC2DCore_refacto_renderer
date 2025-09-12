@@ -39,9 +39,19 @@ const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[])
     config->gpuOptions->verbose = false;
 #else // Debug mode
     rc2d_logger_set_priority(RC2D_LOG_TRACE);
+    // Plateformes qui ne permettent pas le mode GPU débogage
+#if defined(RC2D_PLATFORM_ANDROID) || defined(RC2D_PLATFORM_IOS)   || \
+    defined(RC2D_PLATFORM_TVOS)    || defined(RC2D_PLATFORM_VISIONOS) || \
+    defined(RC2D_PLATFORM_XBOXONE) || defined(RC2D_PLATFORM_XBOXSERIES)
+    RC2D_log(RC2D_LOG_WARN, "Debug GPU mode forcé OFF sur cette plateforme, car non supportée.\n");
+    config->gpuOptions->debugMode = false;
+    config->gpuOptions->verbose = false;
+    return;
+#else
     config->gpuOptions->debugMode = true;
     config->gpuOptions->verbose = true;
-#endif
+#endif // Plateformes qui ne permettent pas le mode GPU débogage
+#endif // NDEBUG
     config->gpuOptions->preferLowPower = false;
     config->gpuOptions->driver = RC2D_GPU_DRIVER_DEFAULT;
     config->windowWidth = 800;
