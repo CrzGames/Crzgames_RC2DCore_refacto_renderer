@@ -9,30 +9,6 @@
 /*  Assets audio                                                             */
 /* ------------------------------------------------------------------------- */
 
-MIX_Audio* rc2d_audio_load(const char* path, bool predecode)
-{
-    if (!rc2d_engine_state.mixer) 
-    {
-        RC2D_log(RC2D_LOG_ERROR, "Mixer non initialisé.");
-        return NULL;
-    }
-    if (!path || *path == '\0') 
-    {
-        RC2D_log(RC2D_LOG_ERROR, "Chemin audio invalide.");
-        return NULL;
-    }
-
-    MIX_Audio* audio = MIX_LoadAudio(rc2d_engine_state.mixer, path, predecode);
-    if (!audio) 
-    {
-        RC2D_log(RC2D_LOG_ERROR, "MIX_LoadAudio('%s') a échoué : %s", path, SDL_GetError());
-        return NULL;
-    }
-
-    RC2D_log(RC2D_LOG_DEBUG, "Audio chargé: '%s' (predecode=%d).", path, (int)predecode);
-    return audio;
-}
-
 MIX_Audio* rc2d_audio_loadAudioFromStorage(const char *storage_path, RC2D_StorageKind storage_kind, bool predecode)
 {
     // Check si le mixer est initialisé et si le chemin est valide

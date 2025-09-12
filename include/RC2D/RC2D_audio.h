@@ -12,25 +12,6 @@ extern "C" {
 #endif
 
 /**
- * \brief Charger un asset audio pour une utilisation avec le mixeur courant.
- *
- * \details
- * Cette fonction charge un fichier audio (WAV/OGG/MP3/FLAC, etc.) pour être joué
- * sur le mixeur déjà initialisé de l’engine. Si \p predecode est vrai, l’audio est
- * entièrement décodé en mémoire (plus de RAM, démarrage instantané et seek rapide).
- *
- * \param path       Chemin du fichier audio à charger.
- * \param predecode  Si vrai, décodage complet en mémoire ; sinon, décodage à la volée.
- *
- * \return (MIX_Audio*) Pointeur valide en cas de succès, NULL en cas d’échec.
- *
- * \threadsafety Cette fonction peut être appelée depuis n’importe quel thread.
- *
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-MIX_Audio* rc2d_audio_load(const char* path, bool predecode);
-
-/**
  * \brief Charger un asset audio depuis un dossier de stockage (Title ou User).
  *
  * \details
