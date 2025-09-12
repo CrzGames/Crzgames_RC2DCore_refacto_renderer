@@ -230,38 +230,6 @@ typedef struct RC2D_GPUAdvancedOptions {
 } RC2D_GPUAdvancedOptions;
 
 /**
- * \brief Remplit une structure RC2D_GPUInfo avec les métadonnées du GPU utilisé.
- * 
- * \param {RC2D_GPUDevice*} gpuDevice - Le périphérique GPU SDL initialisé par RC2D.
- * \param {RC2D_GPUInfo*} gpuInfo - Pointeur vers la structure à remplir.
- * 
- * \threadsafety Cette fonction peut être appelée depuis n'importe quel thread.
- * 
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-//void rc2d_gpu_getInfo(RC2D_GPUInfo* gpuInfo);
-
-/**
- * \brief Récupère le périphérique GPU utilisé par RC2D.
- * 
- * \return {RC2D_GPUDevice*} Pointeur vers le périphérique GPU SDL utilisé par RC2D.
- * 
- * \threadsafety Cette fonction peut être appelée depuis n'importe quel thread.
- * 
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-RC2D_GPUDevice* rc2d_gpu_getDevice(void);
-
-/**
- * \brief Récupère les formats de shaders supportés par le GPU actuel.
- *
- * \return {RC2D_GPUShaderFormat} Bitmask RC2D_GPUShaderFormat contenant les formats supportés.
- *
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-RC2D_GPUShaderFormat rc2d_gpu_getSupportedShaderFormats(void);
-
-/**
  * \brief Charge un shader graphique à partir d'un fichier source HLSL ou d'un fichier binaire précompilé.
  * 
  * Le chemin passé à la fonction ne doit contenir que le "nom logique" du shader, avec son suffixe de stage

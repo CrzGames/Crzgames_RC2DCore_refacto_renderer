@@ -143,6 +143,17 @@ typedef struct RC2D_EngineState {
 extern RC2D_EngineState rc2d_engine_state;
 
 /**
+ * \brief Récupère le périphérique GPU utilisé par RC2D.
+ * 
+ * \return {RC2D_GPUDevice*} Pointeur vers le périphérique GPU SDL utilisé par RC2D.
+ * 
+ * \threadsafety Cette fonction peut être appelée depuis n'importe quel thread.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+RC2D_GPUDevice* rc2d_gpu_getDevice(void);
+
+/**
  * \brief Crée le moteur de texte SDL_ttf pour le renderer RC2D.
  *
  * Le moteur de texte est nécessaire pour créer et dessiner des objets texte.
