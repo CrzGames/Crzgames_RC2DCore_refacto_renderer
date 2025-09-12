@@ -1,12 +1,10 @@
 #include <mygame/game.h>
-
 #include <RC2D/RC2D.h>
 #include <RC2D/RC2D_internal.h>
 
 /* ========================================================================= */
 /*                              RESSOURCES                                   */
 /* ========================================================================= */
-
 static SDL_GPURenderState* g_ocean_render_state   = NULL;
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPUSampler*     g_ocean_sampler        = NULL;
@@ -16,17 +14,14 @@ static RC2D_Image          background_login_image = {0};
 /* ========================================================================= */
 /*                           RESSOURCES TEXTE / FONT                         */
 /* ========================================================================= */
-
 static RC2D_Font g_ui_font = {0};
 static RC2D_Text g_title_text = {0};
 static RC2D_Text g_hint_text  = {0};
 static int g_title_w = 0, g_title_h = 0;
 
-
 /* ========================================================================= */
 /*                              RESSOURCES UI                                */
 /* ========================================================================= */
-
 static RC2D_UIImage g_logo_ui       = {0};
 static RC2D_UIImage g_input_email_ui = {0};
 static RC2D_UIImage g_input_pass_ui  = {0};
@@ -35,7 +30,6 @@ static RC2D_UIImage g_button_login_ui = {0};
 /* ========================================================================= */
 /*                            SPLASH SYSTEME                                 */
 /* ========================================================================= */
-
 static RC2D_Video          g_splash_studio;     /* 1ère vidéo : Studio */
 static RC2D_Video          g_splash_game;       /* 2ème vidéo : Jeu    */
 static bool                g_splash_active = true;
@@ -50,7 +44,6 @@ static SplashState         g_splash_state = SPLASH_STUDIO;
 
 /* Durée du fondu (secondes) */
 static const double        g_fade_seconds = 1.5;
-
 
 /* ========================================================================= */
 /*                              RESSOURCES AUDIO                             */
@@ -68,7 +61,6 @@ static const float g_login_fade_speed = 0.5f; // vitesse du fade (alpha/sec)
 /* ========================================================================= */
 /*                         HELPERS / PETITES UTILS                           */
 /* ========================================================================= */
-
 static inline double clamp01(double x)
 {
     if (x < 0.0) return 0.0;
@@ -92,7 +84,6 @@ static inline void draw_fullscreen_black_with_alpha(SDL_Renderer* r, double a01)
 /* ========================================================================= */
 /*                                UNLOAD                                     */
 /* ========================================================================= */
-
 void rc2d_unload(void)
 {
     rc2d_video_close(&g_splash_studio);
@@ -145,13 +136,11 @@ void rc2d_unload(void)
 /* ========================================================================= */
 /*                                 LOAD                                      */
 /* ========================================================================= */
-
 void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
     rc2d_window_setSize(1280, 720);
-    //rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
 
     // --- Logo ---
     g_logo_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
@@ -195,7 +184,7 @@ void rc2d_load(void)
 
     /**
      * Sounds
-    */
+     */
     g_menu_music = rc2d_audio_loadAudioFromStorage("assets/sounds/sound_menu.mp3", RC2D_STORAGE_TITLE, /*predecode=*/true);
     if (!g_menu_music) 
     {
@@ -272,23 +261,14 @@ void rc2d_load(void)
 
     RC2D_log(RC2D_LOG_INFO, "Render state created successfully!");
 
-
-    // --- Splash videos ---
-    if (rc2d_video_openFromStorage(&g_splash_studio, "assets/videos/SplashScreen_Studio_1080p.mp4", RC2D_STORAGE_TITLE) != 0)
-    {
-        RC2D_log(RC2D_LOG_WARN, "Studio splash failed to open, skipping directly to game splash.");
-    } 
-    else 
-    {
-        g_splash_state  = SPLASH_STUDIO;
-        g_splash_active = true;
-    }
+    // Initialiser l'état des splashes sans charger les vidéos
+    g_splash_state = SPLASH_STUDIO;
+    g_splash_active = true;
 }
 
 /* ========================================================================= */
 /*                                UPDATE                                     */
 /* ========================================================================= */
-
 void rc2d_update(double dt)
 {
     if (!g_splash_active) 
@@ -320,33 +300,57 @@ void rc2d_update(double dt)
 
     switch (g_splash_state) {
         case SPLASH_STUDIO: {
+            // Charger la première vidéo si elle n'est pas encore ouverte
+            if (!g_splash_studio.format_ctx) {
+                RC2D_log(RC2D_LOG_INFO, "Loading studio splash video in update");
+                if (rc2d_video_openFromStorage(&g_splash_studio, "assets/videos/SplashScreen_Studio_1080p.mp4", RC2D_STORAGE_TITLE) != 0) {
+                    RC2D_log(RC2D_LOG_ERROR, "Studio splash failed to open, skipping to game splash");
+                    g_splash_state = SPLASH_GAME;
+                    return;
+                }
+                RC2D_log(RC2D_LOG_INFO, "Studio splash opened successfully");
+            }
+
             int r = rc2d_video_update(&g_splash_studio, dt);
             if (r <= 0) 
             {
-                /* Ouverture de la 2e vidéo immédiatement après la fin */
-                if (rc2d_video_openFromStorage(&g_splash_game, "assets/videos/SplashScreen_SeaTyrants_1080p.mp4", RC2D_STORAGE_TITLE) != 0) 
-                {
+                // Charger la deuxième vidéo
+                RC2D_log(RC2D_LOG_INFO, "Loading game splash video");
+                if (rc2d_video_openFromStorage(&g_splash_game, "assets/videos/SplashScreen_SeaTyrants_1080p.mp4", RC2D_STORAGE_TITLE) != 0) {
                     RC2D_log(RC2D_LOG_WARN, "Game splash failed, skipping to game.");
                     rc2d_video_close(&g_splash_studio);
-                    g_splash_state  = SPLASH_DONE;
+                    g_splash_state = SPLASH_DONE;
                     g_splash_active = false;
                     return;
                 }
 
-                /* On peut fermer la 1re vidéo, on passe à la 2e (qui fera son fade-in 6s) */
+                // Fermer la première vidéo et passer à la suivante
                 rc2d_video_close(&g_splash_studio);
                 g_splash_state = SPLASH_GAME;
+                RC2D_log(RC2D_LOG_INFO, "Transitioned to game splash");
             }
         } break;
 
         case SPLASH_GAME: {
+            // Charger la deuxième vidéo si elle n'est pas encore ouverte
+            if (!g_splash_game.format_ctx) {
+                RC2D_log(RC2D_LOG_INFO, "Loading game splash video in update");
+                if (rc2d_video_openFromStorage(&g_splash_game, "assets/videos/SplashScreen_SeaTyrants_1080p.mp4", RC2D_STORAGE_TITLE) != 0) {
+                    RC2D_log(RC2D_LOG_WARN, "Game splash failed, skipping to game.");
+                    g_splash_state = SPLASH_DONE;
+                    g_splash_active = false;
+                    return;
+                }
+                RC2D_log(RC2D_LOG_INFO, "Game splash opened successfully");
+            }
+
             int r = rc2d_video_update(&g_splash_game, dt);
             if (r <= 0) 
             {
-                g_splash_state  = SPLASH_DONE;
+                g_splash_state = SPLASH_DONE;
                 g_splash_active = false;
                 rc2d_video_close(&g_splash_game);
-                RC2D_log(RC2D_LOG_INFO, "Both splash videos finished, switching to game\n");
+                RC2D_log(RC2D_LOG_INFO, "Both splash videos finished, switching to game");
             }
         } break;
 
@@ -359,7 +363,6 @@ void rc2d_update(double dt)
 /* ========================================================================= */
 /*                                 DRAW                                      */
 /* ========================================================================= */
-
 void rc2d_draw(void)
 {
     if (g_splash_active) 
@@ -402,7 +405,7 @@ void rc2d_draw(void)
         /* --- Rendu du jeu --- */
         if (background_login_image.sdl_texture) 
         {
-            // BACKGROUND
+            // BACKGROUND LOGIN
             int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode;
             SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &lw, &lh, &mode);
 
@@ -410,13 +413,11 @@ void rc2d_draw(void)
             /* src = NULL -> texture entière ; dst = plein cadre logique */
             SDL_RenderTexture(rc2d_engine_state.renderer, background_login_image.sdl_texture, NULL, &dst);
 
-
-            // UI
+            // UI LOGIN
             rc2d_ui_drawImage(&g_logo_ui);
             rc2d_ui_drawImage(&g_input_email_ui);
             rc2d_ui_drawImage(&g_input_pass_ui);
             rc2d_ui_drawImage(&g_button_login_ui);
-
 
             // --- Dessiner le fade noir au-dessus si alpha > 0 ---
             if (g_login_fade_alpha > 0.0f) 
@@ -431,6 +432,9 @@ void rc2d_draw(void)
     }
 }
 
+/* ========================================================================= */
+/*                              MOUSE INPUT                                  */
+/* ========================================================================= */
 void rc2d_mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SDL_MouseID mouseID)
 {
     RC2D_log(RC2D_LOG_INFO, "Mouse pressed at (%.1f, %.1f), button=%d, clicks=%d, mouseID=%d\n", x, y, button, clicks, mouseID);

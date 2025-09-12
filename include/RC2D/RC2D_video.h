@@ -1,6 +1,14 @@
 #ifndef RC2D_VIDEO_H
 #define RC2D_VIDEO_H
 
+/**
+* IMPORTANT:
+* Sur Android, on'as renssencé un problème ou ça n'afficher jamais les vidéo à partir de la callback rc2d_load().
+* Par contre, si on lance la vidéo plus tard dans le code (après l'appel de rc2d_load()), à partir de
+* rc2d_update() par exemple, ça fonctionne parfaitement.
+* Donc pour l'instant, on ne supporte pas l'ouverture de vidéo dans rc2d_load() sur Android.
+*/
+
 #if RC2D_VIDEO_MODULE_ENABLED
 
 #include <RC2D/RC2D_storage.h>
@@ -229,13 +237,12 @@ typedef struct RC2D_Video {
     /* Fade-out */
     double           fade_out_start_time; /* Temps de début du fade-out (en secondes) */
     double           fade_out_duration;   /* Durée du fade-out (en secondes) */
-    /* -------- IO custom -------- */
-    AVIOContext    *avio;         /* tampon FFmpeg */
-    void           *avio_opaque;  /* RC2D_FFmpegIO* alloué avec RC2D_malloc */
-    SDL_IOStream   *sdl_io;       /* IO SDL (mémoire) */
-    void           *owned_mem;    /* buffer mémoire (à libérer) */
-    size_t          owned_len;    /* taille du buffer */
-    int64_t         io_size;      /* taille pour AVSEEK_SIZE */
+
+    AVIOContext    *avio;          // IO custom FFmpeg
+    SDL_IOStream   *sdl_io;        // stream SDL (mémoire)
+    void           *owned_mem;     // si on possède un buffer mémoire (à libérer)
+    size_t          owned_len;     // taille du buffer
+    int64_t         io_size;       // taille connue (pour AVSEEK_SIZE)
 } RC2D_Video;
 
 /**
