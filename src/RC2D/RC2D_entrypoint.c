@@ -13,10 +13,12 @@
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_memory.h>
 #include <RC2D/RC2D_graphics.h>
+#include <RC2D/RC2D_platform_defines.h>
 
 static bool title_storage_is_ready = false;  // SDL_OpenTitleStorage est prêt ?
 static bool user_storage_is_ready  = false;  // SDL_OpenUserStorage est prêt ?
 static bool rc2d_load_has_been_called = false;  // rc2d_load() a déjà été appelé ?
+static const char* internalStoragePath = NULL; // Chemin du stockage interne sur Android
 
 /**
  * SDL3 Callback: Initialisation
@@ -63,7 +65,21 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
      * Il n'ai pas garanti que les dossiers de stockage soient prêts immédiatement après l'ouverture,
      * donc on doit vérifier leur état dans la boucle principale avant de les utiliser.
     */
+#ifdef RC2D_PLATFORM_ANDROID
+    /**
+     * Sur Android, SDL_GetBasePath() renvoie NULL.
+     * On utilise donc le storage interne de l'application.
+    */
+    internalStoragePath = SDL_GetAndroidInternalStoragePath();
+    if (!internalStoragePath) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "SDL_GetAndroidInternalStoragePath() returned NULL, error : %s", SDL_GetError());
+    }
+
+    rc2d_storage_openTitle(internalStoragePath);
+#else
     rc2d_storage_openTitle(NULL);
+#endif
     rc2d_storage_openUser(config->appInfo->organization, config->appInfo->name);
 
     /**
@@ -136,8 +152,17 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         }
 
         // Réessaye d'ouvrir le dossier de stockage Title
+#ifdef RC2D_PLATFORM_ANDROID
+        /**
+        * Sur Android, SDL_GetBasePath() renvoie NULL.
+        * On utilise donc le storage interne de l'application.
+        */        
+        rc2d_storage_openTitle(internalStoragePath);
+#else
         rc2d_storage_openTitle(NULL);
+#endif
     }
+    
     // --- STORAGE USER ---
     if (rc2d_storage_userReady()) 
     {
