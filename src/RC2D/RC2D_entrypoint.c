@@ -10,7 +10,7 @@
  */
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
-#include <SDL3/SDL_timer.h>
+#include <SDL3/SDL.h>
 
 #include <RC2D/RC2D_engine.h>
 #include <RC2D/RC2D_internal.h>
