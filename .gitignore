@@ -1,3 +1,4 @@
+# Ignore build files and IDE/project files
 .idea
 .vs
 .vscode
@@ -16,8 +17,12 @@ build
 # Dependency directories
 /dependencies/
 
+# Compiled object files
 docker-build-output
 
 /examples/shaders/tools/
 /examples/assets/shaders/tools/
 /examples/assets/shaders/scripts/
+
+# For project Windows
+platforms/windows/resource.rc
