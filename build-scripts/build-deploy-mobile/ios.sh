@@ -58,10 +58,6 @@ DEVICE_ID=$(ios-deploy --no-wifi -c | grep -oE 'Found ([0-9A-Za-z\-]+)' | sed 's
 
 # Vérifier si un périphérique a été détecté
 if [ -n "$DEVICE_ID" ]; then
-  # Uninstall the existing App from the connected device
-  echo -e "\e[32m\nUninstalling the existing application from device...\e[0m"
-  #ios-deploy --uninstall_only --bundle "$APP_PATH" --id "$DEVICE_ID"
-  
   # Run the application in real device
   echo -e "\e[32m\nApplication installed in real device now...\e[0m"
   ios-deploy --justlaunch --bundle "$APP_PATH" --id "$DEVICE_ID"
