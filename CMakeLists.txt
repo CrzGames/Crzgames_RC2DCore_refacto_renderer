@@ -70,13 +70,6 @@ elseif(APPLE)
   elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
     set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "iOS Architectures" FORCE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "18.0" CACHE STRING "iOS Deployment Target" FORCE)
-    # iOS à besoin d'être signé pour être exécuté sur un appareil réel
-    set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "U3D28WJ8DV") 
-    set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Distribution: Corentin Recanzone (U3D28WJ8DV)") 
-    set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual") 
-    set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --strict --force --timestamp --verbose")
-    set(CMAKE_XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "TestExe") # Remplacez par le nom de votre profil de provisionnement
-    set(CMAKE_XCODE_ATTRIBUTE_PROVISIONING_PROFILE "c7b83a1a-cce9-4a7b-baee-b7f26b04eaa1") # Remplacez par l'UUID de votre profil de provisionnement
   endif()
 elseif(ANDROID)
   set(CMAKE_ANDROID_API 28 CACHE STRING "Android API Level" FORCE)
@@ -1156,6 +1149,12 @@ if(RC2D_BUILD_EXAMPLES)
       MACOSX_BUNDLE_INFO_STRING "Description de l'application" # Description de l'application (à modifier pour chaque application)
       XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon" # Nom de l'icône de l'application
       XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2" # 1 pour iPhone, 2 pour iPad
+      CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "U3D28WJ8DV" # Remplacez par votre Team ID Apple
+      CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Distribution: Corentin Recanzone (U3D28WJ8DV)" # Remplacez par votre identité de signature
+      CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual" # Style de signature (Manual ou Automatic)
+      CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --strict --force --timestamp --verbose" # Options supplémentaires pour la signature
+      CMAKE_XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "TestExe" # Remplacez par le nom de votre profil de provisionnement
+      CMAKE_XCODE_ATTRIBUTE_PROVISIONING_PROFILE "c7b83a1a-cce9-4a7b-baee-b7f26b04eaa1" # Remplacez par l'UUID de votre profil de provisionnement
       RESOURCE "${RESOURCE_FILES}" # Fichiers de ressources à inclure dans le bundle .app
     )
 
