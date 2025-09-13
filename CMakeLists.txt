@@ -32,7 +32,7 @@ option(RC2D_VIDEO_MODULE_ENABLED "Enable RC2D_video (FFmpeg-based)" ON)
 option(RC2D_DATA_MODULE_ENABLED "Enable RC2D_data (OpenSSL-based)" ON)
 
 # Option pour activer le module RC2D_net (via RCEnet, fork de ENet)
-option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net (ENet-based)" ON)
+option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net (ENet-based)" OFF)
 
 # Option pour activer le module RC2D_onnx (via ONNX Runtime)
 option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" ON)
@@ -168,20 +168,17 @@ set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
 # Mais il nécessite l'autorisation de l'utilisateur avant que votre application puisse communiquer avec le matériel Bluetooth
 set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "" FORCE)
 
-set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-set(SDL_STATIC  ON  CACHE BOOL "" FORCE)
-set(SDLMIXER_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(SDLMIXER_BUILD_STATIC_LIBS  ON  CACHE BOOL "" FORCE)
-set(SDLIMAGE_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(SDLIMAGE_BUILD_STATIC_LIBS  ON  CACHE BOOL "" FORCE)
-set(SDLTTF_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(SDLTTF_BUILD_STATIC_LIBS  ON  CACHE BOOL "" FORCE)
+# Forcer la compilation en statique de SDL3 et des dépendances associées sur iOS
+if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+  set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
+  set(SDL_SHARED OFF)
+endif()
 
 # SDL3, SDL3_ttf, SDL3_image, SDL3_mixer : 
 # Permet de dire à CMake de ne pas chercher les dépendances dans le système,
 # mais de les utiliser à partir du répertoire "dependencies", dont également les submodules
 # des repositories de SDL3, SDL3_ttf, SDL3_mixer, SDL3_image
-add_subdirectory(dependencies/SDL        )
+add_subdirectory(dependencies/SDL        EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_ttf    EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_image  EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_mixer  EXCLUDE_FROM_ALL)
@@ -877,19 +874,6 @@ function(rc2d_configure_openssl target_name)
   endif()
 endfunction()
 
-function(rc2d_link_ios_frameworks target_name)
-  if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-    target_link_libraries(${target_name} PRIVATE
-      "-framework" "CoreFoundation"
-      "-framework" "CoreText"
-      "-framework" "ImageIO"
-      "-framework" "CoreServices"
-      "-framework" "CoreGraphics"
-      "-framework" "MobileCoreServices"
-    )
-  endif()
-endfunction()
-
 function(rc2d_force_link_linux target_name)
   if(UNIX AND NOT APPLE AND NOT ANDROID)
     target_link_libraries(${target_name} PUBLIC
@@ -904,6 +888,18 @@ function(rc2d_include_headers target_name)
     "${PROJECT_SOURCE_DIR}/include"
     "${PROJECT_SOURCE_DIR}/include/external"
   )
+endfunction()
+
+function(rc2d_link_apple_frameworks target_name)
+  # SDL_Image bug: https://github.com/libsdl-org/SDL_image/issues/506
+  if (APPLE AND NOT BUILD_SHARED_LIBS)
+    find_library(IO_LIB ImageIO REQUIRED)
+    find_library(CS_LIB CoreServices REQUIRED)
+    find_library(CT_LIB CoreText REQUIRED)
+    find_library(CG_LIB CoreGraphics REQUIRED)
+    find_library(CF_LIB CoreFoundation REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${CF_LIB} ${CT_LIB} ${IO_LIB} ${CS_LIB} ${CG_LIB})
+  endif()
 endfunction()
 
 # Fonction pour les target_compile_definitions par target
@@ -1003,8 +999,8 @@ rc2d_force_link_linux(${PROJECT_NAME})
 # Linker la dépendance RCEnet si le module RC2D_net est activé
 rc2d_configure_rcenet(${PROJECT_NAME})
 
-# Linker les frameworks iOS si on compile pour iOS
-rc2d_link_ios_frameworks(${PROJECT_NAME})
+# Linker les frameworks
+rc2d_link_apple_frameworks(${PROJECT_NAME})
 
 # Pour l'exemple RC2D
 if(RC2D_BUILD_EXAMPLES)
@@ -1077,8 +1073,8 @@ if(RC2D_BUILD_EXAMPLES)
   # Linker la dépendance RCEnet si le module RC2D_net est activé
   rc2d_configure_rcenet(${RC2D_EXAMPLE_TARGET_NAME})
 
-  # Linker les frameworks iOS si on compile pour iOS
-  rc2d_link_ios_frameworks(${RC2D_EXAMPLE_TARGET_NAME})
+  # Linker les frameworks
+  rc2d_link_apple_frameworks(${RC2D_EXAMPLE_TARGET_NAME})
 
   # Link les dépendances communes à toutes les plateformes + on link la lib RC2D pour finir
   target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PUBLIC
@@ -1169,6 +1165,9 @@ if(RC2D_BUILD_TESTS)
 
   # Linker les dépendances natives selon la plateforme
   rc2d_force_link_linux(rc2d_tests)
+
+  # Linker les frameworks
+  rc2d_link_apple_frameworks(rc2d_tests)
   
   # Linker Criterion selon la plateforme
   if(APPLE)
