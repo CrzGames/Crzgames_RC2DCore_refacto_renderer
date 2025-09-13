@@ -265,7 +265,7 @@ function(rc2d_configure_ffmpeg target_name)
       )
 
       # Frameworks iOS requis par FFmpeg et d'autres dépendances
-      target_link_libraries(${target_name} PUBLIC
+      target_link_libraries(${target_name} PUBLIC 
           "-framework Security"
           "-framework CoreFoundation"
           "-framework VideoToolbox"
@@ -884,13 +884,27 @@ endfunction()
 
 function(rc2d_link_apple_frameworks target_name)
   # SDL_Image bug: https://github.com/libsdl-org/SDL_image/issues/506
+  # Notammment pour iOS les lib ci-dessous sont nécessaires vu qu'ont utilise les lib static de SDL3, SDL3_image, SDL3_mixer et SDL3_ttf
   if (APPLE AND NOT BUILD_SHARED_LIBS)
-    find_library(IO_LIB ImageIO REQUIRED)
-    find_library(CS_LIB CoreServices REQUIRED)
-    find_library(CT_LIB CoreText REQUIRED)
-    find_library(CG_LIB CoreGraphics REQUIRED)
-    find_library(CF_LIB CoreFoundation REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${CF_LIB} ${CT_LIB} ${IO_LIB} ${CS_LIB} ${CG_LIB})
+    target_link_libraries(${PROJECT_NAME} PUBLIC 
+      "-framework ImageIO"
+      "-framework CoreServices"
+      "-framework CoreText"
+      "-framework CoreGraphics"
+      "-framework CoreFoundation"
+      "-framework AVFoundation"
+      "-framework AudioToolbox"
+      "-framework CoreBluetooth" 
+      "-framework CoreMotion"
+      "-framework CoreGraphics"
+      "-framework CoreHaptics"
+      "-framework GameController"
+      "-framework Metal"
+      "-framework UIKit"
+      "-framework Foundation"
+      "-framework OpenGLES"
+      "-framework QuartzCore"
+    )
   endif()
 endfunction()
 
