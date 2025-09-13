@@ -1150,11 +1150,11 @@ if(RC2D_BUILD_EXAMPLES)
       XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon" # Nom de l'icône de l'application
       XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2" # 1 pour iPhone, 2 pour iPad
       XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "U3D28WJ8DV" # Remplacez par votre Team ID Apple
-      XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Distribution: Corentin Recanzone (U3D28WJ8DV)" # Remplacez par votre identité de signature
+      XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development: Corentin Recanzone (2X96T6AM4K)" # Remplacez par votre identité de signature
       XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual" # Style de signature (Manual ou Automatic)
       XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --strict --force --timestamp --verbose" # Options supplémentaires pour la signature
       XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "TestExe" # Remplacez par le nom de votre profil de provisionnement
-      XCODE_ATTRIBUTE_PROVISIONING_PROFILE "c7b83a1a-cce9-4a7b-baee-b7f26b04eaa1" # Remplacez par l'UUID de votre profil de provisionnement
+      XCODE_ATTRIBUTE_PROVISIONING_PROFILE "d5115451-c438-4aa6-9c68-dee8a87a36e8" # Remplacez par l'UUID de votre profil de provisionnement
       RESOURCE "${RESOURCE_FILES}" # Fichiers de ressources à inclure dans le bundle .app
     )
 
