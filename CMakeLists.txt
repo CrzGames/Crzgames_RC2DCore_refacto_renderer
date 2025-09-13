@@ -1019,6 +1019,39 @@ if(RC2D_BUILD_EXAMPLES)
     set(RC2D_EXAMPLE_TARGET_NAME rc2d_example)
   endif()
 
+  # Fichiers de ressources (resource files) pour l'exécutable
+  if(MSVC)
+    # Generer le fichier .rc pour l'executable par rapport au fichier resource.rc.in
+    # Pour Windows, le fichier resource.rc est utilisé pour définir les informations de version de l'application, le nom de l'entreprise, icone etc.
+    configure_file(
+      ${CMAKE_CURRENT_SOURCE_DIR}/platforms/windows/resource.rc.in 
+      ${CMAKE_CURRENT_SOURCE_DIR}/platforms/windows/resource.rc
+      @ONLY
+    )
+    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/platforms/windows/resource.rc" PROPERTIES LANGUAGE RC)
+
+    # Ressource de l'executable : resource, fichiers .json, etc.
+    set(RESOURCE_FILES
+      "${CMAKE_CURRENT_SOURCE_DIR}/platforms/windows/resource.rc"
+    )
+  elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx")
+    # Configurations spécifiques à macOS
+
+    # Ressource de l'executable : icon, fichier .json.., exemple d'un .app : Contents/Ressources/..
+    set(RESOURCE_FILES
+      "${CMAKE_CURRENT_SOURCE_DIR}/icons/macos/app-icon.icns"
+      "${CMAKE_CURRENT_SOURCE_DIR}/examples/assets"
+    )
+  elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    # Configurations spécifiques à iOS
+
+    # Ressource de l'executable : icon, fichier .json.. (notamment ce qui as dans assets)
+    set(RESOURCE_FILES
+      "${CMAKE_CURRENT_SOURCE_DIR}/icons/ios/Assets.xcassets"
+      "${CMAKE_CURRENT_SOURCE_DIR}/examples/assets"
+    )
+  endif()
+
   # Ajouter les fichiers source de l'exemple
   # Cela inclut tous les fichiers .c dans le répertoire "examples/src" et ses sous-répertoires
   file(GLOB_RECURSE RC2D_EXAMPLE_SOURCES
@@ -1036,9 +1069,14 @@ if(RC2D_BUILD_EXAMPLES)
   # Créer un exécutable pour l'exemple
   if(ANDROID)
     # Pour Android, il faut obligatoirement mettre SHARED et "main" comme nom de target
-    add_library(${RC2D_EXAMPLE_TARGET_NAME} SHARED ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS})
+    add_library(${RC2D_EXAMPLE_TARGET_NAME} SHARED 
+      ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS}
+    )
   else()
-    add_executable(${RC2D_EXAMPLE_TARGET_NAME} ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS})
+    add_executable(${RC2D_EXAMPLE_TARGET_NAME} 
+      ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS}
+      ${RESOURCE_FILES} # Fichier .rc doit être intégré dans l'executable (Windows uniquement)
+    )
   endif()
 
   if (WIN32)
@@ -1157,33 +1195,23 @@ if(RC2D_BUILD_EXAMPLES)
     )
   endif()
 
-  if (NOT ANDROID)
-    # Copier le dossier shaders dans le dossier de sortie de rc2d_example (exécutable)
-    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:rc2d_example>/shaders"
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-              "${PROJECT_SOURCE_DIR}/examples/shaders"
-              "$<TARGET_FILE_DIR:rc2d_example>/shaders"
-      COMMENT "Copie du dossier shaders dans le dossier de build de rc2d_example"
-    )
+  # Copier le dossier shaders dans le dossier de sortie de rc2d_example (exécutable)
+  add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:rc2d_example>/shaders"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${PROJECT_SOURCE_DIR}/examples/shaders"
+            "$<TARGET_FILE_DIR:rc2d_example>/shaders"
+    COMMENT "Copie du dossier shaders dans le dossier de build de rc2d_example"
+  )
 
-    # Copier le dossier assets dans le dossier de sortie de rc2d_example (exécutable)
-    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:rc2d_example>/assets"
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-              "${PROJECT_SOURCE_DIR}/examples/assets"
-              "$<TARGET_FILE_DIR:rc2d_example>/assets"
-      COMMENT "Copie du dossier assets dans le dossier de build de rc2d_example"
-    )
-  else()
-    # Pour Android, on copie le dossier shaders dans le répertoire "assets" de l'exemple
-    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-              "${PROJECT_SOURCE_DIR}/examples/shaders"
-              "${PROJECT_SOURCE_DIR}/examples/assets/shaders"
-      COMMENT "Copie du dossier shaders dans le dossier assets d'android pour l'executable rc2d_example"
-    )
-  endif()
+  # Copier le dossier assets dans le dossier de sortie de rc2d_example (exécutable)
+  add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:rc2d_example>/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${PROJECT_SOURCE_DIR}/examples/assets"
+            "$<TARGET_FILE_DIR:rc2d_example>/assets"
+    COMMENT "Copie du dossier assets dans le dossier de build de rc2d_example"
+  )
 
   if (UNIX OR APPLE AND NOT ANDROID)
     # Rendre rc2d_example exécutable (important s’il est copié depuis une archive)
