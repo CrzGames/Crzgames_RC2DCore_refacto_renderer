@@ -114,9 +114,11 @@ set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
 set(SDLIMAGE_VENDORED ON CACHE BOOL "" FORCE)
 set(SDLMIXER_VENDORED ON CACHE BOOL "" FORCE)
 
-# SDL3_mixer : Désactiver explicitement tous les formats audio qui sont activé par défault et compile tout en statique
-# pour les dependance de SDL3_mixer
+# SDL3_mixer : Désactiver explicitement tous les formats audio qui sont activé par défault.
+# Il restera ces formats activé par défault : WAV, OGG et MP3.
 if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+  # Spécifiquement pour iOS, on utilise minimp3 pour le MP3 qui est en statique, par rapport à mpg123.
+  # et on build en statique pour éviter les problèmes de dépendances dynamiques sur iOS
   set(SDLMIXER_DEPS_SHARED OFF CACHE BOOL "" FORCE)
   set(SDLMIXER_MP3_MPG123 OFF CACHE BOOL "" FORCE)
   set(SDLMIXER_MP3_MINIMP3 ON  CACHE BOOL "" FORCE)
@@ -161,7 +163,9 @@ set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
 # Mais il nécessite l'autorisation de l'utilisateur avant que votre application puisse communiquer avec le matériel Bluetooth
 set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "" FORCE)
 
-# Forcer la compilation en statique de SDL3 et des dépendances associées sur iOS
+# On force la compilation en statique pour iOS (iPhone/iPad), pour SDL3, SDL3_ttf, SDL3_image, SDL3_mixer et leur sous-dépendances.
+# Spécifiquement pour iOS, parce que les .dylib ne sont plus autorisées sur l'App Store.
+# On le fait grâce à : set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "") pour toutes les dépendances.
 if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
   set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
   set(SDL_SHARED OFF)
@@ -779,12 +783,7 @@ function(rc2d_configure_shadercross target_name)
   endif()
 endfunction()
 
-# Fonction pour OpenSSL :
-# - Sur les plateformes Apple (macOS, iOS, tvOS) : utilise XCFramework, on télécharge et extrait OpenSSL.xcframework
-# - Sur Windows : utilise les librairies précompilées statiques de Crzgames_LibCpp_Windows
-# - Sur Android : à faire
-# - Sur Linux : à faire
-# Puis lors de l'appel de la fonction, on link les librairies OpenSSL avec le target_name
+# Configuration de OpenSSL
 function(rc2d_configure_openssl target_name)
   if(RC2D_DATA_MODULE_ENABLED)
     if(APPLE)
@@ -885,7 +884,7 @@ endfunction()
 
 function(rc2d_link_apple_frameworks target_name)
   # SDL_Image bug: https://github.com/libsdl-org/SDL_image/issues/506
-  # Notammment pour iOS les lib ci-dessous sont nécessaires vu qu'ont utilise les lib static de SDL3, SDL3_image, SDL3_mixer et SDL3_ttf
+  # + Notammment pour iOS les lib ci-dessous sont nécessaires vu qu'ont utilise les lib static de SDL3, SDL3_image, SDL3_mixer et SDL3_ttf
   if (APPLE AND NOT BUILD_SHARED_LIBS)
     target_link_libraries(${PROJECT_NAME} PUBLIC 
       "-framework ImageIO"
@@ -911,24 +910,20 @@ endfunction()
 
 # Fonction pour les target_compile_definitions par target
 function(rc2d_target_compile_definitions target_name)
-  # Définitions de compilation pour le module vidéo
   if(RC2D_VIDEO_MODULE_ENABLED)
     target_compile_definitions(${target_name} PUBLIC RC2D_VIDEO_MODULE_ENABLED=1)
   else()
     target_compile_definitions(${target_name} PUBLIC RC2D_VIDEO_MODULE_ENABLED=0)
   endif()
 
-  # Définitions de compilation pour le rechargement à chaud des shaders
   if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
     target_compile_definitions(${target_name} PUBLIC RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=1)
   else()
     target_compile_definitions(${target_name} PUBLIC RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=0)
   endif()
 
-  # Définitions de compilation pour le niveau d'assertion
   target_compile_definitions(${target_name} PUBLIC RC2D_ASSERT_LEVEL=${RC2D_ASSERT_LEVEL})
 
-  # Les définitions de compilation pour les modules RC2D
   if(RC2D_DATA_MODULE_ENABLED)
     target_compile_definitions(${target_name} PUBLIC RC2D_DATA_MODULE_ENABLED=1)
   else()
@@ -976,7 +971,7 @@ endif()
 # Compiler les définitions pour la target RC2D
 rc2d_target_compile_definitions(${PROJECT_NAME})
 
-# Inclure les répertoires d'en-tête (headers)
+# Inclure les répertoires d'en-tête (headers) de RC2D et du répertoire "external"
 rc2d_include_headers(${PROJECT_NAME})
 
 # Link les dépendances communes à toutes les plateformes
@@ -993,8 +988,7 @@ rc2d_configure_ffmpeg(${PROJECT_NAME})
 # Link onnxruntime si le module RC2D_onnx est activé
 rc2d_configure_onnxruntime(${PROJECT_NAME})
 
-# Linker la dépendance OpenSSL non commune à toutes les plateformes
-# Cela dépend de la plateforme, donc on le fait dans la fonction rc2d_configure_openssl
+# Link la dépendance OpenSSL si le module RC2D_data est activé
 rc2d_configure_openssl(${PROJECT_NAME})
 
 # Linker SDL3_shadercross selon la plateforme
@@ -1006,7 +1000,7 @@ rc2d_force_link_linux(${PROJECT_NAME})
 # Linker la dépendance RCEnet si le module RC2D_net est activé
 rc2d_configure_rcenet(${PROJECT_NAME})
 
-# Linker les frameworks
+# Linker les frameworks Apple si nécessaire
 rc2d_link_apple_frameworks(${PROJECT_NAME})
 
 # Pour l'exemple RC2D
@@ -1086,7 +1080,7 @@ if(RC2D_BUILD_EXAMPLES)
       "${CMAKE_CURRENT_SOURCE_DIR}/icons/macos/app-icon.icns"
       "${CMAKE_CURRENT_SOURCE_DIR}/examples/assets"
     )
-  elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
     # Configurations spécifiques à iOS
 
     # Ressource de l'executable : icon, fichier .json.. (notamment ce qui as dans assets)
@@ -1127,21 +1121,17 @@ if(RC2D_BUILD_EXAMPLES)
     # Définir le projet de démarrage dans Visual Studio
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${RC2D_EXAMPLE_TARGET_NAME})
 
+    # Définir le répertoire de travail pour le débogueur dans Visual Studio
+    # Cela permet de lancer l'exécutable avec le bon répertoire de travail (working directory)
     set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
       VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>"
     )
   endif()
 
-  # Compiler les définitions pour la target rc2d_example
-  rc2d_target_compile_definitions(${RC2D_EXAMPLE_TARGET_NAME})
-
   # Les fichiers d'en-tête (headers) de l'exemple sont dans le répertoire "examples/include"
-  target_include_directories(${RC2D_EXAMPLE_TARGET_NAME} PUBLIC
+  target_include_directories(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
     "${PROJECT_SOURCE_DIR}/examples/include"
   )
-
-  # Inclure les répertoires d'en-tête (headers)
-  rc2d_include_headers(${RC2D_EXAMPLE_TARGET_NAME})
 
   # Link la dépendance ffmpeg si le module RC2D_video est activé
   rc2d_configure_ffmpeg(${RC2D_EXAMPLE_TARGET_NAME})
@@ -1156,21 +1146,8 @@ if(RC2D_BUILD_EXAMPLES)
   # Link onnxruntime si le module RC2D_onnx est activé
   rc2d_configure_onnxruntime(${RC2D_EXAMPLE_TARGET_NAME})
 
-  # Linker les dépendances natives selon la plateforme
-  rc2d_force_link_linux(${RC2D_EXAMPLE_TARGET_NAME})
-
-  # Linker la dépendance RCEnet si le module RC2D_net est activé
-  rc2d_configure_rcenet(${RC2D_EXAMPLE_TARGET_NAME})
-
-  # Linker les frameworks
-  rc2d_link_apple_frameworks(${RC2D_EXAMPLE_TARGET_NAME})
-
-  # Link les dépendances communes à toutes les plateformes + on link la lib RC2D pour finir
-  target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PUBLIC
-    SDL3_mixer::SDL3_mixer
-    SDL3_image::SDL3_image
-    SDL3_ttf::SDL3_ttf
-    SDL3::SDL3
+  # Link la dépendance RC2D statique ou dynamique selon le choix de l'utilisateur
+  target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
     ${PROJECT_NAME} # RC2D
   )
 
@@ -1278,46 +1255,19 @@ if(RC2D_BUILD_TESTS)
   enable_testing()
 
   # Ajouter les fichiers source des tests unitaires
-  # Cela inclut tous les fichiers .c dans le répertoire "tests" et ses sous-répertoires
   file(GLOB_RECURSE RC2D_TEST_SOURCES
-    "${PROJECT_SOURCE_DIR}/tests/*.c"
+    "${PROJECT_SOURCE_DIR}/tests/src/*.c"
   )
 
-  # Ajouter les fichiers inclus dans le répertoire "tests/include" et ses sous-répertoires
+  # Ajouter les fichiers include des tests unitaires
   file(GLOB_RECURSE RC2D_TEST_HEADERS
     "${PROJECT_SOURCE_DIR}/tests/include/*.h"
   )
 
   # Créer un exécutable pour les tests
-  add_executable(rc2d_tests ${RC2D_TEST_SOURCES} ${RC2D_TEST_HEADERS})
-
-  # Compiler les définitions pour la target rc2d_tests
-  rc2d_target_compile_definitions(rc2d_tests)
-
-  # Inclure les répertoires d'en-tête (headers)
-  rc2d_include_headers(rc2d_tests)
-
-  # Linker SDL3_shadercross selon la plateforme
-  rc2d_configure_shadercross(rc2d_tests)
-
-  # Linker la dépendance OpenSSL non commune à toutes les plateformes
-  # Cela dépend de la plateforme, donc on le fait dans la fonction rc2d_configure_openssl
-  rc2d_configure_openssl(rc2d_tests)
-
-  # Link onnxruntime si le module RC2D_onnx est activé
-  rc2d_configure_onnxruntime(rc2d_tests)
-
-  # Link la dépendance ffmpeg si le module RC2D_video est activé
-  rc2d_configure_ffmpeg(rc2d_tests)
-
-  # Linker la dépendance RCEnet si le module RC2D_net est activé
-  rc2d_configure_rcenet(rc2d_tests)
-
-  # Linker les dépendances natives selon la plateforme
-  rc2d_force_link_linux(rc2d_tests)
-
-  # Linker les frameworks
-  rc2d_link_apple_frameworks(rc2d_tests)
+  add_executable(rc2d_tests 
+    ${RC2D_TEST_SOURCES} ${RC2D_TEST_HEADERS}
+  )
   
   # Linker Criterion selon la plateforme
   if(APPLE)
@@ -1327,11 +1277,8 @@ if(RC2D_BUILD_TESTS)
 
   endif()
 
-  # Link les dépendances communes à toutes les plateformes + on link la lib RC2D pour finir
-  target_link_libraries(rc2d_tests PUBLIC
-    SDL3_image::SDL3_image
-    SDL3_ttf::SDL3_ttf
-    SDL3::SDL3
+  # Link RC2D statique ou dynamique selon le choix de l'utilisateur
+  target_link_libraries(rc2d_tests PRIVATE
     ${PROJECT_NAME} # RC2D
   )
 
