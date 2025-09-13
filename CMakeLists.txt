@@ -115,7 +115,11 @@ set(SDLMIXER_VENDORED ON CACHE BOOL "" FORCE)
 
 # SDL3_mixer : Désactiver explicitement tous les formats audio qui sont activé par défault et compile tout en statique
 # pour les dependance de SDL3_mixer
-set(SDLMIXER_DEPS_SHARED OFF CACHE BOOL "" FORCE)
+if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+  set(SDLMIXER_DEPS_SHARED OFF CACHE BOOL "" FORCE)
+  set(SDLMIXER_MP3_MPG123 OFF CACHE BOOL "" FORCE)
+  set(SDLMIXER_MP3_MINIMP3 ON  CACHE BOOL "" FORCE)
+endif()
 
 set(SDLMIXER_AIFF OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_VOC OFF CACHE BOOL "" FORCE)

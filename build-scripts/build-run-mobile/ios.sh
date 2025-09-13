@@ -35,7 +35,7 @@ fi
 # Clean and rebuild the project
 echo -e "${GREEN}Cleaning and rebuilding the project...${NC}"
 cmake --build "$BUILD_DIR" --target clean
-cmake --build "$BUILD_DIR" --config "$CONFIGURATION" 
+cmake --build "$BUILD_DIR" --config "$CONFIGURATION"
 
 # Define the path to the .app file for iphoneos
 APP_PATH=$(find "$BUILD_DIR/$CONFIGURATION" -name "*.app" -print -quit)
