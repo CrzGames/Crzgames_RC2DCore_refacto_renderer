@@ -41,10 +41,6 @@ cd android-project
 echo -e "\e[32m \n Clean project...\e[0m"
 $GRADLE clean
 
-# Uninstall the existing APK from the connected device
-echo -e "\e[32m \n Uninstalling existing APK from device...\e[0m"
-adb uninstall com.crzgames.testexe # Remplacez 'com.crzgames.testexe' par le nom de package de votre application
-
 # Build the project in real device connected
 echo -e "\e[32m \n Install APK in real device connected...\e[0m"
 $GRADLE installDebug
