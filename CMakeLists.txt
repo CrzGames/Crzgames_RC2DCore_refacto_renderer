@@ -32,10 +32,10 @@ option(RC2D_VIDEO_MODULE_ENABLED "Enable RC2D_video (FFmpeg-based)" ON)
 option(RC2D_DATA_MODULE_ENABLED "Enable RC2D_data (OpenSSL-based)" ON)
 
 # Option pour activer le module RC2D_net (via RCEnet, fork de ENet)
-option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net (ENet-based)" OFF)
+option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net (ENet-based)" ON)
 
 # Option pour activer le module RC2D_onnx (via ONNX Runtime)
-option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" ON)
+option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" OFF)
 
 # Option pour le niveau d'assertion
 option(RC2D_ASSERT_LEVEL "Niveau des assertions (0=none, 1=release, 2=debug, 3=paranoid)" 3)
