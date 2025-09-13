@@ -140,7 +140,8 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    rc2d_window_setSize(1280, 720);
+    //rc2d_window_setSize(1280, 720);
+    rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, false);
 
     // --- Logo ---
     g_logo_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
@@ -153,8 +154,8 @@ void rc2d_load(void)
     g_logo_ui.hittable    = false;
 
     // --- Input Email ---
-    g_input_email_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-email-login.png", RC2D_STORAGE_TITLE);
-    g_input_email_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-email-login.png", RC2D_STORAGE_TITLE);
+    g_input_email_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-email-login2.png", RC2D_STORAGE_TITLE);
+    g_input_email_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-email-login2.png", RC2D_STORAGE_TITLE);
     g_input_email_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_input_email_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_input_email_ui.margin_x    = 0.0f;
@@ -163,8 +164,8 @@ void rc2d_load(void)
     g_input_email_ui.hittable    = true;
 
     // --- Input password ---
-    g_input_pass_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-password-login.png", RC2D_STORAGE_TITLE);
-    g_input_pass_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-password-login.png", RC2D_STORAGE_TITLE);
+    g_input_pass_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-password-login2.png", RC2D_STORAGE_TITLE);
+    g_input_pass_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-password-login2.png", RC2D_STORAGE_TITLE);
     g_input_pass_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_input_pass_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_input_pass_ui.margin_x    = 0.f;
@@ -173,12 +174,12 @@ void rc2d_load(void)
     g_input_pass_ui.hittable    = true;
 
     // --- Bouton login (clé) ---
-    g_button_login_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
-    g_button_login_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
+    g_button_login_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/button-login2.png", RC2D_STORAGE_TITLE);
+    g_button_login_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/button-login2.png", RC2D_STORAGE_TITLE);
     g_button_login_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_button_login_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_button_login_ui.margin_x    = 0.f;
-    g_button_login_ui.margin_y    = 0.03f; // encore en dessous
+    g_button_login_ui.margin_y    = 0.04f; // encore en dessous
     g_button_login_ui.visible     = true;
     g_button_login_ui.hittable    = true;
 

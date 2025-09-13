@@ -1019,6 +1019,50 @@ if(RC2D_BUILD_EXAMPLES)
     set(RC2D_EXAMPLE_TARGET_NAME rc2d_example)
   endif()
 
+  # Variables d'environnement pour la configuration de l'application (version, nom de l'entreprise, etc.)
+  if(DEFINED ENV{APP_VERSION})
+    set(APP_VERSION "$ENV{APP_VERSION}" CACHE STRING "Version de l'application")
+  else()
+    set(APP_VERSION "1.0.0" CACHE STRING "Version de l'application")
+  endif()
+
+  # Découper la version en parties
+  string(REPLACE "." ";" VERSION_LIST ${APP_VERSION})
+  list(GET VERSION_LIST 0 APP_VERSION_MAJOR)
+  list(GET VERSION_LIST 1 APP_VERSION_MINOR)
+  list(GET VERSION_LIST 2 APP_VERSION_PATCH)
+
+  if(DEFINED ENV{APP_COMPANY_NAME})
+    set(APP_COMPANY_NAME "$ENV{APP_COMPANY_NAME}" CACHE STRING "Nom de l'entreprise")
+  else()
+    set(APP_COMPANY_NAME "CrzGames" CACHE STRING "Nom de l'entreprise")
+  endif()
+
+  if(DEFINED ENV{APP_GAME_DESCRIPTION})
+    set(APP_GAME_DESCRIPTION "$ENV{APP_GAME_DESCRIPTION}" CACHE STRING "Game description")
+  else()
+    set(APP_GAME_DESCRIPTION "MyGame - MMORPG" CACHE STRING "Game description")
+  endif()
+
+  if(DEFINED ENV{APP_LEGAL_COPYRIGHT})
+    set(APP_LEGAL_COPYRIGHT "$ENV{APP_LEGAL_COPYRIGHT}" CACHE STRING "Droits d'auteur")
+  else()
+    set(APP_LEGAL_COPYRIGHT "Copyright 2025 CrzGames" CACHE STRING "Droits d'auteur")
+  endif()
+
+  # Pour macOS spécifiquement (bundle .app) : Identifier de l'application et version de construction
+  if(DEFINED ENV{APP_IOSMACOS_BUILD_VERSION})
+    set(APP_IOSMACOS_BUILD_VERSION "$ENV{APP_IOSMACOS_BUILD_VERSION}" CACHE STRING "Build version")
+  else()
+    set(APP_IOSMACOS_BUILD_VERSION "1" CACHE STRING "Build version")
+  endif()
+
+  if(DEFINED ENV{APP_IOSMACOS_IDENTIFIER})
+    set(APP_IOSMACOS_IDENTIFIER "$ENV{APP_IOSMACOS_IDENTIFIER}" CACHE STRING "Identifiant de l'application")
+  else()
+    set(APP_IOSMACOS_IDENTIFIER "com.crzgames.testexe" CACHE STRING "Identifiant de l'application")
+  endif()
+
   # Fichiers de ressources (resource files) pour l'exécutable
   if(MSVC)
     # Generer le fichier .rc pour l'executable par rapport au fichier resource.rc.in
