@@ -70,6 +70,13 @@ elseif(APPLE)
   elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
     set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "iOS Architectures" FORCE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "18.0" CACHE STRING "iOS Deployment Target" FORCE)
+    # iOS à besoin d'être signé pour être exécuté sur un appareil réel
+    set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "U3D28WJ8DV") 
+    set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Distribution: Corentin Recanzone (U3D28WJ8DV)") 
+    set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual") 
+    set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --strict --force --timestamp --verbose")
+    set(CMAKE_XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "TestExe") # Remplacez par le nom de votre profil de provisionnement
+    set(CMAKE_XCODE_ATTRIBUTE_PROVISIONING_PROFILE "c7b83a1a-cce9-4a7b-baee-b7f26b04eaa1") # Remplacez par l'UUID de votre profil de provisionnement
   endif()
 elseif(ANDROID)
   set(CMAKE_ANDROID_API 28 CACHE STRING "Android API Level" FORCE)
@@ -1084,6 +1091,71 @@ if(RC2D_BUILD_EXAMPLES)
     SDL3::SDL3
     ${PROJECT_NAME} # RC2D
   )
+
+  if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+    # Ajouter le dossier Assets.xcassets comme ressource
+    set(ASSETS_ICONS "${CMAKE_CURRENT_SOURCE_DIR}/icons/ios/Assets.xcassets")
+    target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE ${ASSETS_ICONS})
+    set_source_files_properties(${ASSETS_ICONS} PROPERTIES
+      MACOSX_PACKAGE_LOCATION "Resources"
+    )
+
+    # Ajouter le fichier storyboard comme ressource
+    set(STORYBOARD_FILE "${CMAKE_SOURCE_DIR}/platforms/ios/LaunchScreen.storyboard")
+    target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE ${STORYBOARD_FILE})
+    set_source_files_properties(${STORYBOARD_FILE} PROPERTIES
+      MACOSX_PACKAGE_LOCATION "Resources"
+    )
+
+    # Configurez le bundle (.app)
+    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+      MACOSX_BUNDLE TRUE
+      MACOSX_BUNDLE_BUNDLE_NAME ${RC2D_EXAMPLE_TARGET_NAME} # Nom de l'application (à modifier pour chaque application)
+      MACOSX_BUNDLE_GUI_IDENTIFIER "com.crzgames.testexe" # L'identifiant de votre application (via identifiers sur le compte apple developer) à modifier pour chaque application
+      MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0.0" # Version utilisateur lisible (à modifier pour chaque application)
+      MACOSX_BUNDLE_BUNDLE_VERSION "1.0.0" # Version de build unique (à modifier pour chaque application)
+      MACOSX_BUNDLE_COPYRIGHT "Crgames" # Droits d'auteur
+      MACOSX_BUNDLE_INFO_STRING "Description de l'application" # Description de l'application (à modifier pour chaque application)
+      XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon" # Nom de l'icône de l'application
+      XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2" # 1 pour iPhone, 2 pour iPad
+      RESOURCE "${RESOURCE_FILES}" # Fichiers de ressources à inclure dans le bundle .app
+    )
+
+    # Ajoute une étape de post-build pour ajouter des clés au fichier Info.plist
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+      # Ajoute les clés pour le bluetooth
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UIApplicationSupportsIndirectInputEvents bool true" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMENT "Adding keys bluetooth to Info.plist"
+
+      # Ajoute les clés pour les souris
+      COMMAND /usr/libexec/PlistBuddy -c "Add :NSBluetoothPeripheralUsageDescription string 'MyApp souhaite rester connecté aux contrôleurs de jeu et aux manettes de jeu Bluetooth à proximité, même lorsque vous n'utilisez pas l'application.'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMENT "Adding keys mouse to Info.plist"
+
+      # Ajoute les clés pour autoriser le High DPI
+      COMMAND /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMENT "Adding key High DPI to Info.plist"
+
+      # Ajoute les clés pour autoriser les orientations supportées
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string 'UIInterfaceOrientationPortrait'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:1 string 'UIInterfaceOrientationPortraitUpsideDown'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:2 string 'UIInterfaceOrientationLandscapeLeft'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:3 string 'UIInterfaceOrientationLandscapeRight'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMENT "Adding supported interface orientations to Info.plist"
+
+      # Ajoute la clé ITSAppUsesNonExemptEncryption pour le chiffrement
+      COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMENT "Adding ITSAppUsesNonExemptEncryption key to Info.plist"
+
+      # Ajoute la clé UILaunchStoryboardName pour le storyboard de lancement
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UILaunchStoryboardName string 'LaunchScreen'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMENT "Adding launch storyboard name to Info.plist"
+
+      # Copie le storyboard de lancement dans le bundle .app
+      COMMAND cp -a "${PROJECT_SOURCE_DIR}/platforms/ios/LaunchScreen.storyboard" "${CMAKE_BINARY_DIR}/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/"
+      COMMENT "Copying LaunchScreen.storyboard to bundle .app directory"
+    )
+  endif()
 
   if (NOT ANDROID)
     # Copier le dossier shaders dans le dossier de sortie de rc2d_example (exécutable)

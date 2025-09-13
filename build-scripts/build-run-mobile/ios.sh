@@ -26,11 +26,16 @@ done
 # Define your project-specific variables (nouveau chemin)
 BUILD_DIR="./build/ios/iphoneos"
 
+# ➕ Générer le projet Xcode si le dossier n'existe pas
+if [ ! -d "$BUILD_DIR" ]; then
+    echo -e "${GREEN}Generating Xcode project for iOS (iphoneos)...${NC}"
+    cmake -S . -B "$BUILD_DIR" -G Xcode
+fi
+
 # Clean and rebuild the project
 echo -e "${GREEN}Cleaning and rebuilding the project...${NC}"
 cmake --build "$BUILD_DIR" --target clean
-cmake --build "$BUILD_DIR" --config "$CONFIGURATION" -- \
-  CODE_SIGNING_ALLOWED=NO
+cmake --build "$BUILD_DIR" --config "$CONFIGURATION"
 
 # Define the path to the .app file for iphoneos
 APP_PATH=$(find "$BUILD_DIR/$CONFIGURATION" -name "*.app" -print -quit)
@@ -61,8 +66,8 @@ if [ -n "$DEVICE_ID" ]; then
   echo -e "\e[32m\nApplication installed in real device now...\e[0m"
   ios-deploy --justlaunch --bundle "$APP_PATH" --id "$DEVICE_ID"
   
-  # Start log with a filter for your application
-  echo -e "\e[32m\nStarting device logs (filter: INFO:)...\e[0m"
+  # Start log with a filter for your application (équivalent adb: SDL:V "SDL/APP:V")
+  echo -e "\e[32m\nStarting device logs (filter: SDL, SDL/APP)...\e[0m"
   idevicesyslog -u "$DEVICE_ID" | grep -E --line-buffered "SDL|SDL/APP"
 else
   echo -e "${RED}Warning: Aucun device iOS détecté.${NC}"
