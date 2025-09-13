@@ -19,3 +19,5 @@ build
 docker-build-output
 
 /examples/shaders/tools/
+/examples/assets/shaders/tools/
+/examples/assets/shaders/scripts/
