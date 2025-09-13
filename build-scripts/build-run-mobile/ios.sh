@@ -29,13 +29,13 @@ BUILD_DIR="./build/ios/iphoneos"
 # ➕ Générer le projet Xcode si le dossier n'existe pas
 if [ ! -d "$BUILD_DIR" ]; then
     echo -e "${GREEN}Generating Xcode project for iOS (iphoneos)...${NC}"
-    cmake -S . -B "$BUILD_DIR" -G Xcode
+    cmake -S . -B "$BUILD_DIR" -G Xcode -DCMAKE_OSX_SYSROOT=iphoneos
 fi
 
 # Clean and rebuild the project
 echo -e "${GREEN}Cleaning and rebuilding the project...${NC}"
 cmake --build "$BUILD_DIR" --target clean
-cmake --build "$BUILD_DIR" --config "$CONFIGURATION"
+cmake --build "$BUILD_DIR" --config "$CONFIGURATION" 
 
 # Define the path to the .app file for iphoneos
 APP_PATH=$(find "$BUILD_DIR/$CONFIGURATION" -name "*.app" -print -quit)
