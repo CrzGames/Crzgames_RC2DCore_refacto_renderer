@@ -132,6 +132,7 @@ typedef struct RC2D_Video {
     double           frame_duration;
 
     /* ---------------- Lecture / pacing ---------------- */
+    int      loop_enabled;      /* 0/1 : rejouer en boucle */
 
     /**
      * \brief Indique si la vidéo a atteint la fin (EOF).
@@ -360,6 +361,23 @@ int rc2d_video_draw(RC2D_Video* video);
  * \see rc2d_video_open
  */
 void rc2d_video_close(RC2D_Video* video);
+
+/**
+* \brief Active ou désactive la boucle de lecture pour une vidéo.
+*
+* \details
+* Si activée, la vidéo recommencera depuis le début lorsqu'elle atteindra la fin.
+* Par défaut, la boucle est désactivée (lecture unique).
+*
+* \param {RC2D_Video*} video - Contexte vidéo.
+* \param {int} enabled - 1 pour activer la boucle, 0 pour désactiver.
+* \return void
+*
+* \threadsafety Doit être appelé sur le thread principal.
+*
+* \since This function is available since RC2D 1.0.0.
+*/
+void rc2d_video_setLoop(RC2D_Video* video, int enabled);
 
 #ifdef __cplusplus
 }

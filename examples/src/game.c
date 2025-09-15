@@ -22,7 +22,7 @@ static double              g_time_accum  = 0.0;
 /* ========================================================================= */
 /*                              RESSOURCES                                   */
 /* ========================================================================= */
-static RC2D_Image          background_login_image = {0};
+static RC2D_Video g_login_bg_video; /* background-login.mp4 (silencieuse idéalement) */
 
 /* ========================================================================= */
 /*                              RESSOURCES UI                                */
@@ -118,7 +118,6 @@ void rc2d_unload(void)
     rc2d_video_close(&g_splash_studio);
     rc2d_video_close(&g_splash_game);
 
-    rc2d_graphics_freeImage(&background_login_image);
     rc2d_graphics_freeImage(&tile_ocean_image);
     rc2d_graphics_freeImage(&g_logo_ui.image);
     rc2d_graphics_freeImageData(&g_logo_ui.imageData);
@@ -178,7 +177,7 @@ void rc2d_load(void)
     g_input_email_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_input_email_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_input_email_ui.margin_x    = 0.0f;
-    g_input_email_ui.margin_y    = 0.2f; // placé au-dessus du centre
+    g_input_email_ui.margin_y    = 0.45f; // placé au-dessus du centre
     g_input_email_ui.visible     = true;
     g_input_email_ui.hittable    = true;
 
@@ -188,7 +187,7 @@ void rc2d_load(void)
     g_input_pass_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_input_pass_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_input_pass_ui.margin_x    = 0.f;
-    g_input_pass_ui.margin_y    = 0.3f; // juste en dessous du champ email
+    g_input_pass_ui.margin_y    = 0.55f; // juste en dessous du champ email
     g_input_pass_ui.visible     = true;
     g_input_pass_ui.hittable    = true;
 
@@ -198,7 +197,7 @@ void rc2d_load(void)
     g_button_login_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_button_login_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_button_login_ui.margin_x    = 0.f;
-    g_button_login_ui.margin_y    = 0.4f; // encore en dessous
+    g_button_login_ui.margin_y    = 0.65f; // encore en dessous
     g_button_login_ui.visible     = true;
     g_button_login_ui.hittable    = true;
 
@@ -226,9 +225,6 @@ void rc2d_load(void)
         }
     }
     g_menu_started = false;
-
-    // background login
-    background_login_image = rc2d_graphics_loadImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
 
     // Charger le shader depuis le stockage
     g_ocean_fragment_shader = rc2d_gpu_loadGraphicsShaderFromStorage("water.fragment", RC2D_STORAGE_TITLE);
@@ -358,6 +354,24 @@ void rc2d_update(double dt)
                 g_menu_started = true;
             }
         }
+
+        /* update de la vidéo de fond si chargée */
+        if (!g_login_bg_video.format_ctx) 
+        {
+            if (rc2d_video_openFromStorage(&g_login_bg_video, "assets/videos/background-login.mp4", RC2D_STORAGE_TITLE) != 0) 
+            {
+                RC2D_log(RC2D_LOG_ERROR, "Studio splash failed to open, skipping to game splash");
+                return;
+            }
+
+            rc2d_video_setLoop(&g_login_bg_video, 1); // boucle infinie
+            RC2D_log(RC2D_LOG_INFO, "Background login video opened successfully");
+        }
+        else 
+        {
+            rc2d_video_update(&g_login_bg_video, dt);
+        }
+
         return;
     }
 
@@ -470,30 +484,26 @@ void rc2d_draw(void)
     else 
     {
         /* --- Rendu du jeu --- */
-        if (background_login_image.sdl_texture) 
+        rc2d_video_draw(&g_login_bg_video);
+
+        // UI LOGIN
+        rc2d_ui_drawImage(&g_logo_ui);
+        rc2d_ui_drawImage(&g_input_email_ui);
+        rc2d_ui_drawImage(&g_input_pass_ui);
+        rc2d_ui_drawImage(&g_button_login_ui);
+
+        // --- Dessiner le fade noir au-dessus si alpha > 0 ---
+        if (g_login_fade_alpha > 0.0f) 
         {
-            /* src = NULL -> texture entière ; dst = plein cadre logique */
-            SDL_RenderTexture(rc2d_engine_state.renderer, background_login_image.sdl_texture, NULL, &dst);
-
-            // UI LOGIN
-            rc2d_ui_drawImage(&g_logo_ui);
-            rc2d_ui_drawImage(&g_input_email_ui);
-            rc2d_ui_drawImage(&g_input_pass_ui);
-            rc2d_ui_drawImage(&g_button_login_ui);
-
-            // --- Dessiner le fade noir au-dessus si alpha > 0 ---
-            if (g_login_fade_alpha > 0.0f) 
-            {
-                SDL_SetRenderDrawBlendMode(rc2d_engine_state.renderer, SDL_BLENDMODE_BLEND);
-                SDL_SetRenderDrawColor(rc2d_engine_state.renderer, 0, 0, 0, (Uint8)(g_login_fade_alpha * 255));
-                SDL_FRect full = {0, 0, (float)lw, (float)lh};
-                SDL_RenderFillRect(rc2d_engine_state.renderer, &full);
-                SDL_SetRenderDrawBlendMode(rc2d_engine_state.renderer, SDL_BLENDMODE_NONE);
-            }
+            SDL_SetRenderDrawBlendMode(rc2d_engine_state.renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(rc2d_engine_state.renderer, 0, 0, 0, (Uint8)(g_login_fade_alpha * 255));
+            SDL_FRect full = {0, 0, (float)lw, (float)lh};
+            SDL_RenderFillRect(rc2d_engine_state.renderer, &full);
+            SDL_SetRenderDrawBlendMode(rc2d_engine_state.renderer, SDL_BLENDMODE_NONE);
         }
     }
 
-    if (tile_ocean_image.sdl_texture && g_ocean_state) 
+    /*if (tile_ocean_image.sdl_texture && g_ocean_state) 
     {
         SDL_FRect dst = {0, 0, (float)lw, (float)lh};
 
@@ -505,7 +515,7 @@ void rc2d_draw(void)
 
         // 3) désactiver l’état pour le reste du HUD
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
-    }
+    }*/
 }
 
 /* ========================================================================= */

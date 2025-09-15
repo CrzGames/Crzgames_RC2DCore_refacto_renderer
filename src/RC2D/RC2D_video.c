@@ -73,7 +73,46 @@ static int64_t sdlio_seek(void *opaque, int64_t offset, int whence)
     return (int64_t)pos;
 }
 
+static int rc2d_video_rewind(RC2D_Video* v)
+{
+    if (!v || !v->format_ctx || !v->codec_ctx) return -1;
+
+    /* 1) revenir au début du conteneur */
+    if (av_seek_frame(v->format_ctx, -1, 0, AVSEEK_FLAG_BACKWARD) < 0) {
+        RC2D_log(RC2D_LOG_ERROR, "FFmpeg: rewind failed (seek to 0)");
+        return -1;
+    }
+
+    /* 2) vider les buffers de décodage */
+    avcodec_flush_buffers(v->codec_ctx);
+
+    /* 3) réinit horloges/états */
+    v->clock_time        = 0.0;
+    v->next_frame_pts    = 0.0;
+    v->has_pending_frame = 0;
+    v->is_finished       = 0;
+
+    /* 4) audio : remettre au début si présent */
+    if (v->mix_track) {
+        /* position 0 ms, puis relance propre */
+        if (!MIX_SetTrackPlaybackPosition(v->mix_track, 0)) {
+            RC2D_log(RC2D_LOG_WARN, "Failed MIX_SetTrackPlaybackPosition(0): %s", SDL_GetError());
+        }
+        /* relance immédiate (pas de fade-out) */
+        (void)MIX_StopTrack(v->mix_track, 0);
+        (void)MIX_PlayTrack(v->mix_track, 0); /* 0 = jouer une fois ; si tu veux boucler audio infinie : -1 */
+    }
+
+    return 0;
+}
+
 /* -- API ------------------------------------------------------------------ */
+
+/* Active/désactive la boucle pour cette vidéo */
+void rc2d_video_setLoop(RC2D_Video* v, int enabled)
+{
+    if (v) v->loop_enabled = enabled ? 1 : 0;
+}
 
 /* Récupère la durée totale (secondes) depuis FFmpeg, ou <=0 si inconnue */
 double rc2d_video_totalSeconds(const RC2D_Video* v)
@@ -99,6 +138,11 @@ int rc2d_video_openFromStorage(RC2D_Video *video,
     /* Init champs (état neutre) */
     memset(video, 0, sizeof(*video));
     for (int i = 0; i < RC2D_TEX_RING; ++i) video->textures[i] = NULL;
+    video->loop_enabled    = 0;      /* par défaut: off */
+    video->clock_time      = 0.0;
+    video->next_frame_pts  = 0.0;
+    video->has_pending_frame = 0;
+    video->is_finished     = 0;
     video->video_stream_index   = -1;
     video->audio_stream_index   = -1;
     video->frame_duration       = 1.0 / 30.0;
@@ -648,12 +692,30 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
             int rret = avcodec_receive_frame(video->codec_ctx, video->frame);
             if (rret == AVERROR(EAGAIN)) break;   /* besoin de plus de paquets */
             if (rret == AVERROR_EOF) {
-                video->is_finished = 1;
-                if (video->mix_track) {
-                    video->fade_out_start_time = video->clock_time; /* Débuter le fade-out */
-                }
+                /* on a atteint la fin du flux vidéo */
                 av_packet_free(&packet);
-                return 0; /* fin de la vidéo */
+
+                if (video->loop_enabled) {
+                    /* si loop -> rewind + continuer */
+                    if (rc2d_video_rewind(video) == 0) {
+                        /* on ne retourne pas is_finished, on laisse l’update reprendre */
+                        return 1;
+                    } else {
+                        /* si rewind échoue, on s’arrête */
+                        video->is_finished = 1;
+                        if (video->mix_track) {
+                            video->fade_out_start_time = video->clock_time;
+                        }
+                        return 0;
+                    }
+                } else {
+                    /* pas de loop: fin normale avec fade audio éventuel */
+                    video->is_finished = 1;
+                    if (video->mix_track) {
+                        video->fade_out_start_time = video->clock_time; /* Débuter le fade-out */
+                    }
+                    return 0;
+                }
             }
             if (rret < 0) {
                 RC2D_log(RC2D_LOG_ERROR, "FFmpeg: échec avcodec_receive_frame");
@@ -699,6 +761,13 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
     }
 
     /* Fin du flux (plus de paquets) */
+    if (video->loop_enabled) {
+        av_packet_free(&packet);
+        if (rc2d_video_rewind(video) == 0) {
+            return 1;
+        }
+        /* fallback: si rewind rate, on tombe en fin normale */
+    }
     video->is_finished = 1;
     if (video->mix_track) {
         video->fade_out_start_time = video->clock_time; /* Débuter le fade-out */
