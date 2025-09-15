@@ -3,11 +3,26 @@
 #include <RC2D/RC2D_internal.h>
 
 /* ========================================================================= */
+/*                          GPU EFFECT: OCEAN                                */
+/* ========================================================================= */
+
+typedef struct OceanUniforms {
+    float time;        // seconds
+    float resolution[2];
+    float strength;    // 0.0f .. 0.2f
+    float padding;     // alignement 16B (par prudence)
+} OceanUniforms;
+
+static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
+static SDL_GPURenderState* g_ocean_state = NULL;
+static OceanUniforms       g_ocean_u     = {0};
+static double              g_time_accum  = 0.0;
+
+/* ========================================================================= */
 /*                              RESSOURCES                                   */
 /* ========================================================================= */
 static RC2D_Image          tile_ocean_image = {0};
 static RC2D_Image          background_login_image = {0};
-static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 
 /* ========================================================================= */
 /*                              RESSOURCES UI                                */
@@ -69,6 +84,17 @@ static inline void draw_fullscreen_black_with_alpha(SDL_Renderer* r, double a01)
     SDL_FRect full = {0.0f, 0.0f, (float)w, (float)h};
     SDL_RenderFillRect(r, &full);
     SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
+}
+
+static void Ocean_UpdateUniforms(SDL_Renderer* renderer, int out_w, int out_h, double dt)
+{
+    g_time_accum += dt;
+    g_ocean_u.time          = (float)g_time_accum;
+    g_ocean_u.resolution[0] = (float)out_w;
+    g_ocean_u.resolution[1] = (float)out_h;
+
+    // Pousse les uniforms actualisés
+    SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u));
 }
 
 /* ========================================================================= */
@@ -201,6 +227,29 @@ void rc2d_load(void)
         return;
     }
 
+    SDL_GPURenderStateCreateInfo rs = {0};
+    rs.fragment_shader = g_ocean_fragment_shader;      // important
+    // rs.sampler_bindings = NULL;    // inutile pour 1 texture "courante"
+    // rs.num_sampler_bindings = 0;
+
+    g_ocean_state = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs);
+    if (!g_ocean_state) {
+        RC2D_log(RC2D_LOG_ERROR, "SDL_CreateGPURenderState failed: %s", SDL_GetError());
+        return false;
+    }
+
+    // Uniforms init par défaut
+    g_ocean_u.time       = 0.0f;
+    g_ocean_u.resolution[0] = 1280.0f;
+    g_ocean_u.resolution[1] = 720.0f;
+    g_ocean_u.strength   = 0.08f;
+
+    // Premier upload d’uniforms -> slot 0 (b0, space3)
+    if (!SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u))) {
+        RC2D_log(RC2D_LOG_ERROR, "Set uniforms failed: %s", SDL_GetError());
+        return false;
+    }
+
     // Initialiser l'état des splashes sans charger les vidéos
     g_splash_state = SPLASH_STUDIO;
     g_splash_active = true;
@@ -211,6 +260,10 @@ void rc2d_load(void)
 /* ========================================================================= */
 void rc2d_update(double dt)
 {
+    int out_w, out_h;
+    SDL_GetCurrentRenderOutputSize(rc2d_engine_state.renderer, &out_w, &out_h);
+    Ocean_UpdateUniforms(rc2d_engine_state.renderer, out_w, out_h, dt);
+
     if (!g_splash_active) 
     {
         /* On décrémente l’alpha du fade jusqu’à 0 */
@@ -366,6 +419,20 @@ void rc2d_draw(void)
                 SDL_SetRenderDrawBlendMode(rc2d_engine_state.renderer, SDL_BLENDMODE_NONE);
             }
         }
+    }
+
+    if (tile_ocean_image.sdl_texture && g_ocean_state) 
+    {
+        SDL_FRect dst = {0, 0, (float)lw, (float)lh};
+
+        // 1) activer l’état GPU custom
+        SDL_SetRenderGPUState(rc2d_engine_state.renderer, g_ocean_state);
+
+        // 2) dessiner ta texture (le renderer lie automatiquement t0/s0 à cette texture)
+        SDL_RenderTexture(rc2d_engine_state.renderer, tile_ocean_image.sdl_texture, NULL, &dst);
+
+        // 3) désactiver l’état pour le reste du HUD
+        SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
     }
 }
 

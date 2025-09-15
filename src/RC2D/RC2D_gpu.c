@@ -12,6 +12,21 @@
 #include <SDL3_shadercross/SDL_shadercross.h>
 #endif
 
+static bool json_read_uint(const char* s, const char* key, Uint32* out) 
+{
+    const char* p = SDL_strstr(s, key);       // ex: "\"uniform_buffers\""
+    if (!p) return false;
+    p = SDL_strchr(p, ':');                   // va au ':'
+    if (!p) return false;
+    p++;                                      // après ':'
+    while (*p==' '||*p=='\t') p++;            // skip spaces
+    char* end = NULL;
+    long v = SDL_strtol(p, &end, 10);
+    if (end==p || v<0) return false;
+    *out = (Uint32)v;
+    return true;
+}
+
 /**
  * Récupère le timestamp de la dernière modification d'un fichier.
  * 
@@ -334,25 +349,14 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
         && jsonContent && jsonLen > 0)
     {
         // Cast le contenu du fichier JSON en chaîne de caractères (NUL-terminée)
-        char* content = (char*)RC2D_malloc((size_t)jsonLen + 1);
-        SDL_memcpy(content, jsonContent, (size_t)jsonLen);
+        char* content = (char*)RC2D_malloc(jsonLen+1);
+        SDL_memcpy(content, jsonContent, jsonLen);
         content[jsonLen] = '\0';
 
-        // Essayer les différentes clés connues, y compris alternatives
-        if (SDL_strstr(content, "\"samplers\""))
-            SDL_sscanf(content, "%*[^\"samplers\"]\"samplers\"%*[: ]%u", &numSamplers);
-        if (SDL_strstr(content, "\"uniform_buffers\""))
-            SDL_sscanf(content, "%*[^\"uniform_buffers\"]\"uniform_buffers\"%*[: ]%u", &numUniformBuffers);
-        else if (SDL_strstr(content, "\"uniformBuffers\""))
-            SDL_sscanf(content, "%*[^\"uniformBuffers\"]\"uniformBuffers\"%*[: ]%u", &numUniformBuffers);
-        if (SDL_strstr(content, "\"storage_buffers\""))
-            SDL_sscanf(content, "%*[^\"storage_buffers\"]\"storage_buffers\"%*[: ]%u", &numStorageBuffers);
-        else if (SDL_strstr(content, "\"readOnlyStorageBuffers\""))
-            SDL_sscanf(content, "%*[^\"readOnlyStorageBuffers\"]\"readOnlyStorageBuffers\"%*[: ]%u", &numStorageBuffers);
-        if (SDL_strstr(content, "\"storage_textures\""))
-            SDL_sscanf(content, "%*[^\"storage_textures\"]\"storage_textures\"%*[: ]%u", &numStorageTextures);
-        else if (SDL_strstr(content, "\"readOnlyStorageTextures\""))
-            SDL_sscanf(content, "%*[^\"readOnlyStorageTextures\"]\"readOnlyStorageTextures\"%*[: ]%u", &numStorageTextures);
+        json_read_uint(content, "\"samplers\"",          &numSamplers);
+        json_read_uint(content, "\"uniform_buffers\"",   &numUniformBuffers);
+        json_read_uint(content, "\"storage_buffers\"",   &numStorageBuffers);
+        json_read_uint(content, "\"storage_textures\"",  &numStorageTextures);
 
         // Libérer le contenu JSON après la lecture
         RC2D_safe_free(content);
@@ -361,9 +365,9 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
     else 
     {
         RC2D_log(RC2D_LOG_WARN, "Shader reflection file not found in storage: %s", jsonPath);
-        if (jsonContent) RC2D_safe_free(jsonContent);
+         if (jsonContent) RC2D_safe_free(jsonContent);
     }
-    
+
     // Création du shader GPU avec les informations de réflexion récupérées depuis le fichier JSON
     SDL_GPUShaderCreateInfo info = {
         .code = codeShaderCompiled,

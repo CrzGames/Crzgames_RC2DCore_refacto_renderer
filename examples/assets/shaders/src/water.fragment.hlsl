@@ -1,16 +1,21 @@
-Texture2D u_texture : register(t0, space2);
-SamplerState u_sampler : register(s0, space2);
+// ============== water.fragment.hlsl ==============
+// Conventions SDL GPU (DXIL/DXBC):
+// - Fragment: textures/samplers -> space2, uniforms -> space3
+// - Un seul sampler attendu (t0/s0), un seul UBO (b0)
 
-cbuffer OceanUniforms : register(b0, space3) {
-    float time;
-    float wave_speed;
-    float wave_amplitude;
-    float wave_frequency;
+cbuffer Context : register(b0, space3) {
+    float time;           // secondes
+    float2 resolution;    // largeur, hauteur du render target courant
+    float strength;       // intensité du warping (0.0 - 0.2 conseillé)
+    float padding;        // alignement 16B (par prudence)
 };
+
+Texture2D    u_texture : register(t0, space2);
+SamplerState u_sampler : register(s0, space2);
 
 struct PSInput {
     float4 v_color : COLOR0;
-    float2 v_uv : TEXCOORD0;
+    float2 v_uv    : TEXCOORD0;
 };
 
 struct PSOutput {
@@ -20,25 +25,21 @@ struct PSOutput {
 static const float PI = 3.14159265f;
 
 PSOutput main(PSInput input) {
-    PSOutput output;
+    PSOutput o;
 
+    // UV animés (ripple léger)
     float2 uv = input.v_uv;
+    float wave1 = sin((uv.y * 10.0 + time * 1.2) * PI) * 0.002;
+    float wave2 = sin((uv.x * 14.0 + time * 0.8) * PI) * 0.0025;
+    uv += strength * float2(wave1, wave2);
 
-    // Déformation des UV pour simuler les vagues
-    float wave = sin(uv.x * wave_frequency + time * wave_speed) * wave_amplitude;
-    wave += cos(uv.y * wave_frequency * 0.5 + time * wave_speed * 0.8) * wave_amplitude * 0.5;
-    uv.y += wave;
+    // Échantillonnage + léger boost de saturation
+    float4 c = u_texture.Sample(u_sampler, uv) * input.v_color;
 
-    // Échantillonner la texture avec les UV déformés
-    float4 color = u_texture.Sample(u_sampler, uv) * input.v_color;
+    // Optionnel: petite variation chromatique
+    float wiggle = 0.005 * sin(time * 2.0 + uv.x * 25.0 + uv.y * 25.0);
+    c.rg += wiggle;
 
-    // Ajouter un effet de reflet
-    float reflection = sin(uv.x * wave_frequency * 2.0 + time * wave_speed * 1.5) * 0.2 + 0.8;
-    color.rgb *= reflection;
-
-    // Teinte bleutée pour l'eau
-    color.rgb = lerp(color.rgb, float3(0.2, 0.4, 0.8), 0.3);
-
-    output.o_color = color;
-    return output;
+    o.o_color = c;
+    return o;
 }
