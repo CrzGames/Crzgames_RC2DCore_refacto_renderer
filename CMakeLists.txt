@@ -22,7 +22,7 @@ option(RC2D_MEMORY_DEBUG_ENABLED "Enable RC2D memory debug tracking (realloc/mal
 if(ANDROID OR CMAKE_OSX_SYSROOT MATCHES "iphoneos")
   option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
 else()
-  option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" ON)
+  option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
 endif()
 
 # Option pour activer le module RC2D_video (basé sur FFmpeg)

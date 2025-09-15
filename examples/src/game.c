@@ -5,19 +5,9 @@
 /* ========================================================================= */
 /*                              RESSOURCES                                   */
 /* ========================================================================= */
-static SDL_GPURenderState* g_ocean_render_state   = NULL;
-static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
-static SDL_GPUSampler*     g_ocean_sampler        = NULL;
 static RC2D_Image          tile_ocean_image = {0};
 static RC2D_Image          background_login_image = {0};
-
-/* ========================================================================= */
-/*                           RESSOURCES TEXTE / FONT                         */
-/* ========================================================================= */
-static RC2D_Font g_ui_font = {0};
-static RC2D_Text g_title_text = {0};
-static RC2D_Text g_hint_text  = {0};
-static int g_title_w = 0, g_title_h = 0;
+static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 
 /* ========================================================================= */
 /*                              RESSOURCES UI                                */
@@ -114,20 +104,10 @@ void rc2d_unload(void)
     }
     g_menu_started = false;
 
-    if (g_ocean_render_state) 
-    {
-        SDL_DestroyGPURenderState(g_ocean_render_state);
-        g_ocean_render_state = NULL;
-    }
     if (g_ocean_fragment_shader) 
     {
         SDL_ReleaseGPUShader(rc2d_engine_state.gpu_device, (SDL_GPUShader*)g_ocean_fragment_shader);
         g_ocean_fragment_shader = NULL;
-    }
-    if (g_ocean_sampler) 
-    {
-        SDL_ReleaseGPUSampler(rc2d_engine_state.gpu_device, g_ocean_sampler);
-        g_ocean_sampler = NULL;
     }
 
     RC2D_log(RC2D_LOG_INFO, "My game is unloading...\n");
@@ -140,8 +120,8 @@ void rc2d_load(void)
 {
     RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
 
-    //rc2d_window_setSize(1280, 720);
-    rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, false);
+    rc2d_window_setSize(1280, 720);
+    //rc2d_window_setFullscreen(true, RC2D_FULLSCREEN_EXCLUSIVE, true);
 
     // --- Logo ---
     g_logo_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/logost-login.png", RC2D_STORAGE_TITLE);
@@ -149,37 +129,37 @@ void rc2d_load(void)
     g_logo_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_logo_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_logo_ui.margin_x    = 0.0f;
-    g_logo_ui.margin_y    = 0.01f; // marge depuis le haut
+    g_logo_ui.margin_y    = 0.005f; // marge depuis le haut
     g_logo_ui.visible     = true;
     g_logo_ui.hittable    = false;
 
     // --- Input Email ---
-    g_input_email_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-email-login2.png", RC2D_STORAGE_TITLE);
-    g_input_email_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-email-login2.png", RC2D_STORAGE_TITLE);
+    g_input_email_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-email-login.png", RC2D_STORAGE_TITLE);
+    g_input_email_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-email-login.png", RC2D_STORAGE_TITLE);
     g_input_email_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_input_email_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_input_email_ui.margin_x    = 0.0f;
-    g_input_email_ui.margin_y    = 0.02f; // placé au-dessus du centre
+    g_input_email_ui.margin_y    = 0.2f; // placé au-dessus du centre
     g_input_email_ui.visible     = true;
     g_input_email_ui.hittable    = true;
 
     // --- Input password ---
-    g_input_pass_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-password-login2.png", RC2D_STORAGE_TITLE);
-    g_input_pass_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-password-login2.png", RC2D_STORAGE_TITLE);
+    g_input_pass_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/input-password-login.png", RC2D_STORAGE_TITLE);
+    g_input_pass_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/input-password-login.png", RC2D_STORAGE_TITLE);
     g_input_pass_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_input_pass_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_input_pass_ui.margin_x    = 0.f;
-    g_input_pass_ui.margin_y    = 0.03f; // juste en dessous du champ email
+    g_input_pass_ui.margin_y    = 0.3f; // juste en dessous du champ email
     g_input_pass_ui.visible     = true;
     g_input_pass_ui.hittable    = true;
 
     // --- Bouton login (clé) ---
-    g_button_login_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/button-login2.png", RC2D_STORAGE_TITLE);
-    g_button_login_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/button-login2.png", RC2D_STORAGE_TITLE);
+    g_button_login_ui.image     = rc2d_graphics_loadImageFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
+    g_button_login_ui.imageData = rc2d_graphics_loadImageDataFromStorage("assets/images/button-login.png", RC2D_STORAGE_TITLE);
     g_button_login_ui.anchor      = RC2D_UI_ANCHOR_TOP_CENTER;
     g_button_login_ui.margin_mode = RC2D_UI_MARGIN_PERCENT;
     g_button_login_ui.margin_x    = 0.f;
-    g_button_login_ui.margin_y    = 0.04f; // encore en dessous
+    g_button_login_ui.margin_y    = 0.4f; // encore en dessous
     g_button_login_ui.visible     = true;
     g_button_login_ui.hittable    = true;
 
@@ -211,56 +191,15 @@ void rc2d_load(void)
     // background login
     background_login_image = rc2d_graphics_loadImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
 
-    // tile ocean
+    // tile ocean (charge l'image originale)
     tile_ocean_image = rc2d_graphics_loadImageFromStorage("assets/images/tile.png", RC2D_STORAGE_TITLE);
 
-    // Load shader, sampler, render state
-    SDL_GPUSamplerCreateInfo sampler_info = {
-        .min_filter = SDL_GPU_FILTER_NEAREST,
-        .mag_filter = SDL_GPU_FILTER_NEAREST,
-        .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
-        .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
-        .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
-        .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
-        .props = 0
-    };
-    g_ocean_sampler = SDL_CreateGPUSampler(rc2d_engine_state.gpu_device, &sampler_info);
-    if (!g_ocean_sampler) 
-    {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to create sampler: %s", SDL_GetError());
+    // Charger le shader depuis le stockage
+    g_ocean_fragment_shader = rc2d_gpu_loadGraphicsShaderFromStorage("water.fragment", RC2D_STORAGE_TITLE);
+    if (!g_ocean_fragment_shader) {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load ocean shader from assets/water.fragment: %s", SDL_GetError());
         return;
     }
-
-    g_ocean_fragment_shader = rc2d_gpu_loadGraphicsShaderFromStorage("assets/water.fragment", RC2D_STORAGE_TITLE);
-    if (!g_ocean_fragment_shader) 
-    {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load water.fragment shader: %s", SDL_GetError());
-        return;
-    }
-
-    SDL_GPUTextureSamplerBinding sampler_binding = {
-        .texture = tile_ocean_image.sdl_texture,
-        .sampler = g_ocean_sampler
-    };
-    SDL_GPURenderStateCreateInfo rs_info = {
-        .fragment_shader = (SDL_GPUShader*)g_ocean_fragment_shader,
-        .num_sampler_bindings = 1,
-        .sampler_bindings = &sampler_binding,
-        .num_storage_textures = 0,
-        .storage_textures = NULL,
-        .num_storage_buffers = 0,
-        .storage_buffers = NULL,
-        .props = 0
-    };
-
-    g_ocean_render_state = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs_info);
-    if (!g_ocean_render_state) 
-    {
-        RC2D_log(RC2D_LOG_ERROR, "SDL_CreateGPURenderState failed: %s", SDL_GetError());
-        return;
-    }
-
-    RC2D_log(RC2D_LOG_INFO, "Render state created successfully!");
 
     // Initialiser l'état des splashes sans charger les vidéos
     g_splash_state = SPLASH_STUDIO;
@@ -294,8 +233,6 @@ void rc2d_update(double dt)
                 g_menu_started = true;
             }
         }
-
-        // ici update gameplay ou UI logique si besoin
         return;
     }
 
@@ -366,6 +303,10 @@ void rc2d_update(double dt)
 /* ========================================================================= */
 void rc2d_draw(void)
 {
+    int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode;
+    SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &lw, &lh, &mode);
+    SDL_FRect dst = { 0.0f, 0.0f, (float)lw, (float)lh };
+
     if (g_splash_active) 
     {
         if (g_splash_state == SPLASH_STUDIO) 
@@ -406,11 +347,6 @@ void rc2d_draw(void)
         /* --- Rendu du jeu --- */
         if (background_login_image.sdl_texture) 
         {
-            // BACKGROUND LOGIN
-            int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode;
-            SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &lw, &lh, &mode);
-
-            SDL_FRect dst = { 0.0f, 0.0f, (float)lw, (float)lh };
             /* src = NULL -> texture entière ; dst = plein cadre logique */
             SDL_RenderTexture(rc2d_engine_state.renderer, background_login_image.sdl_texture, NULL, &dst);
 
