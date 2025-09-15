@@ -223,7 +223,7 @@ void rc2d_load(void)
     background_login_image = rc2d_graphics_loadImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
 
     // tile ocean (charge l'image originale)
-    tile_ocean_image = rc2d_graphics_loadImageFromStorage("assets/images/tile.png", RC2D_STORAGE_TITLE);
+    tile_ocean_image = rc2d_graphics_loadImageFromStorage("assets/images/tile2.png", RC2D_STORAGE_TITLE);
 
     // Charger le shader depuis le stockage
     g_ocean_fragment_shader = rc2d_gpu_loadGraphicsShaderFromStorage("water.fragment", RC2D_STORAGE_TITLE);
@@ -242,9 +242,42 @@ void rc2d_load(void)
     g_ocean_u.params1[2] = 0.25f;   // speed (0.0..1.0)
     g_ocean_u.params1[3] = 0.0f;
 
+    // 1) Créer un sampler en REPEAT
+    SDL_GPUSamplerCreateInfo s = {0};
+    s.min_filter = SDL_GPU_FILTER_LINEAR;
+    s.mag_filter = SDL_GPU_FILTER_LINEAR;
+    s.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+    s.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    s.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    s.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    SDL_GPUSampler* repeatSampler = SDL_CreateGPUSampler(rc2d_engine_state.gpu_device, &s);
 
+    // 2) Récupérer les properties de la texture SDL
+    SDL_PropertiesID props = SDL_GetTextureProperties(tile_ocean_image.sdl_texture);
+    if (!props) {
+        RC2D_log(RC2D_LOG_ERROR, "SDL_GetTextureProperties failed: %s", SDL_GetError());
+        return;
+    }
+
+    // 3) Récupérer le pointeur GPU (renderer = gpu)
+    SDL_GPUTexture* gpuTex = (SDL_GPUTexture*)SDL_GetPointerProperty(
+        props, SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER, NULL
+    );
+    if (!gpuTex) {
+        RC2D_log(RC2D_LOG_ERROR, "No SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER on this texture");
+        return;
+    }
+
+    // 4) Brancher ce sampler sur t0/s0 via le render state
+    SDL_GPUTextureSamplerBinding sb = {0};
+    sb.texture = gpuTex;           // <- la texture GPU réelle
+    sb.sampler = repeatSampler;    // <- REPEAT
+
+    // 5) Créer le render state avec le shader et le sampler
     SDL_GPURenderStateCreateInfo rs = {0};
     rs.fragment_shader = g_ocean_fragment_shader;
+    rs.num_sampler_bindings = 1;
+    rs.sampler_bindings = &sb;
     g_ocean_state = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs);
     if (!g_ocean_state) {
         RC2D_log(RC2D_LOG_ERROR, "SDL_CreateGPURenderState failed: %s", SDL_GetError());

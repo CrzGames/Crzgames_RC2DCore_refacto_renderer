@@ -368,6 +368,9 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
          if (jsonContent) RC2D_safe_free(jsonContent);
     }
 
+    RC2D_log(RC2D_LOG_INFO, "Loading graphics shader from storage: %s (format=%d, samplers=%u, uniform_buffers=%u, storage_buffers=%u, storage_textures=%u)",
+             fullPath, format, numSamplers, numUniformBuffers, numStorageBuffers, numStorageTextures);
+
     // Création du shader GPU avec les informations de réflexion récupérées depuis le fichier JSON
     SDL_GPUShaderCreateInfo info = {
         .code = codeShaderCompiled,
