@@ -1,8 +1,7 @@
 cbuffer type_Context : register(b0)
 {
-    float Context_time : packoffset(c0);
-    float2 Context_resolution : packoffset(c0.y);
-    float Context_strength : packoffset(c0.w);
+    float4 Context_params0 : packoffset(c0);
+    float4 Context_params1 : packoffset(c1);
 };
 
 Texture2D<float4> u_texture : register(t0);
@@ -25,10 +24,14 @@ struct SPIRV_Cross_Output
 
 void frag_main()
 {
-    float2 _61 = in_var_TEXCOORD0 + (float2(sin(((in_var_TEXCOORD0.y * 10.0f) + (Context_time * 1.2000000476837158203125f)) * 3.1415927410125732421875f) * 0.00200000009499490261077880859375f, sin(((in_var_TEXCOORD0.x * 14.0f) + (Context_time * 0.800000011920928955078125f)) * 3.1415927410125732421875f) * 0.0024999999441206455230712890625f) * Context_strength);
-    float4 _66 = u_texture.Sample(u_sampler, _61) * in_var_COLOR0;
-    float2 _78 = _66.xy + (0.004999999888241291046142578125f * sin(((Context_time * 2.0f) + (_61.x * 25.0f)) + (_61.y * 25.0f))).xx;
-    out_var_SV_Target = float4(_78.x, _78.y, _66.z, _66.w);
+    float2 _69 = frac((in_var_TEXCOORD0 + float2((Context_params0.x * 0.0199999995529651641845703125f) * Context_params1.z, (Context_params0.x * 0.0130000002682209014892578125f) * Context_params1.z)) * Context_params0.w);
+    float _74 = _69.x;
+    float _80 = _69.y;
+    float _85 = sin(((_80 * 14.0f) - (Context_params0.x * 0.89999997615814208984375f)) * 3.1415927410125732421875f);
+    float _86 = _74 + _80;
+    float4 _103 = u_texture.Sample(u_sampler, frac(_69 + ((float2(sin(((_74 * 10.0f) + (Context_params0.x * 1.2000000476837158203125f)) * 3.1415927410125732421875f) - _85, _85 + sin(((_86 * 8.0f) + (Context_params0.x * 0.64999997615814208984375f)) * 3.1415927410125732421875f)) * 0.5f) * (((1.0f.xx / max(Context_params1.xy, 1.0f.xx)) * Context_params0.z) * Context_params0.y)))) * in_var_COLOR0;
+    float2 _111 = _103.xy + (0.008000000379979610443115234375f * sin((Context_params0.x * 1.7000000476837158203125f) + (_86 * 20.0f))).xx;
+    out_var_SV_Target = float4(_111.x, _111.y, _103.z, _103.w);
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)

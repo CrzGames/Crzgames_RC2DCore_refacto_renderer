@@ -7,11 +7,10 @@
 /* ========================================================================= */
 
 typedef struct OceanUniforms {
-    float time;        // seconds
-    float resolution[2];
-    float strength;    // 0.0f .. 0.2f
-    float padding;     // alignement 16B (par prudence)
-} OceanUniforms;
+    float params0[4]; // time, strength, px_amp, tiling
+    float params1[4]; // width, height, speed, unused
+} OceanUniforms; // 32 bytes, aligné 16B
+
 
 static RC2D_Image          tile_ocean_image = {0};
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
@@ -89,11 +88,17 @@ static inline void draw_fullscreen_black_with_alpha(SDL_Renderer* r, double a01)
 static void Ocean_UpdateUniforms(SDL_Renderer* renderer, int out_w, int out_h, double dt)
 {
     g_time_accum += dt;
-    g_ocean_u.time          = (float)g_time_accum;
-    g_ocean_u.resolution[0] = (float)out_w;
-    g_ocean_u.resolution[1] = (float)out_h;
 
-    // Pousse les uniforms actualisés
+    g_ocean_u.params0[0] = (float)g_time_accum; // time
+    // g_ocean_u.params0[1] strength : tu peux l’animer si tu veux
+    // g_ocean_u.params0[2] px_amp    : idem
+    // g_ocean_u.params0[3] tiling    : idem
+
+    g_ocean_u.params1[0] = (float)out_w;
+    g_ocean_u.params1[1] = (float)out_h;
+    // g_ocean_u.params1[2] speed     : idem
+    g_ocean_u.params1[3] = 0.0f;
+
     SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u));
 }
 
@@ -227,27 +232,27 @@ void rc2d_load(void)
         return;
     }
 
-    SDL_GPURenderStateCreateInfo rs = {0};
-    rs.fragment_shader = g_ocean_fragment_shader;      // important
-    // rs.sampler_bindings = NULL;    // inutile pour 1 texture "courante"
-    // rs.num_sampler_bindings = 0;
+    g_ocean_u.params0[0] = 0.0f;   // time
+    g_ocean_u.params0[1] = 0.6f;   // strength (0.4..0.8 pour un menu)
+    g_ocean_u.params0[2] = 18.0f;  // px_amp : ~18 px visibles
+    g_ocean_u.params0[3] = 6.0f;   // tiling : 6 répétitions
 
+    g_ocean_u.params1[0] = 1280.0f; // width
+    g_ocean_u.params1[1] = 720.0f;  // height
+    g_ocean_u.params1[2] = 0.25f;   // speed (0.0..1.0)
+    g_ocean_u.params1[3] = 0.0f;
+
+
+    SDL_GPURenderStateCreateInfo rs = {0};
+    rs.fragment_shader = g_ocean_fragment_shader;
     g_ocean_state = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs);
     if (!g_ocean_state) {
         RC2D_log(RC2D_LOG_ERROR, "SDL_CreateGPURenderState failed: %s", SDL_GetError());
-        return false;
     }
-
-    // Uniforms init par défaut
-    g_ocean_u.time       = 0.0f;
-    g_ocean_u.resolution[0] = 1280.0f;
-    g_ocean_u.resolution[1] = 720.0f;
-    g_ocean_u.strength   = 0.08f;
 
     // Premier upload d’uniforms -> slot 0 (b0, space3)
     if (!SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u))) {
         RC2D_log(RC2D_LOG_ERROR, "Set uniforms failed: %s", SDL_GetError());
-        return false;
     }
 
     // Initialiser l'état des splashes sans charger les vidéos

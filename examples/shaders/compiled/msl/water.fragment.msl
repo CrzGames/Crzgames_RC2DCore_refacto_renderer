@@ -5,9 +5,8 @@ using namespace metal;
 
 struct type_Context
 {
-    float time;
-    packed_float2 resolution;
-    float strength;
+    float4 params0;
+    float4 params1;
 };
 
 struct main0_out
@@ -24,10 +23,14 @@ struct main0_in
 fragment main0_out main0(main0_in in [[stage_in]], constant type_Context& Context [[buffer(0)]], texture2d<float> u_texture [[texture(0)]], sampler u_sampler [[sampler(0)]])
 {
     main0_out out = {};
-    float2 _61 = in.in_var_TEXCOORD0 + (float2(sin(((in.in_var_TEXCOORD0.y * 10.0) + (Context.time * 1.2000000476837158203125)) * 3.1415927410125732421875) * 0.00200000009499490261077880859375, sin(((in.in_var_TEXCOORD0.x * 14.0) + (Context.time * 0.800000011920928955078125)) * 3.1415927410125732421875) * 0.0024999999441206455230712890625) * Context.strength);
-    float4 _66 = u_texture.sample(u_sampler, _61) * in.in_var_COLOR0;
-    float2 _78 = _66.xy + float2(0.004999999888241291046142578125 * sin(((Context.time * 2.0) + (_61.x * 25.0)) + (_61.y * 25.0)));
-    out.out_var_SV_Target = float4(_78.x, _78.y, _66.z, _66.w);
+    float2 _69 = fract((in.in_var_TEXCOORD0 + float2((Context.params0.x * 0.0199999995529651641845703125) * Context.params1.z, (Context.params0.x * 0.0130000002682209014892578125) * Context.params1.z)) * Context.params0.w);
+    float _74 = _69.x;
+    float _80 = _69.y;
+    float _85 = sin(((_80 * 14.0) - (Context.params0.x * 0.89999997615814208984375)) * 3.1415927410125732421875);
+    float _86 = _74 + _80;
+    float4 _103 = u_texture.sample(u_sampler, fract(_69 + ((float2(sin(((_74 * 10.0) + (Context.params0.x * 1.2000000476837158203125)) * 3.1415927410125732421875) - _85, _85 + sin(((_86 * 8.0) + (Context.params0.x * 0.64999997615814208984375)) * 3.1415927410125732421875)) * 0.5) * (((float2(1.0) / precise::max(Context.params1.xy, float2(1.0))) * Context.params0.z) * Context.params0.y)))) * in.in_var_COLOR0;
+    float2 _111 = _103.xy + float2(0.008000000379979610443115234375 * sin((Context.params0.x * 1.7000000476837158203125) + (_86 * 20.0)));
+    out.out_var_SV_Target = float4(_111.x, _111.y, _103.z, _103.w);
     return out;
 }
 
