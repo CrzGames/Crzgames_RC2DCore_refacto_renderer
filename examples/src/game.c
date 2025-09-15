@@ -13,6 +13,7 @@ typedef struct OceanUniforms {
 
 
 static RC2D_Image          tile_ocean_image = {0};
+static RC2D_Image          tileCausticImage = {0};
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPURenderState* g_ocean_state = NULL;
 static OceanUniforms       g_ocean_u     = {0};
@@ -89,18 +90,25 @@ static void Ocean_UpdateUniforms(SDL_Renderer* renderer, int out_w, int out_h, d
 {
     g_time_accum += dt;
 
-    g_ocean_u.params0[0] = (float)g_time_accum; // time
-    // g_ocean_u.params0[1] strength : tu peux l’animer si tu veux
-    // g_ocean_u.params0[2] px_amp    : idem
-    // g_ocean_u.params0[3] tiling    : idem
+    // time
+    g_ocean_u.params0[0] = (float)g_time_accum;
 
+    // NE PAS toucher à params0[1..3] si tu ne les animes pas
+    // g_ocean_u.params0[1] = strength;
+    // g_ocean_u.params0[2] = px_amp;
+    // g_ocean_u.params0[3] = tiling;
+
+    // resolution
     g_ocean_u.params1[0] = (float)out_w;
     g_ocean_u.params1[1] = (float)out_h;
-    // g_ocean_u.params1[2] speed     : idem
-    g_ocean_u.params1[3] = 0.0f;
+
+    // NE PAS remettre à 0 : speed et causticIntensity
+    // g_ocean_u.params1[2] = speed;            // si tu veux l’animer, ok
+    // g_ocean_u.params1[3] = causticIntensity; // surtout pas 0 chaque frame !
 
     SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u));
 }
+
 
 /* ========================================================================= */
 /*                                UNLOAD                                     */
@@ -222,9 +230,6 @@ void rc2d_load(void)
     // background login
     background_login_image = rc2d_graphics_loadImageFromStorage("assets/images/background-login.png", RC2D_STORAGE_TITLE);
 
-    // tile ocean (charge l'image originale)
-    tile_ocean_image = rc2d_graphics_loadImageFromStorage("assets/images/tile2.png", RC2D_STORAGE_TITLE);
-
     // Charger le shader depuis le stockage
     g_ocean_fragment_shader = rc2d_gpu_loadGraphicsShaderFromStorage("water.fragment", RC2D_STORAGE_TITLE);
     if (!g_ocean_fragment_shader) {
@@ -234,15 +239,17 @@ void rc2d_load(void)
 
     g_ocean_u.params0[0] = 0.0f;   // time
     g_ocean_u.params0[1] = 0.6f;   // strength (0.4..0.8 pour un menu)
-    g_ocean_u.params0[2] = 18.0f;  // px_amp : ~18 px visibles
-    g_ocean_u.params0[3] = 6.0f;   // tiling : 6 répétitions
+    g_ocean_u.params0[2] = 30.0f;  // px_amp : ~18 px visibles
+    g_ocean_u.params0[3] = 3.0f;   // tiling : 6 répétitions
 
     g_ocean_u.params1[0] = 1280.0f; // width
     g_ocean_u.params1[1] = 720.0f;  // height
-    g_ocean_u.params1[2] = 0.25f;   // speed (0.0..1.0)
-    g_ocean_u.params1[3] = 0.0f;
+    g_ocean_u.params1[2] = 0.60f;   // speed (0.0..1.0)
+    g_ocean_u.params1[3] = 0.25f; // reflet/Fresnel
 
-    // 1) Créer un sampler en REPEAT
+    /**
+     * 1) Créer un sampler en REPEAT
+     */
     SDL_GPUSamplerCreateInfo s = {0};
     s.min_filter = SDL_GPU_FILTER_LINEAR;
     s.mag_filter = SDL_GPU_FILTER_LINEAR;
@@ -252,32 +259,59 @@ void rc2d_load(void)
     s.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
     SDL_GPUSampler* repeatSampler = SDL_CreateGPUSampler(rc2d_engine_state.gpu_device, &s);
 
-    // 2) Récupérer les properties de la texture SDL
+    /**
+     * 2) Loader l'image de la texture de la tile d'eau, puis récupérer la texture GPU
+     */
+    tile_ocean_image = rc2d_graphics_loadImageFromStorage("assets/images/tile-water.png", RC2D_STORAGE_TITLE);
     SDL_PropertiesID props = SDL_GetTextureProperties(tile_ocean_image.sdl_texture);
-    if (!props) {
+    if (!props) 
+    {
         RC2D_log(RC2D_LOG_ERROR, "SDL_GetTextureProperties failed: %s", SDL_GetError());
         return;
     }
-
-    // 3) Récupérer le pointeur GPU (renderer = gpu)
-    SDL_GPUTexture* gpuTex = (SDL_GPUTexture*)SDL_GetPointerProperty(
+    SDL_GPUTexture* textureGPUWater = (SDL_GPUTexture*)SDL_GetPointerProperty(
         props, SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER, NULL
     );
-    if (!gpuTex) {
+    if (!textureGPUWater) 
+    {
         RC2D_log(RC2D_LOG_ERROR, "No SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER on this texture");
         return;
     }
 
-    // 4) Brancher ce sampler sur t0/s0 via le render state
-    SDL_GPUTextureSamplerBinding sb = {0};
-    sb.texture = gpuTex;           // <- la texture GPU réelle
-    sb.sampler = repeatSampler;    // <- REPEAT
+    /**
+     * 3) Loader l'image de la texture de la tile de caustics, puis récupérer la texture GPU
+     */
+    tileCausticImage = rc2d_graphics_loadImageFromStorage("assets/images/tile-caustic.png", RC2D_STORAGE_TITLE);
+    props = SDL_GetTextureProperties(tileCausticImage.sdl_texture);
+    if (!props) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "SDL_GetTextureProperties failed: %s", SDL_GetError());
+        return;
+    }
+    SDL_GPUTexture* textureGPUCaustic = (SDL_GPUTexture*)SDL_GetPointerProperty(
+        props, SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER, NULL
+    );
+    if (!textureGPUCaustic) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "No SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER on this texture");
+        return;
+    }
 
-    // 5) Créer le render state avec le shader et le sampler
+    
+    SDL_GPUTextureSamplerBinding sb[1] = {0};
+    sb[0].texture = textureGPUWater;
+    sb[0].sampler = repeatSampler;
+    
+    /*SDL_GPUTextureSamplerBinding sb[2] = {0};
+    sb[0].texture = textureGPUWater;
+    sb[0].sampler = repeatSampler;
+    sb[1].texture = textureGPUCaustic;
+    sb[1].sampler = repeatSampler;*/
+
     SDL_GPURenderStateCreateInfo rs = {0};
-    rs.fragment_shader = g_ocean_fragment_shader;
-    rs.num_sampler_bindings = 1;
-    rs.sampler_bindings = &sb;
+    rs.fragment_shader      = g_ocean_fragment_shader;
+    rs.num_sampler_bindings = 1;              // <-- plus que 1
+    rs.sampler_bindings     = sb;
     g_ocean_state = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs);
     if (!g_ocean_state) {
         RC2D_log(RC2D_LOG_ERROR, "SDL_CreateGPURenderState failed: %s", SDL_GetError());
