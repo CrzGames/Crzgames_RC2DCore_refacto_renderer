@@ -13,6 +13,7 @@ typedef struct OceanUniforms {
     float padding;     // alignement 16B (par prudence)
 } OceanUniforms;
 
+static RC2D_Image          tile_ocean_image = {0};
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPURenderState* g_ocean_state = NULL;
 static OceanUniforms       g_ocean_u     = {0};
@@ -21,7 +22,6 @@ static double              g_time_accum  = 0.0;
 /* ========================================================================= */
 /*                              RESSOURCES                                   */
 /* ========================================================================= */
-static RC2D_Image          tile_ocean_image = {0};
 static RC2D_Image          background_login_image = {0};
 
 /* ========================================================================= */
