@@ -23,7 +23,18 @@ static double              g_time_accum  = 0.0;
 /*                              RESSOURCES                                   */
 /* ========================================================================= */
 static RC2D_Video g_login_bg_video; /* background-login.mp4 (silencieuse idéalement) */
+
+/* === TexturePacker: elite27 === */
 static RC2D_TP_Atlas g_elite27_atlas = {0};
+
+static const char* s_elite27_names[] = {
+    "1.png","2.png","3.png","4.png","5.png","6.png","7.png","8.png"
+};
+static const int   s_elite27_count = 8;
+static double      s_elite27_time  = 0.0;
+static float       s_elite27_fps   = 12.0f;   /* vitesse de preview */
+static float       s_elite27_x     = 50.0f;   /* position d’affichage */
+static float       s_elite27_y     = 50.0f;
 
 /* ========================================================================= */
 /*                              RESSOURCES UI                                */
@@ -130,6 +141,8 @@ void rc2d_unload(void)
     rc2d_graphics_freeImage(&g_button_login_ui.image);
     rc2d_graphics_freeImageData(&g_button_login_ui.imageData);
     rc2d_graphics_freeImage(&tileCausticImage);
+
+    rc2d_tp_freeAtlas(&g_elite27_atlas);
 
     // Audio
     if (g_menu_track) 
@@ -329,7 +342,7 @@ void rc2d_load(void)
 
 
     // Charger l’atlas de textures
-    g_elite27_atlas = rc2d_tp_loadAtlasFromStorage("assets/elite27/elite27.json", RC2D_STORAGE_TITLE);
+    g_elite27_atlas = rc2d_tp_loadAtlasFromStorage("assets/atlas/elite27/elite27.json", RC2D_STORAGE_TITLE);
     if (!g_elite27_atlas.atlas_image.sdl_texture) 
     {
         RC2D_log(RC2D_LOG_ERROR, "Failed to load elite27 atlas");
@@ -533,6 +546,40 @@ void rc2d_draw(void)
 
         // 3) désactiver l’état pour le reste du HUD
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
+    }
+
+    /* ================== PREVIEW TexturePacker elite27 ================== */
+    if (g_elite27_atlas.atlas_image.sdl_texture) 
+    {
+        /* index courant à s_elite27_fps */
+        int idx = (int)(s_elite27_time * (double)s_elite27_fps) % s_elite27_count;
+        const char* fname = s_elite27_names[idx];
+
+        /* dessine la sous-image RAW à (x,y) (aucun spriteSourceSize appliqué) */
+        rc2d_tp_drawFrameByName(&g_elite27_atlas, fname,
+                                s_elite27_x, s_elite27_y,
+                                /*angle*/ 0.0,
+                                /*scale*/ 1.0f, 1.0f,
+                                /*offset*/ -1.0f, -1.0f,
+                                /*flip*/ false, false);
+
+        /* récupérer la frame pour connaitre w/h, tracer un cadre rouge de debug */
+        const RC2D_TP_Frame* f = rc2d_tp_getFrame(&g_elite27_atlas, fname);
+        if (f)
+        {
+            /* cadre = zone blit réelle (RAW) */
+            SDL_FRect r = { s_elite27_x, s_elite27_y, f->frame.w, f->frame.h };
+
+            /* tracer un contour rouge */
+            RC2D_Color prev = {0}; /* on ne relit pas la couleur courante ici — debug only */
+            (void)prev;
+
+            rc2d_graphics_setColor((RC2D_Color){255, 0, 0, 255});
+            rc2d_graphics_rectangle("line", &r);
+
+            /* si tu veux, remets ta couleur habituelle ensuite */
+            rc2d_graphics_setColor((RC2D_Color){255, 255, 255, 255});
+        }
     }
 }
 
