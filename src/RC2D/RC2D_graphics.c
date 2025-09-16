@@ -68,7 +68,6 @@ void rc2d_graphics_drawQuad(RC2D_Image* image, const RC2D_Quad* quad,
                             float offsetX, float offsetY,
                             bool flipHorizontal, bool flipVertical)
 {
-    // Vérifier les paramètres de l'image et du quad
     if (!image || !image->sdl_texture) 
     {
         RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_drawQuad: invalid image/texture");
@@ -80,31 +79,31 @@ void rc2d_graphics_drawQuad(RC2D_Image* image, const RC2D_Quad* quad,
         return;
     }
 
-    /* Destination : même logique que drawImage (taille = source * scale) */
-    SDL_FRect dest = {
-        x,
-        y,
-        quad->src.w * scaleX,
-        quad->src.h * scaleY
-    };
+    // Destination = taille brute (sans appliquer scaleX/scaleY ici)
+    SDL_FRect dst = { x, y, quad->src.w, quad->src.h };
 
-    /* Flip mode */
+    // Flip
     SDL_FlipMode flip = SDL_FLIP_NONE;
-    if (flipHorizontal) flip |= SDL_FLIP_HORIZONTAL;
-    if (flipVertical)   flip |= SDL_FLIP_VERTICAL;
+    if (flipHorizontal) flip = (SDL_FlipMode)(flip | SDL_FLIP_HORIZONTAL);
+    if (flipVertical)   flip = (SDL_FlipMode)(flip | SDL_FLIP_VERTICAL);
 
-    /* Point de rotation */
-    const SDL_FPoint center = { offsetX, offsetY };
-    const SDL_FPoint* pCenter = (offsetX >= 0.0f && offsetY >= 0.0f) ? &center : NULL;
+    // Centre de rotation
+    const SDL_FPoint* pCenter = NULL;
+    SDL_FPoint center;
+    if (offsetX >= 0.0f && offsetY >= 0.0f) 
+    {
+        center.x = offsetX;
+        center.y = offsetY;
+        pCenter = &center;
+    }
 
-    /* Comme drawImage : applique aussi le render scale, puis reset */
+    // Appliquer le scale globalement
     SDL_SetRenderScale(rc2d_engine_state.renderer, scaleX, scaleY);
 
-    // Dessiner la texture avec rotation, flip et portion source (quad->src)
     if (!SDL_RenderTextureRotated(rc2d_engine_state.renderer,
                                   image->sdl_texture,
-                                  &quad->src,       /* <- source rect */
-                                  &dest,            /* <- destination rect */
+                                  &quad->src,
+                                  &dst,
                                   angle,
                                   pCenter,
                                   flip))
@@ -112,7 +111,7 @@ void rc2d_graphics_drawQuad(RC2D_Image* image, const RC2D_Quad* quad,
         RC2D_log(RC2D_LOG_ERROR, "SDL_RenderTextureRotated (quad) failed: %s", SDL_GetError());
     }
 
-    // Reset render scale si le scale a été modifié
+    // Reset du scale pour ne pas impacter le reste
     SDL_SetRenderScale(rc2d_engine_state.renderer, 1.0f, 1.0f);
 }
 

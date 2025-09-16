@@ -127,8 +127,8 @@ const RC2D_TP_Frame* rc2d_tp_getFrame(const RC2D_TP_Atlas* atlas, const char* fi
  * - Idéal si tu travailles en « brut » avec des sprites non réalignés (ou que tu gères
  *   toi-même l’ancrage).
  *
- * \param atlas   Atlas source (doit contenir la texture).
- * \param frame   Frame à dessiner (issue de rc2d_tp_getFrame ou atlas->frames[i]).
+ * \param atlas    Atlas contenant la frame.
+ * \param filename Nom exact de la frame à dessiner (ex: "1.png").
  * \param x       Position X d'affichage.
  * \param y       Position Y d'affichage.
  * \param angle   Rotation en degrés.
@@ -139,12 +139,12 @@ const RC2D_TP_Frame* rc2d_tp_getFrame(const RC2D_TP_Atlas* atlas, const char* fi
  * \param flipH   Retournement horizontal.
  * \param flipV   Retournement vertical.
  */
-void rc2d_tp_drawFrame(const RC2D_TP_Atlas* atlas, const RC2D_TP_Frame* frame,
-                       float x, float y,
-                       double angle,
-                       float scaleX, float scaleY,
-                       float offsetX, float offsetY,
-                       bool flipH, bool flipV);
+void rc2d_tp_drawFrameByName(const RC2D_TP_Atlas* atlas, const char* filename,
+                             float x, float y,
+                             double angle,
+                             float scaleX, float scaleY,
+                             float offsetX, float offsetY,
+                             bool flipH, bool flipV);
 
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */
 #ifdef __cplusplus
