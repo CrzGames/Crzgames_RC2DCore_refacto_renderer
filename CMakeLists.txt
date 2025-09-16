@@ -171,6 +171,14 @@ if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
   set(SDL_SHARED OFF)
 endif()
 
+# cJSON :
+# Désactiver les tests et utils de cJSON, et forcer la compilation en statique
+set(CMAKE_POLICY_VERSION_MINIMUM "3.5" CACHE STRING "Allow old subprojects" FORCE) # Autoriser les vieux subprojects de CJSON
+set(CJSON_OVERRIDE_BUILD_SHARED_LIBS ON  CACHE BOOL "" FORCE)  # ignore BUILD_SHARED_LIBS global
+set(CJSON_BUILD_SHARED_LIBS      OFF CACHE BOOL "" FORCE)      # force STATIC pour cJSON
+set(ENABLE_CJSON_TEST   OFF CACHE BOOL "" FORCE)
+set(ENABLE_CJSON_UTILS  OFF CACHE BOOL "" FORCE)
+
 # SDL3, SDL3_ttf, SDL3_image, SDL3_mixer : 
 # Permet de dire à CMake de ne pas chercher les dépendances dans le système,
 # mais de les utiliser à partir du répertoire "dependencies", dont également les submodules
@@ -179,10 +187,19 @@ add_subdirectory(dependencies/SDL        EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_ttf    EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_image  EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_mixer  EXCLUDE_FROM_ALL)
+add_subdirectory(dependencies/cJSON EXCLUDE_FROM_ALL)
 
 # Chemin vers les dépendances
 set(DEPENDENCIES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
 set(CRZGAMES_LIBRARIES "${DEPENDENCIES_PATH}/Crzgames_Libraries")
+
+function(rc2d_configure_cjson target_name)
+  # Link le dossier include de cJSON à la target
+  target_include_directories(${target_name} PUBLIC "${DEPENDENCIES_PATH}/cJSON")
+
+  # Link la librairie cJSON
+  target_link_libraries(${target_name} PUBLIC cjson)
+endfunction()
 
 function(rc2d_configure_ffmpeg target_name)
   if (RC2D_VIDEO_MODULE_ENABLED)
@@ -1002,6 +1019,9 @@ rc2d_configure_rcenet(${PROJECT_NAME})
 
 # Linker les frameworks Apple si nécessaire
 rc2d_link_apple_frameworks(${PROJECT_NAME})
+
+# Linker cjson
+rc2d_configure_cjson(${PROJECT_NAME})
 
 # Pour l'exemple RC2D
 if(RC2D_BUILD_EXAMPLES)

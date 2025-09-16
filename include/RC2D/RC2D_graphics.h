@@ -42,6 +42,13 @@ typedef struct RC2D_Color {
 } RC2D_Color;
 
 /**
+ * Représente un sous-rectangle (source) d'une texture.
+ */
+typedef struct RC2D_Quad {
+    SDL_FRect src; /* x, y, w, h dans l'espace pixel de la texture */
+} RC2D_Quad;
+
+/**
  * Structure représentant une image.
  * @typedef {object} RC2D_Image
  * @property {SDL_Texture} sdl_texture - Pointeur vers la texture SDL de l'image.
@@ -102,6 +109,27 @@ void rc2d_graphics_clear(void);
  * Présente le contenu rendu à l'écran.
  */
 void rc2d_graphics_present(void);
+
+/**
+ * Crée un Quad (sous-rectangle) borné dans l'image.
+ * @param image  Image source (utilisée pour borner/clamp).
+ * @param x,y    Position haute-gauche dans la texture (pixels).
+ * @param width  Largeur du Quad (pixels).
+ * @param height Hauteur du Quad (pixels).
+ * @return Quad valide (w/h==0 si échec).
+ */
+RC2D_Quad rc2d_graphics_newQuad(RC2D_Image* image, float x, float y, float width, float height);
+
+/**
+ * Dessine une portion d'image (Quad) avec transformations.
+ * Paramètres identiques à rc2d_graphics_drawImage, mais la source est quad->src.
+ */
+void rc2d_graphics_drawQuad(RC2D_Image* image, const RC2D_Quad* quad,
+                            float x, float y,
+                            double angle,
+                            float scaleX, float scaleY,
+                            float offsetX, float offsetY,
+                            bool flipHorizontal, bool flipVertical);
 
 /**
  * Dessine une image à l'écran avec transformations.

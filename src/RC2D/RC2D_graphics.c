@@ -11,6 +11,111 @@
 */
 static RC2D_Color rc2d_graphics_currentRenderColor = {0, 0, 0, 255};
 
+RC2D_Quad rc2d_graphics_newQuad(RC2D_Image* image, float x, float y, float width, float height)
+{
+    // Initialiser un Quad vide
+    RC2D_Quad q = (RC2D_Quad){0};
+
+    // Vérifier que l'image et la texture sont valides
+    if (!image || !image->sdl_texture) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_newQuad: invalid image/texture");
+        return q;
+    }
+
+    // Obtenir la taille de la texture
+    float texW = 0.0f, texH = 0.0f;
+    if (!SDL_GetTextureSize(image->sdl_texture, &texW, &texH)) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_newQuad: SDL_GetTextureSize failed: %s", SDL_GetError());
+        return q;
+    }
+
+    // Vérifier les dimensions si valeurs négatives ou nulles
+    if (width <= 0.0f || height <= 0.0f) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_newQuad: width/height must be > 0 (got %.2f x %.2f)", width, height);
+        return q;
+    }
+
+    /* Clamp dans les bornes de la texture */
+    if (x < 0.0f) x = 0.0f;
+    if (y < 0.0f) y = 0.0f;
+    if (x + width  > texW) width  = texW - x;
+    if (y + height > texH) height = texH - y;
+
+    // Vérifier si la zone est vide après clamp
+    if (width <= 0.0f || height <= 0.0f) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_newQuad: clamped area is empty");
+        return q;
+    }
+
+    // Remplir le Quad avec les coordonnées source
+    q.src.x = x;
+    q.src.y = y;
+    q.src.w = width;
+    q.src.h = height;
+
+    // Retourner le Quad valide
+    return q;
+}
+
+void rc2d_graphics_drawQuad(RC2D_Image* image, const RC2D_Quad* quad,
+                            float x, float y,
+                            double angle,
+                            float scaleX, float scaleY,
+                            float offsetX, float offsetY,
+                            bool flipHorizontal, bool flipVertical)
+{
+    // Vérifier les paramètres de l'image et du quad
+    if (!image || !image->sdl_texture) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_drawQuad: invalid image/texture");
+        return;
+    }
+    if (!quad || quad->src.w <= 0.0f || quad->src.h <= 0.0f) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_drawQuad: invalid quad");
+        return;
+    }
+
+    /* Destination : même logique que drawImage (taille = source * scale) */
+    SDL_FRect dest = {
+        x,
+        y,
+        quad->src.w * scaleX,
+        quad->src.h * scaleY
+    };
+
+    /* Flip mode */
+    SDL_FlipMode flip = SDL_FLIP_NONE;
+    if (flipHorizontal) flip |= SDL_FLIP_HORIZONTAL;
+    if (flipVertical)   flip |= SDL_FLIP_VERTICAL;
+
+    /* Point de rotation */
+    const SDL_FPoint center = { offsetX, offsetY };
+    const SDL_FPoint* pCenter = (offsetX >= 0.0f && offsetY >= 0.0f) ? &center : NULL;
+
+    /* Comme drawImage : applique aussi le render scale, puis reset */
+    SDL_SetRenderScale(rc2d_engine_state.renderer, scaleX, scaleY);
+
+    // Dessiner la texture avec rotation, flip et portion source (quad->src)
+    if (!SDL_RenderTextureRotated(rc2d_engine_state.renderer,
+                                  image->sdl_texture,
+                                  &quad->src,       /* <- source rect */
+                                  &dest,            /* <- destination rect */
+                                  angle,
+                                  pCenter,
+                                  flip))
+    {
+        RC2D_log(RC2D_LOG_ERROR, "SDL_RenderTextureRotated (quad) failed: %s", SDL_GetError());
+    }
+
+    // Reset render scale si le scale a été modifié
+    SDL_SetRenderScale(rc2d_engine_state.renderer, 1.0f, 1.0f);
+}
+
 void rc2d_graphics_clear(void)
 {
     if (rc2d_engine_state.renderer) 
