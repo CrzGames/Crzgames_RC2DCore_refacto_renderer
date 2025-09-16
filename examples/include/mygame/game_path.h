@@ -109,6 +109,8 @@ typedef enum RC2D_IsoDirection {
  * \threadsafety À appeler depuis le thread principal si la grille est partagée
  *               avec le rendu, sinon thread-safe en soi.
  *
+ * \note La grille doit être libérée par \ref rc2d_grid_destroy.
+ *
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
 RC2D_Grid rc2d_grid_create(int width, int height);
