@@ -32,7 +32,7 @@ static const char* s_elite27_names[] = {
 };
 static const int   s_elite27_count = 8;
 static double      s_elite27_time  = 0.0;
-static float       s_elite27_fps   = 12.0f;   /* vitesse de preview */
+static float       s_elite27_fps   = 2.0f;   /* vitesse de preview */
 static float       s_elite27_x     = 50.0f;   /* position d’affichage */
 static float       s_elite27_y     = 50.0f;
 
@@ -362,6 +362,8 @@ void rc2d_update(double dt)
     int out_w, out_h;
     SDL_GetCurrentRenderOutputSize(rc2d_engine_state.renderer, &out_w, &out_h);
     SDL_FRect dst = {0.0f, 0.0f, (float)out_w, (float)out_h};
+
+    s_elite27_time += dt;
     
     Ocean_UpdateUniforms(rc2d_engine_state.renderer, out_w, out_h, dt);
 
