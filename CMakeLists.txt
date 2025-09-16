@@ -195,7 +195,7 @@ set(CRZGAMES_LIBRARIES "${DEPENDENCIES_PATH}/Crzgames_Libraries")
 
 function(rc2d_configure_cjson target_name)
   # Link le dossier include de cJSON à la target
-  target_include_directories(${target_name} PUBLIC "${DEPENDENCIES_PATH}/cJSON")
+  target_include_directories(${target_name} PUBLIC "${DEPENDENCIES_PATH}")
 
   # Link la librairie cJSON
   target_link_libraries(${target_name} PUBLIC cjson)
