@@ -86,7 +86,7 @@ bool rc2d_graphics_drawTileIsometricAt(const char* mode, int i, int j,
 {
     const float cx = origin_x + (i - j) * (tile_w * 0.5f);
     const float cy = origin_y + (i + j) * (tile_h * 0.5f);
-    return rc2d_graphics_isoDiamond(mode, cx, cy, tile_w, tile_h);
+    return rc2d_graphics_drawTileIsometric(mode, cx, cy, tile_w, tile_h);
 }
 
 RC2D_Quad rc2d_graphics_newQuad(RC2D_Image* image, float x, float y, float width, float height)
