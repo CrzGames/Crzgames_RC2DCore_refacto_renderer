@@ -62,6 +62,7 @@ const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[])
     config->callbacks->rc2d_load = rc2d_load;
     config->callbacks->rc2d_unload = rc2d_unload;
     config->callbacks->rc2d_mousepressed = rc2d_mousepressed;
+    config->callbacks->rc2d_keypressed = rc2d_keypressed;
     config->logicalPresentationMode = RC2D_LOGICAL_PRESENTATION_OVERSCAN;
     config->pixelartMode = false;
     config->appInfo->name = "SeaTyrants";
