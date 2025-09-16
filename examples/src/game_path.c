@@ -1,4 +1,4 @@
-#include <game/game_path.h>
+#include <mygame/game_path.h>
 
 #include <RC2D/RC2D_memory.h>
 

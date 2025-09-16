@@ -1,5 +1,5 @@
-#ifndef GAME_PATH_H
-#define GAME_PATH_H
+#ifndef MYGAME_PATH_H
+#define MYGAME_PATH_H
 
 #include <stdbool.h>   /* Requis pour : bool */
 #include <stdint.h>    /* Requis pour : uint8_t */
@@ -265,4 +265,4 @@ void rc2d_make_frameName(int index, char out[16]);
 }
 #endif
 
-#endif // GAME_PATH_H
+#endif // MYGAME_PATH_H
