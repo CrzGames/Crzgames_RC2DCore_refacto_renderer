@@ -24,6 +24,13 @@ static double              g_time_accum  = 0.0;
 /* ========================================================================= */
 static RC2D_Video g_login_bg_video; /* background-login.mp4 (silencieuse idéalement) */
 
+/* === TexturePacker: elite27 === */
+static RC2D_TP_Atlas g_elite27_atlas = {0};
+
+static const char* s_elite27_names[] = {
+    "1.png","2.png","3.png","4.png","5.png","6.png","7.png","8.png"
+};
+
 /* ========================================================================= */
 /*                              RESSOURCES UI                                */
 /* ========================================================================= */
