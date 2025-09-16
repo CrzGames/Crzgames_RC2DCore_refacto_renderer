@@ -1,6 +1,50 @@
 #include <mygame/game.h>
 #include <RC2D/RC2D.h>
 #include <RC2D/RC2D_internal.h>
+#include <SDL3/SDL.h>
+
+/* ===== Gouttières autour de la MAP (logic coords, safe & overscan aware) ===== */
+typedef struct RC2D_UIGutters {
+    float left, top, right, bottom; /* px logiques ou % si percent=true */
+    bool  percent;
+} RC2D_UIGutters;
+
+/* Ton besoin : peu en haut/bas, beaucoup à gauche/droite */
+static RC2D_UIGutters g_gui_gutters = {
+    420.0f,   /* left   : minimap / panel gauche */
+    16.0f,    /* top    : barre boutons top */
+    520.0f,   /* right  : chat / events / panel droit */
+    56.0f,    /* bottom : barre boutons bas */
+    false     /* percent = false (pixels logiques) */
+};
+
+static SDL_FRect g_ocean_dst = SDL_FRect{0,0,0,0};
+
+static SDL_FRect rc2d_get_available_rect_with_gutters(RC2D_UIGutters G)
+{
+    SDL_FRect V = rc2d_engine_getVisibleSafeRectRender(); /* déjà OVERSCAN + safe */
+    if (V.w <= 0.f || V.h <= 0.f) return SDL_FRect{0,0,0,0};
+
+    float L = G.percent ? V.w * G.left   : G.left;
+    float T = G.percent ? V.h * G.top    : G.top;
+    float R = G.percent ? V.w * G.right  : G.right;
+    float B = G.percent ? V.h * G.bottom : G.bottom;
+
+    SDL_FRect A = SDL_FRect{ V.x + L, V.y + T, V.w - (L + R), V.h - (T + B) };
+    if (A.w < 0.f) A.w = 0.f;
+    if (A.h < 0.f) A.h = 0.f;
+    return A;
+}
+
+/* Option ratio 16:9, ancré TOP-LEFT, clampé à la zone dispo */
+static inline SDL_FRect ocean_layout_fit_ratio_top_left(SDL_FRect avail, float targetW, float targetH)
+{
+    if (avail.w <= 0.f || avail.h <= 0.f) return SDL_FRect{0,0,0,0};
+    float s = SDL_min(avail.w / targetW, avail.h / targetH);
+    if (s <= 0.f) return SDL_FRect{avail.x, avail.y, 0, 0};
+    float w = targetW * s, h = targetH * s;
+    return SDL_FRect{ avail.x, avail.y, w, h }; /* TOP-LEFT */
+}
 
 /* ========================================================================= */
 /*                          GPU EFFECT: OCEAN                                */
@@ -11,12 +55,12 @@ typedef struct OceanUniforms {
     float params1[4]; // width, height, speed, unused
 } OceanUniforms; // 32 bytes, aligné 16B
 
-
 static RC2D_Image          tile_ocean_image = {0};
 static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
 static SDL_GPURenderState* g_ocean_state = NULL;
 static OceanUniforms       g_ocean_u     = {0};
 static double              g_time_accum  = 0.0;
+static SDL_GPUSampler*     g_repeat_sampler = NULL;
 
 /* ========================================================================= */
 /*                              RESSOURCES                                   */
@@ -27,26 +71,12 @@ static const char* s_elite27_names[] = {
     "1.png","2.png","3.png","4.png","5.png","6.png","7.png","8.png"
 };
 
-static void Ocean_UpdateUniforms(SDL_Renderer* renderer, int out_w, int out_h, double dt)
+static void Ocean_UpdateUniforms(double dt)
 {
     g_time_accum += dt;
-
-    // time
     g_ocean_u.params0[0] = (float)g_time_accum;
-
-    // NE PAS toucher à params0[1..3] si tu ne les animes pas
-    // g_ocean_u.params0[1] = strength;
-    // g_ocean_u.params0[2] = px_amp;
-    // g_ocean_u.params0[3] = tiling;
-
-    // resolution
-    g_ocean_u.params1[0] = (float)out_w;
-    g_ocean_u.params1[1] = (float)out_h;
-
-    // NE PAS remettre à 0 : speed et causticIntensity
-    // g_ocean_u.params1[2] = speed;            // si tu veux l’animer, ok
-    // g_ocean_u.params1[3] = causticIntensity; // surtout pas 0 chaque frame !
-
+    g_ocean_u.params1[0] = g_ocean_dst.w;
+    g_ocean_u.params1[1] = g_ocean_dst.h;
     SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u));
 }
 
@@ -56,14 +86,18 @@ static void Ocean_UpdateUniforms(SDL_Renderer* renderer, int out_w, int out_h, d
 void rc2d_unload(void)
 {
     rc2d_graphics_freeImage(&tile_ocean_image);
-
     rc2d_tp_freeAtlas(&g_elite27_atlas);
 
-    if (g_ocean_state) 
-    {
+    if (g_ocean_state) {
         SDL_DestroyGPURenderState(g_ocean_state);
         g_ocean_state = NULL;
     }
+    if (g_repeat_sampler) {
+        SDL_DestroyGPUSampler(g_repeat_sampler);
+        g_repeat_sampler = NULL;
+    }
+    // si ton API RC2D fournit la destruction du shader, ajoute-la ici
+    // if (g_ocean_fragment_shader) { rc2d_gpu_destroyGraphicsShader(g_ocean_fragment_shader); g_ocean_fragment_shader = NULL; }
 
     RC2D_log(RC2D_LOG_INFO, "My game is unloading...\n");
 }
@@ -87,18 +121,16 @@ void rc2d_load(void)
 
     // Initialiser les uniforms
     g_ocean_u.params0[0] = 0.0f;   // time
-    g_ocean_u.params0[1] = 0.6f;   // strength (0.4..0.8 pour un menu)
-    g_ocean_u.params0[2] = 30.0f;  // px_amp : ~18 px visibles
-    g_ocean_u.params0[3] = 3.0f;   // tiling : 6 répétitions
+    g_ocean_u.params0[1] = 0.6f;   // strength
+    g_ocean_u.params0[2] = 30.0f;  // px_amp
+    g_ocean_u.params0[3] = 3.0f;   // tiling
 
     g_ocean_u.params1[0] = 1280.0f; // width
     g_ocean_u.params1[1] = 720.0f;  // height
-    g_ocean_u.params1[2] = 0.60f;   // speed (0.0..1.0)
-    g_ocean_u.params1[3] = 0.25f; // reflet/Fresnel
+    g_ocean_u.params1[2] = 0.60f;   // speed
+    g_ocean_u.params1[3] = 0.25f;   // reflet/Fresnel
 
-    /**
-     * 1) Créer un sampler en REPEAT
-     */
+    /* 1) Sampler REPEAT */
     SDL_GPUSamplerCreateInfo s = {0};
     s.min_filter = SDL_GPU_FILTER_LINEAR;
     s.mag_filter = SDL_GPU_FILTER_LINEAR;
@@ -106,56 +138,45 @@ void rc2d_load(void)
     s.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
     s.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
     s.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    SDL_GPUSampler* repeatSampler = SDL_CreateGPUSampler(rc2d_engine_state.gpu_device, &s);
+    g_repeat_sampler = SDL_CreateGPUSampler(rc2d_engine_state.gpu_device, &s);
 
-    /**
-     * 2) Loader l'image de la texture de la tile d'eau, puis récupérer la texture GPU
-     */
+    /* 2) Texture GPU de la tile eau */
     tile_ocean_image = rc2d_graphics_loadImageFromStorage("assets/images/tile-water.png", RC2D_STORAGE_TITLE);
     SDL_PropertiesID props = SDL_GetTextureProperties(tile_ocean_image.sdl_texture);
-    if (!props) 
-    {
+    if (!props) {
         RC2D_log(RC2D_LOG_ERROR, "SDL_GetTextureProperties failed: %s", SDL_GetError());
         return;
     }
     SDL_GPUTexture* textureGPUWater = (SDL_GPUTexture*)SDL_GetPointerProperty(
         props, SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER, NULL
     );
-    if (!textureGPUWater) 
-    {
+    if (!textureGPUWater) {
         RC2D_log(RC2D_LOG_ERROR, "(1)No SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER on this texture");
         return;
     }
 
-    /**
-     * 3) Créer l’état GPU avec le shader et le sampler
-     */    
+    /* 3) RenderState avec shader + sampler */
     SDL_GPUTextureSamplerBinding sb[1] = {0};
     sb[0].texture = textureGPUWater;
-    sb[0].sampler = repeatSampler;
+    sb[0].sampler = g_repeat_sampler;
 
     SDL_GPURenderStateCreateInfo rs = {0};
     rs.fragment_shader      = g_ocean_fragment_shader;
-    rs.num_sampler_bindings = 1;              // <-- plus que 1
+    rs.num_sampler_bindings = 1;
     rs.sampler_bindings     = sb;
     g_ocean_state = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs);
     if (!g_ocean_state) {
         RC2D_log(RC2D_LOG_ERROR, "SDL_CreateGPURenderState failed: %s", SDL_GetError());
     }
 
-    /**
-     * 4) Initialiser les uniforms
-     */
+    /* 4) Uniforms init */
     if (!SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u))) {
         RC2D_log(RC2D_LOG_ERROR, "Set uniforms failed: %s", SDL_GetError());
     }
 
-    /**
-     * 5) Charger l’atlas de textures
-     */
+    /* 5) Atlas */
     g_elite27_atlas = rc2d_tp_loadAtlasFromStorage("assets/atlas/elite24/elite24.json", RC2D_STORAGE_TITLE);
-    if (!g_elite27_atlas.atlas_image.sdl_texture) 
-    {
+    if (!g_elite27_atlas.atlas_image.sdl_texture) {
         RC2D_log(RC2D_LOG_ERROR, "Failed to load elite27 atlas");
     }
 }
@@ -165,13 +186,18 @@ void rc2d_load(void)
 /* ========================================================================= */
 void rc2d_update(double dt)
 {
-    int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode;
-    SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &lw, &lh, &mode);
-    SDL_FRect dst = { 0.0f, 0.0f, (float)lw, (float)lh };
+    SDL_FRect avail = rc2d_get_available_rect_with_gutters(g_gui_gutters);
 
-    Ocean_UpdateUniforms(rc2d_engine_state.renderer, lw, lh, dt);
+    /* MAP/OCEAN top-left en 16:9 dans l’espace dispo */
+    g_ocean_dst = ocean_layout_fit_ratio_top_left(avail, 1920.f, 1080.f);
 
-    // Update scene
+    /* --- Uniforms shader : résolution = taille locale DU RECT --- */
+    g_time_accum            += dt;
+    g_ocean_u.params0[0]     = (float)g_time_accum;  /* time */
+    g_ocean_u.params1[0]     = g_ocean_dst.w;        /* width locale */
+    g_ocean_u.params1[1]     = g_ocean_dst.h;        /* height locale */
+
+    SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u));
 }
 
 /* ========================================================================= */
@@ -179,22 +205,14 @@ void rc2d_update(double dt)
 /* ========================================================================= */
 void rc2d_draw(void)
 {
-    int lw = 0, lh = 0; SDL_RendererLogicalPresentation mode;
-    SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &lw, &lh, &mode);
-    SDL_FRect dst = { 0.0f, 0.0f, (float)lw, (float)lh };
-
-    // DRAW SCENE
-    if (tile_ocean_image.sdl_texture && g_ocean_state) 
+    if (tile_ocean_image.sdl_texture && g_ocean_state && g_ocean_dst.w > 0.f && g_ocean_dst.h > 0.f)
     {
-        // 1) activer l’état GPU custom
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, g_ocean_state);
-
-        // 2) dessiner ta texture (le renderer lie automatiquement t0/s0 à cette texture)
-        SDL_RenderTexture(rc2d_engine_state.renderer, tile_ocean_image.sdl_texture, NULL, &dst);
-
-        // 3) désactiver l’état pour le reste du HUD
+        SDL_RenderTexture(rc2d_engine_state.renderer, tile_ocean_image.sdl_texture, NULL, &g_ocean_dst);
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
     }
+
+    /* ... dessine ta GUI dans les zones "gouttières" autour de g_ocean_dst ... */
 }
 
 /* ========================================================================= */
