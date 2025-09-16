@@ -275,28 +275,30 @@ const RC2D_TP_Frame* rc2d_tp_getFrame(const RC2D_TP_Atlas* atlas, const char* fi
     return NULL;
 }
 
-void rc2d_tp_drawFrame(const RC2D_TP_Atlas* atlas, const RC2D_TP_Frame* frame,
-                       float canvasX, float canvasY,
-                       double angle,
-                       float scaleX, float scaleY,
-                       float offsetX, float offsetY,
-                       bool flipH, bool flipV)
+void rc2d_tp_drawFrameByName(const RC2D_TP_Atlas* atlas, const char* filename,
+                             float x, float y,
+                             double angle,
+                             float scaleX, float scaleY,
+                             float offsetX, float offsetY,
+                             bool flipH, bool flipV)
 {
-    if (!atlas || !atlas->atlas_image.sdl_texture || !frame) {
-        RC2D_log(RC2D_LOG_ERROR, "TexturePacker: invalid atlas/frame passed to rc2d_tp_drawFrame");
+    if (!atlas || !atlas->atlas_image.sdl_texture || !filename || !*filename) {
+        RC2D_log(RC2D_LOG_ERROR, "TexturePacker: invalid args in rc2d_tp_drawFrameByName");
         return;
     }
 
-    /* Replacer la partie trimée dans le canevas original :
-       on dessine la zone 'frame' de l’atlas à (canvasX + sss.x, canvasY + sss.y). */
-    const float drawX = canvasX + frame->spriteSourceSize.x * scaleX;
-    const float drawY = canvasY + frame->spriteSourceSize.y * scaleY;
+    const RC2D_TP_Frame* f = rc2d_tp_getFrame(atlas, filename);
+    if (!f) {
+        RC2D_log(RC2D_LOG_ERROR, "TexturePacker: frame '%s' not found", filename);
+        return;
+    }
 
+    /* Dessin RAW: prend le sous-rect 'frame' tel quel dans l'atlas, à (x, y). */
     RC2D_Quad q;
-    q.src = frame->frame;
+    q.src = f->frame;
 
     rc2d_graphics_drawQuad((RC2D_Image*)&atlas->atlas_image, &q,
-                           drawX, drawY,
+                           x, y,
                            angle,
                            scaleX, scaleY,
                            offsetX, offsetY,

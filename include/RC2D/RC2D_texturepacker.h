@@ -119,28 +119,28 @@ void rc2d_tp_freeAtlas(RC2D_TP_Atlas* atlas);
 const RC2D_TP_Frame* rc2d_tp_getFrame(const RC2D_TP_Atlas* atlas, const char* filename);
 
 /**
- * \brief Dessine une frame **trimée** en la replaçant correctement dans son canevas d’origine.
+ * \brief Dessine la portion de texture correspondant à la frame, SANS correction de trimming.
  *
  * \details
- * - (canvasX, canvasY) représente la position du **canevas non trimé** (coin haut-gauche).
- * - La zone réellement dessinée (découpée) est `frame->frame` dans l’atlas.
- * - Elle est rendue à l’offset `(frame->spriteSourceSize.x, frame->spriteSourceSize.y)`
- *   par rapport à (canvasX, canvasY).
+ * - (x, y) est la position d'affichage du coin haut-gauche de la portion `frame->frame`
+ *   directement issue de l'atlas (aucun offset `spriteSourceSize` appliqué).
+ * - Idéal si tu travailles en « brut » avec des sprites non réalignés (ou que tu gères
+ *   toi-même l’ancrage).
  *
- * \param atlas     Atlas source (doit contenir la texture).
- * \param frame     Frame à dessiner (issue de rc2d_tp_getFrame ou du tableau `atlas->frames`).
- * \param canvasX   Position X du canevas d’origine.
- * \param canvasY   Position Y du canevas d’origine.
- * \param angle     Rotation en degrés.
- * \param scaleX    Échelle horizontale.
- * \param scaleY    Échelle verticale.
- * \param offsetX   Centre de rotation X (passer -1 pour centrer automatiquement).
- * \param offsetY   Centre de rotation Y (passer -1 pour centrer automatiquement).
- * \param flipH     Retournement horizontal.
- * \param flipV     Retournement vertical.
+ * \param atlas   Atlas source (doit contenir la texture).
+ * \param frame   Frame à dessiner (issue de rc2d_tp_getFrame ou atlas->frames[i]).
+ * \param x       Position X d'affichage.
+ * \param y       Position Y d'affichage.
+ * \param angle   Rotation en degrés.
+ * \param scaleX  Échelle horizontale.
+ * \param scaleY  Échelle verticale.
+ * \param offsetX Centre de rotation X (passer -1 pour centrer automatiquement).
+ * \param offsetY Centre de rotation Y (passer -1 pour centrer automatiquement).
+ * \param flipH   Retournement horizontal.
+ * \param flipV   Retournement vertical.
  */
 void rc2d_tp_drawFrame(const RC2D_TP_Atlas* atlas, const RC2D_TP_Frame* frame,
-                       float canvasX, float canvasY,
+                       float x, float y,
                        double angle,
                        float scaleX, float scaleY,
                        float offsetX, float offsetY,

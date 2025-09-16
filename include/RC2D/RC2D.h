@@ -32,6 +32,7 @@
 #include <RC2D/RC2D_storage.h>
 #include <RC2D/RC2D_system.h>
 #include <RC2D/RC2D_text.h>
+#include <RC2D/RC2D_texturepacker.h>
 #include <RC2D/RC2D_thread.h>
 #include <RC2D/RC2D_time.h>
 #include <RC2D/RC2D_timer.h>

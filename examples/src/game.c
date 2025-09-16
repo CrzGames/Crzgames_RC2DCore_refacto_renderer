@@ -23,6 +23,7 @@ static double              g_time_accum  = 0.0;
 /*                              RESSOURCES                                   */
 /* ========================================================================= */
 static RC2D_Video g_login_bg_video; /* background-login.mp4 (silencieuse idéalement) */
+static RC2D_TP_Atlas g_elite27_atlas = {0};
 
 /* ========================================================================= */
 /*                              RESSOURCES UI                                */
@@ -325,6 +326,15 @@ void rc2d_load(void)
     if (!SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u))) {
         RC2D_log(RC2D_LOG_ERROR, "Set uniforms failed: %s", SDL_GetError());
     }
+
+
+    // Charger l’atlas de textures
+    g_elite27_atlas = rc2d_tp_loadAtlasFromStorage("assets/elite27/elite27.json", RC2D_STORAGE_TITLE);
+    if (!g_elite27_atlas.atlas_image.sdl_texture) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load elite27 atlas");
+    }
+
 
     // Initialiser l'état des splashes sans charger les vidéos
     g_splash_state = SPLASH_STUDIO;
