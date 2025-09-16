@@ -270,7 +270,7 @@ void rc2d_load(void)
     );
     if (!textureGPUWater) 
     {
-        RC2D_log(RC2D_LOG_ERROR, "No SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER on this texture");
+        RC2D_log(RC2D_LOG_ERROR, "(1)No SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER on this texture");
         return;
     }
 
@@ -289,7 +289,7 @@ void rc2d_load(void)
     );
     if (!textureGPUCaustic) 
     {
-        RC2D_log(RC2D_LOG_ERROR, "No SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER on this texture");
+        RC2D_log(RC2D_LOG_ERROR, "(2)No SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER on this texture");
         return;
     }
 
@@ -330,6 +330,8 @@ void rc2d_update(double dt)
 {
     int out_w, out_h;
     SDL_GetCurrentRenderOutputSize(rc2d_engine_state.renderer, &out_w, &out_h);
+    SDL_FRect dst = {0.0f, 0.0f, (float)out_w, (float)out_h};
+    
     Ocean_UpdateUniforms(rc2d_engine_state.renderer, out_w, out_h, dt);
 
     if (!g_splash_active) 
@@ -503,10 +505,8 @@ void rc2d_draw(void)
         }
     }
 
-    /*if (tile_ocean_image.sdl_texture && g_ocean_state) 
+    if (tile_ocean_image.sdl_texture && g_ocean_state) 
     {
-        SDL_FRect dst = {0, 0, (float)lw, (float)lh};
-
         // 1) activer l’état GPU custom
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, g_ocean_state);
 
@@ -515,7 +515,7 @@ void rc2d_draw(void)
 
         // 3) désactiver l’état pour le reste du HUD
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
-    }*/
+    }
 }
 
 /* ========================================================================= */
