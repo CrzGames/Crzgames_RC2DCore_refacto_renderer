@@ -342,7 +342,7 @@ void rc2d_load(void)
 
 
     // Charger l’atlas de textures
-    g_elite27_atlas = rc2d_tp_loadAtlasFromStorage("assets/atlas/elite27/elite27.json", RC2D_STORAGE_TITLE);
+    g_elite27_atlas = rc2d_tp_loadAtlasFromStorage("assets/atlas/elite24/elite24.json", RC2D_STORAGE_TITLE);
     if (!g_elite27_atlas.atlas_image.sdl_texture) 
     {
         RC2D_log(RC2D_LOG_ERROR, "Failed to load elite27 atlas");
@@ -571,16 +571,6 @@ void rc2d_draw(void)
         {
             /* cadre = zone blit réelle (RAW) */
             SDL_FRect r = { s_elite27_x, s_elite27_y, f->frame.w, f->frame.h };
-
-            /* tracer un contour rouge */
-            RC2D_Color prev = {0}; /* on ne relit pas la couleur courante ici — debug only */
-            (void)prev;
-
-            rc2d_graphics_setColor((RC2D_Color){255, 0, 0, 255});
-            rc2d_graphics_rectangle("line", &r);
-
-            /* si tu veux, remets ta couleur habituelle ensuite */
-            rc2d_graphics_setColor((RC2D_Color){255, 255, 255, 255});
         }
     }
 }
