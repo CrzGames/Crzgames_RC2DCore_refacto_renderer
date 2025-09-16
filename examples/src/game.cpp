@@ -92,13 +92,7 @@ void rc2d_unload(void)
         SDL_DestroyGPURenderState(g_ocean_state);
         g_ocean_state = NULL;
     }
-    if (g_repeat_sampler) {
-        SDL_DestroyGPUSampler(g_repeat_sampler);
-        g_repeat_sampler = NULL;
-    }
-    // si ton API RC2D fournit la destruction du shader, ajoute-la ici
-    // if (g_ocean_fragment_shader) { rc2d_gpu_destroyGraphicsShader(g_ocean_fragment_shader); g_ocean_fragment_shader = NULL; }
-
+    
     RC2D_log(RC2D_LOG_INFO, "My game is unloading...\n");
 }
 
