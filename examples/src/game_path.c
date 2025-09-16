@@ -1,9 +1,11 @@
 #include <mygame/game_path.h>
 
 #include <RC2D/RC2D_memory.h>
+#include <RC2D/RC2D_logger.h>
+
+#include <SDL3/SDL_stdinc.h> /* Requis pour : SDL_memset, SDL_snprintf */
 
 #include <math.h>      /* Requis pour : floorf, fabsf */
-#include <string.h>    /* Requis pour : memset        */
 
 /* ========================================================================== */
 /*                               GRILLE : API                                 */
@@ -28,7 +30,7 @@ RC2D_Grid rc2d_grid_create(int width, int height)
     }
 
     /* Initialiser toutes les cases à 0 (libre). */
-    memset(grid.cells, 0, total);
+    SDL_memset(grid.cells, 0, total);
     grid.width  = width;
     grid.height = height;
     return grid;
@@ -87,8 +89,8 @@ RC2D_IsoTile rc2d_iso_screenToTile(int originX, int originY,
     float fy = (dy - dx) * 0.5f;
 
     RC2D_IsoTile t;
-    t.x = (int)floorf(fx + 0.5f);
-    t.y = (int)floorf(fy + 0.5f);
+    t.x = (int)SDL_floorf(fx + 0.5f);
+    t.y = (int)SDL_floorf(fy + 0.5f);
     return t;
 }
 
@@ -145,7 +147,7 @@ void rc2d_make_frameName(int index, char out[16])
     if (index > 8) index = 8;
 
     /* 16 octets suffisent largement pour "DD.png\0". */
-    (void)snprintf(out, 16, "%d.png", index);
+    SDL_snprintf(out, 16, "%d.png", index);
 }
 
 
