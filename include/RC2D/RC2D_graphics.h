@@ -111,6 +111,21 @@ void rc2d_graphics_clear(void);
 void rc2d_graphics_present(void);
 
 /**
+ * Dessine une tuile isométrique (losange) centrée en (cx,cy) de taille (tile_w,tile_h).
+ * mode = "fill" ou "line" (comme rc2d_graphics_rectangle).
+ */
+bool rc2d_graphics_drawTileIsometric(const char* mode, float cx, float cy, float tile_w, float tile_h);
+
+/**
+ * Helper : dessine la tuile (i,j) d’une grille iso.
+ * origin_x,origin_y = origine écran de la tuile (0,0)
+ * tile_w,tile_h = dimensions iso (diamant).
+ */
+bool rc2d_graphics_drawTileIsometricAt(const char* mode, int i, int j,
+                                        float origin_x, float origin_y,
+                                        float tile_w, float tile_h);
+
+/**
  * Crée un Quad (sous-rectangle) borné dans l'image.
  * @param image  Image source (utilisée pour borner/clamp).
  * @param x,y    Position haute-gauche dans la texture (pixels).

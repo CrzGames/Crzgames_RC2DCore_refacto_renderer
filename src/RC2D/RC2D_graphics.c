@@ -11,6 +11,84 @@
 */
 static RC2D_Color rc2d_graphics_currentRenderColor = {0, 0, 0, 255};
 
+/* ========================================================================= */
+/*                     Isometric diamond (tile) drawing                      */
+/* ========================================================================= */
+
+static inline void rc2d__iso_corners(float cx, float cy, float w, float h,
+                                     SDL_FPoint* top, SDL_FPoint* right,
+                                     SDL_FPoint* bottom, SDL_FPoint* left)
+{
+    top->x = cx;            top->y = cy - h * 0.5f;
+    right->x = cx + w*0.5f; right->y = cy;
+    bottom->x = cx;         bottom->y = cy + h * 0.5f;
+    left->x = cx - w*0.5f;  left->y = cy;
+}
+
+bool rc2d_graphics_drawTileIsometric(const char* mode, float cx, float cy, float tile_w, float tile_h)
+{
+    if (!rc2d_engine_state.renderer) return false;
+    if (!mode || tile_w <= 0.f || tile_h <= 0.f) {
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_drawTileIsometric: invalid params (mode=%s, size=%.2fx%.2f)",
+                 mode ? mode : "(null)", tile_w, tile_h);
+        return false;
+    }
+
+    SDL_FPoint top, right, bottom, left;
+    rc2d__iso_corners(cx, cy, tile_w, tile_h, &top, &right, &bottom, &left);
+
+    if (strcmp(mode, "fill") == 0) {
+        /* Remplissage via RenderGeometry (2 triangles) avec la couleur courante */
+        const float r = rc2d_graphics_currentRenderColor.r / 255.0f;
+        const float g = rc2d_graphics_currentRenderColor.g / 255.0f;
+        const float b = rc2d_graphics_currentRenderColor.b / 255.0f;
+        const float a = rc2d_graphics_currentRenderColor.a / 255.0f;
+
+        SDL_Vertex v[4] = {
+            { {top.x,    top.y},    {r,g,b,a}, {0,0} },
+            { {right.x,  right.y},  {r,g,b,a}, {0,0} },
+            { {bottom.x, bottom.y}, {r,g,b,a}, {0,0} },
+            { {left.x,   left.y},   {r,g,b,a}, {0,0} },
+        };
+        int idx[6] = { 0,1,2, 0,2,3 };
+
+        if (!SDL_RenderGeometry(rc2d_engine_state.renderer, /*texture*/NULL, v, 4, idx, 6)) {
+            RC2D_log(RC2D_LOG_ERROR, "SDL_RenderGeometry (iso fill) failed: %s", SDL_GetError());
+            return false;
+        }
+        return true;
+    }
+    else if (strcmp(mode, "line") == 0) {
+        /* Contour : 4 côtés + retour au point de départ */
+        SDL_FPoint loop[5] = { top, right, bottom, left, top };
+
+        /* S’assure que la draw color du renderer = couleur courante */
+        SDL_SetRenderDrawColor(rc2d_engine_state.renderer,
+                               rc2d_graphics_currentRenderColor.r,
+                               rc2d_graphics_currentRenderColor.g,
+                               rc2d_graphics_currentRenderColor.b,
+                               rc2d_graphics_currentRenderColor.a);
+
+        if (!SDL_RenderLinesF(rc2d_engine_state.renderer, loop, 5)) {
+            RC2D_log(RC2D_LOG_ERROR, "SDL_RenderLinesF (iso line) failed: %s", SDL_GetError());
+            return false;
+        }
+        return true;
+    }
+
+    RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_isoDiamond: unknown mode '%s' (expected 'fill' or 'line')", mode);
+    return false;
+}
+
+bool rc2d_graphics_drawTileIsometricAt(const char* mode, int i, int j,
+                                float origin_x, float origin_y,
+                                float tile_w, float tile_h)
+{
+    const float cx = origin_x + (i - j) * (tile_w * 0.5f);
+    const float cy = origin_y + (i + j) * (tile_h * 0.5f);
+    return rc2d_graphics_isoDiamond(mode, cx, cy, tile_w, tile_h);
+}
+
 RC2D_Quad rc2d_graphics_newQuad(RC2D_Image* image, float x, float y, float width, float height)
 {
     // Initialiser un Quad vide
