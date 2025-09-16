@@ -48,7 +48,6 @@ typedef struct RC2D_IsoTile {
     int y;  /**< Ordonnée sur la grille isométrique. */
 } RC2D_IsoTile;
 
-
 /**
  * \brief Grille logique pour le pathfinding (0 = libre, 1 = bloqué).
  *
@@ -58,11 +57,12 @@ typedef struct RC2D_IsoTile {
  * \since Cette structure est disponible depuis RC2D 1.0.0.
  */
 typedef struct RC2D_Grid {
-    int      width;   /**< Nombre de colonnes de la grille.   */
-    int      height;  /**< Nombre de lignes de la grille.     */
-    uint8_t* cells;   /**< Tableau d’octets (0 libre, 1 mur). */
+    int      origin_x; /**< Origine écran X de la tuile (0,0). */
+    int      origin_y; /**< Origine écran Y de la tuile (0,0). */
+    int      width;    /**< Nombre de colonnes de la grille.   */
+    int      height;   /**< Nombre de lignes de la grille.     */
+    uint8_t* cells;    /**< Tableau d’octets (0 libre, 1 mur). */
 } RC2D_Grid;
-
 
 /**
  * \brief Chemin résultant d’un A* : séquence ordonnée de tuiles.
