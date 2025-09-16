@@ -24,18 +24,6 @@ static double              g_time_accum  = 0.0;
 /* ========================================================================= */
 static RC2D_Video g_login_bg_video; /* background-login.mp4 (silencieuse idéalement) */
 
-/* === TexturePacker: elite27 === */
-static RC2D_TP_Atlas g_elite27_atlas = {0};
-
-static const char* s_elite27_names[] = {
-    "1.png","2.png","3.png","4.png","5.png","6.png","7.png","8.png"
-};
-static const int   s_elite27_count = 8;
-static double      s_elite27_time  = 0.0;
-static float       s_elite27_fps   = 2.0f;   /* vitesse de preview */
-static float       s_elite27_x     = 50.0f;   /* position d’affichage */
-static float       s_elite27_y     = 50.0f;
-
 /* ========================================================================= */
 /*                              RESSOURCES UI                                */
 /* ========================================================================= */
@@ -362,8 +350,6 @@ void rc2d_update(double dt)
     int out_w, out_h;
     SDL_GetCurrentRenderOutputSize(rc2d_engine_state.renderer, &out_w, &out_h);
     SDL_FRect dst = {0.0f, 0.0f, (float)out_w, (float)out_h};
-
-    s_elite27_time += dt;
     
     Ocean_UpdateUniforms(rc2d_engine_state.renderer, out_w, out_h, dt);
 
@@ -548,30 +534,6 @@ void rc2d_draw(void)
 
         // 3) désactiver l’état pour le reste du HUD
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
-    }
-
-    /* ================== PREVIEW TexturePacker elite27 ================== */
-    if (g_elite27_atlas.atlas_image.sdl_texture) 
-    {
-        /* index courant à s_elite27_fps */
-        int idx = (int)(s_elite27_time * (double)s_elite27_fps) % s_elite27_count;
-        const char* fname = s_elite27_names[idx];
-
-        /* dessine la sous-image RAW à (x,y) (aucun spriteSourceSize appliqué) */
-        rc2d_tp_drawFrameByName(&g_elite27_atlas, fname,
-                                s_elite27_x, s_elite27_y,
-                                /*angle*/ 0.0,
-                                /*scale*/ 1.0f, 1.0f,
-                                /*offset*/ -1.0f, -1.0f,
-                                /*flip*/ false, false);
-
-        /* récupérer la frame pour connaitre w/h, tracer un cadre rouge de debug */
-        const RC2D_TP_Frame* f = rc2d_tp_getFrame(&g_elite27_atlas, fname);
-        if (f)
-        {
-            /* cadre = zone blit réelle (RAW) */
-            SDL_FRect r = { s_elite27_x, s_elite27_y, f->frame.w, f->frame.h };
-        }
     }
 }
 

@@ -69,7 +69,7 @@ bool rc2d_graphics_drawTileIsometric(const char* mode, float cx, float cy, float
                                rc2d_graphics_currentRenderColor.b,
                                rc2d_graphics_currentRenderColor.a);
 
-        if (!SDL_RenderLinesF(rc2d_engine_state.renderer, loop, 5)) {
+        if (!SDL_RenderLines(rc2d_engine_state.renderer, loop, 5)) {
             RC2D_log(RC2D_LOG_ERROR, "SDL_RenderLinesF (iso line) failed: %s", SDL_GetError());
             return false;
         }
