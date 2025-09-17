@@ -18,7 +18,7 @@ const MapInsets Map::kInsetsFramed = {
     200.0f,  /* left   */
     50.0f,   /* top    */
     200.0f,  /* right  */
-    80.0f,   /* bottom */
+    150.0f,   /* bottom */
     false    /* interprétation en pixels logiques */
 };
 
