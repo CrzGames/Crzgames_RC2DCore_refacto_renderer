@@ -171,8 +171,6 @@ void Map::Draw()
         SDL_RenderTexture(rc2d_engine_state.renderer, this->oceanTile.sdl_texture, NULL, &this->mapRect);
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
     }
-
-    // TODO : Ajouter le rendu des éléments UI dans les marges si nécessaire
 }
 
 void Map::KeyPressed(const char* key, SDL_Scancode scancode, SDL_Keycode keycode, SDL_Keymod mod, bool isrepeat, SDL_KeyboardID keyboardID) 
