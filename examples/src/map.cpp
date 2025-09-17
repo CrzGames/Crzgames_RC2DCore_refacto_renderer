@@ -8,7 +8,7 @@ const int Map::COLUMN      = 100;     // Nombre de colonnes de tuiles
 const int Map::ROW         = 100;     // Nombre de lignes de tuiles
 const int Map::MAP_WIDTH   = Map::COLUMN * Map::TILE_WIDTH;  // Largeur totale (4800)
 const int Map::MAP_HEIGHT  = Map::ROW * Map::TILE_HEIGHT;    // Hauteur totale (3200)
-const float Map::MIN_ZOOM  = 0.3f;    // Zoom minimum (30%)
+const float Map::MIN_ZOOM  = 0.6f;    // Zoom minimum (60%)
 const float Map::MAX_ZOOM  = 1.0f;    // Zoom maximum (100%)
 
 /* --- Presets de marges (constantes) --- */
@@ -64,16 +64,29 @@ SDL_FRect Map::ComputeRectFromVisibleSafeAndInsets(const SDL_FRect& visibleSafe,
     return out;
 }
 
-void Map::UpdateOceanUniforms(double dt) 
+void Map::UpdateOceanUniforms(double dt)
 {
-    this->timeSeconds += dt;
+    timeSeconds += dt;
 
-    this->oceanUniforms.params0[0] = (float)this->timeSeconds; // Temps animé
-    this->oceanUniforms.params1[0] = this->mapRect.w;          // Largeur zone visible
-    this->oceanUniforms.params1[1] = this->mapRect.h;          // Hauteur zone visible
-    this->oceanUniforms.params0[3] = 1.0f;                    // Tiling réduit pour éviter zoom excessif
+    // params0: [time, camX, camY, zoom]
+    oceanUniforms.params0[0] = (float)timeSeconds;
+    oceanUniforms.params0[1] = camera.x;
+    oceanUniforms.params0[2] = camera.y;
+    oceanUniforms.params0[3] = camera.zoom;
 
-    SDL_SetGPURenderStateFragmentUniforms(this->oceanRenderState, 0, &this->oceanUniforms, sizeof(this->oceanUniforms));
+    // Replie strength dans px_amp_eff (comme avant mais multiplié)
+    const float strength = 0.6f;   // ta valeur
+    const float px_amp   = 30.0f;  // ta valeur
+    const float px_amp_eff = px_amp * strength;
+
+    // params1: [viewW, viewH, speed, px_amp_eff]
+    oceanUniforms.params1[0] = mapRect.w;   // largeur fenêtre logique
+    oceanUniforms.params1[1] = mapRect.h;   // hauteur fenêtre logique
+    oceanUniforms.params1[2] = 0.60f;       // speed
+    oceanUniforms.params1[3] = px_amp_eff;  // amplitude écran (px)
+
+    SDL_SetGPURenderStateFragmentUniforms(oceanRenderState, 0,
+        &oceanUniforms, sizeof(oceanUniforms));
 }
 
 void Map::UpdateCamera(float dx, float dy, float dz) 
@@ -107,12 +120,16 @@ void Map::UpdateCamera(float dx, float dy, float dz)
 Map::Map() 
 {
     // Initialisation des uniforms océan
-    this->oceanUniforms.params0[0] = 0.0f;   // time
-    this->oceanUniforms.params0[1] = 0.6f;   // strength
-    this->oceanUniforms.params0[2] = 30.0f;  // px_amp
-    this->oceanUniforms.params0[3] = 1.0f;   // tiling (réduit pour éviter zoom excessif)
-    this->oceanUniforms.params1[2] = 0.60f;  // speed
-    this->oceanUniforms.params1[3] = 0.25f;  // extra: reflet/Fresnel
+    this->oceanUniforms = { {0,0,0,0}, {0,0,0,0} };
+    this->timeSeconds = 0.0;
+    this->oceanShader = NULL;
+    this->repeatSampler = NULL;
+    this->oceanRenderState = NULL;
+    this->oceanTile = { NULL };
+    this->shipAtlas = { 0 };
+    this->currentLayoutMode = MAP_LAYOUT_FRAMED;
+    this->currentInsets = this->kInsetsFramed;
+    this->mapRect = { 0, 0, 0, 0 };
 
     // Initialisation de la caméra
     this->camera.x = 0.0f;
@@ -247,45 +264,46 @@ void Map::Update(double dt)
     }
 }
 
-void Map::Draw() 
+void Map::Draw()
 {
-    // Dessiner l'océan dans la zone visible de la carte, en appliquant le zoom
-    if (this->oceanTile.sdl_texture && this->oceanRenderState && this->mapRect.w > 0.f && this->mapRect.h > 0.f) 
-    {
-        // Convertir mapRect (SDL_FRect) en SDL_Rect pour le clip
-        SDL_Rect clipRect = {
-            static_cast<int>(SDL_roundf(this->mapRect.x)),
-            static_cast<int>(SDL_roundf(this->mapRect.y)),
-            static_cast<int>(SDL_roundf(this->mapRect.w)),
-            static_cast<int>(SDL_roundf(this->mapRect.h))
-        };
-        SDL_SetRenderClipRect(rc2d_engine_state.renderer, &clipRect);
+    if (!(this->oceanTile.sdl_texture && this->oceanRenderState && this->mapRect.w > 0.f && this->mapRect.h > 0.f))
+        return;
 
-        // Appliquer le zoom via SDL_SetRenderScale
-        SDL_SetRenderScale(rc2d_engine_state.renderer, this->camera.zoom, this->camera.zoom);
+    // 1) Clip à la fenêtre fixe
+    SDL_Rect clipRect = {
+        (int)SDL_roundf(this->mapRect.x),
+        (int)SDL_roundf(this->mapRect.y),
+        (int)SDL_roundf(this->mapRect.w),
+        (int)SDL_roundf(this->mapRect.h)
+    };
+    SDL_SetRenderClipRect(rc2d_engine_state.renderer, &clipRect);
 
-        // Créer un rectangle pour la carte entière avec décalage correct
-        SDL_FRect mapFullRect = {
-            this->mapRect.x - this->camera.x * this->camera.zoom,
-            this->mapRect.y - this->camera.y * this->camera.zoom,
-            (float)this->MAP_WIDTH * this->camera.zoom,
-            (float)this->MAP_HEIGHT * this->camera.zoom
-        };
+    // 2) Rendu océan : on remplit exactement la fenêtre (le shader gère UV/tiling/caméra)
+    SDL_SetRenderGPUState(rc2d_engine_state.renderer, this->oceanRenderState);
+    SDL_RenderTexture(rc2d_engine_state.renderer, this->oceanTile.sdl_texture, nullptr, &this->mapRect);
+    SDL_SetRenderGPUState(rc2d_engine_state.renderer, nullptr);
 
-        // Dessiner l'océan en tiling pour couvrir toute la carte avec le shader
-        SDL_SetRenderGPUState(rc2d_engine_state.renderer, this->oceanRenderState);
-        SDL_RenderTexture(rc2d_engine_state.renderer, this->oceanTile.sdl_texture, NULL, &mapFullRect);
-        SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
+    // 3) Exemple : dessiner un navire à une position "monde"
+    //    Position monde (exemple bidon)
+    float shipWorldX = 10.0f;
+    float shipWorldY = 10.0f;
 
-        // Dessine les éléments du jeu ici (ex: navire)
-        float shipX = mapFullRect.x + 10.0f;
-        float shipY = mapFullRect.y + 10.0f;
-        rc2d_tp_drawFrameByName(&this->shipAtlas, "1.png", shipX, shipY, 0.0, 1.0f, 1.0f, -1.0f, -1.0f, false, false);
+    float shipScreenX = WorldToScreenX(shipWorldX);
+    float shipScreenY = WorldToScreenY(shipWorldY);
 
-        // Réinitialiser l'échelle et le clip après le rendu
-        SDL_SetRenderScale(rc2d_engine_state.renderer, 1.0f, 1.0f);
-        SDL_SetRenderClipRect(rc2d_engine_state.renderer, NULL);
-    }
+    // Scale visuel = scaleSprite * zoomCam
+    float spriteScale = 1.0f * this->camera.zoom;
+
+    rc2d_tp_drawFrameByName(&this->shipAtlas,
+                            "1.png",
+                            shipScreenX, shipScreenY,
+                            0.0,
+                            spriteScale, spriteScale,
+                            -1.0f, -1.0f,
+                            false, false);
+
+    // 4) Reset du clip
+    SDL_SetRenderClipRect(rc2d_engine_state.renderer, nullptr);
 }
 
 void Map::KeyPressed(const char* key, SDL_Scancode scancode, SDL_Keycode keycode, SDL_Keymod mod, bool isrepeat, SDL_KeyboardID keyboardID) 

@@ -203,6 +203,27 @@ private:
      */
     void UpdateCamera(float dx, float dy, float dz);
 
+    // Helpers monde -> écran (viewport = mapRect, caméra + zoom appliqués)
+    inline float WorldToScreenX(float wx) const {
+        return this->mapRect.x + (wx - this->camera.x) * this->camera.zoom;
+    }
+    inline float WorldToScreenY(float wy) const {
+        return this->mapRect.y + (wy - this->camera.y) * this->camera.zoom;
+    }
+
+    // Option pratique
+    inline SDL_FPoint WorldToScreen(float wx, float wy) const {
+        return SDL_FPoint{ WorldToScreenX(wx), WorldToScreenY(wy) };
+    }
+
+    // (si besoin plus tard)
+    inline float ScreenToWorldX(float sx) const {
+        return this->camera.x + (sx - this->mapRect.x) / this->camera.zoom;
+    }
+    inline float ScreenToWorldY(float sy) const {
+        return this->camera.y + (sy - this->mapRect.y) / this->camera.zoom;
+    }
+
 public:
     /**
      * \brief Constructeur par défaut de la classe Map.

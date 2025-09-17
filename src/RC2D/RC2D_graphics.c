@@ -146,37 +146,34 @@ void rc2d_graphics_drawQuad(RC2D_Image* image, const RC2D_Quad* quad,
                             float offsetX, float offsetY,
                             bool flipHorizontal, bool flipVertical)
 {
-    if (!image || !image->sdl_texture) 
-    {
+    if (!image || !image->sdl_texture) {
         RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_drawQuad: invalid image/texture");
         return;
     }
-    if (!quad || quad->src.w <= 0.0f || quad->src.h <= 0.0f) 
-    {
+    if (!quad || quad->src.w <= 0.0f || quad->src.h <= 0.0f) {
         RC2D_log(RC2D_LOG_ERROR, "rc2d_graphics_drawQuad: invalid quad");
         return;
     }
 
-    // Destination = taille brute (sans appliquer scaleX/scaleY ici)
-    SDL_FRect dst = { x, y, quad->src.w, quad->src.h };
+    // Appliquer l’échelle directement dans le dst (PAS de SetRenderScale global)
+    SDL_FRect dst = {
+        x,
+        y,
+        quad->src.w * scaleX,
+        quad->src.h * scaleY
+    };
 
-    // Flip
     SDL_FlipMode flip = SDL_FLIP_NONE;
     if (flipHorizontal) flip = (SDL_FlipMode)(flip | SDL_FLIP_HORIZONTAL);
     if (flipVertical)   flip = (SDL_FlipMode)(flip | SDL_FLIP_VERTICAL);
 
-    // Centre de rotation
     const SDL_FPoint* pCenter = NULL;
     SDL_FPoint center;
-    if (offsetX >= 0.0f && offsetY >= 0.0f) 
-    {
-        center.x = offsetX;
-        center.y = offsetY;
+    if (offsetX >= 0.0f && offsetY >= 0.0f) {
+        center.x = offsetX * scaleX; // centre suit l’échelle
+        center.y = offsetY * scaleY;
         pCenter = &center;
     }
-
-    // Appliquer le scale globalement
-    SDL_SetRenderScale(rc2d_engine_state.renderer, scaleX, scaleY);
 
     if (!SDL_RenderTextureRotated(rc2d_engine_state.renderer,
                                   image->sdl_texture,
@@ -188,9 +185,6 @@ void rc2d_graphics_drawQuad(RC2D_Image* image, const RC2D_Quad* quad,
     {
         RC2D_log(RC2D_LOG_ERROR, "SDL_RenderTextureRotated (quad) failed: %s", SDL_GetError());
     }
-
-    // Reset du scale pour ne pas impacter le reste
-    SDL_SetRenderScale(rc2d_engine_state.renderer, 1.0f, 1.0f);
 }
 
 void rc2d_graphics_clear(void)
