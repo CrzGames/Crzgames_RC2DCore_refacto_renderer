@@ -247,19 +247,19 @@ void Map::KeyPressed(const char* key, SDL_Scancode scancode, SDL_Keycode keycode
     // Gérer la caméra avec les touches fléchées et zoom
     const float CAMERA_SPEED = 500.0f;
     const float ZOOM_SPEED = 0.1f;
-    if (SDL_strcmp(key, "left") == 0 && !isrepeat) 
+    if (SDL_strcmp(key, "Left") == 0 && !isrepeat) 
     {
         this->UpdateCamera(-CAMERA_SPEED * 0.1f, 0.0f, 0.0f);
     } 
-    else if (SDL_strcmp(key, "right") == 0 && !isrepeat) 
+    else if (SDL_strcmp(key, "Right") == 0 && !isrepeat) 
     {
         this->UpdateCamera(CAMERA_SPEED * 0.1f, 0.0f, 0.0f);
     }
-    else if (SDL_strcmp(key, "up") == 0 && !isrepeat) 
+    else if (SDL_strcmp(key, "Up") == 0 && !isrepeat) 
     {
         this->UpdateCamera(0.0f, -CAMERA_SPEED * 0.1f, 0.0f);
     }
-    else if (SDL_strcmp(key, "down") == 0 && !isrepeat) 
+    else if (SDL_strcmp(key, "Down") == 0 && !isrepeat) 
     {
         this->UpdateCamera(0.0f, CAMERA_SPEED * 0.1f, 0.0f);
     }
