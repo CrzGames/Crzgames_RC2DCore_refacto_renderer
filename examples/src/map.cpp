@@ -73,8 +73,8 @@ void Map::UpdateOceanUniforms(double dt)
     oceanUniforms.params0[2] = 30.0f;  // px_amp : ~18 px visibles
     oceanUniforms.params0[3] = 3.0f;   // tiling : 6 répétitions
 
-    oceanUniforms.params1[0] = 1280.0f; // width
-    oceanUniforms.params1[1] = 720.0f;  // height
+    oceanUniforms.params1[0] = this->mapRect.w; // width
+    oceanUniforms.params1[1] = this->mapRect.h;  // height
     oceanUniforms.params1[2] = 0.60f;   // speed (0.0..1.0)
     oceanUniforms.params1[3] = 0.25f; // reflet/Fresnel
 
