@@ -166,6 +166,12 @@ void Map::Load()
     rs.num_sampler_bindings = 1;
     rs.sampler_bindings = sb;
     this->oceanRenderState = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs);
+
+    // 5) Charger l'atlas TexturePacker
+    this->shipAtlas = rc2d_tp_loadAtlasFromStorage("assets/atlas/elite24/elite24.json", RC2D_STORAGE_TITLE);
+    if (this->shipAtlas.frame_count == 0) {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load ship atlas: %s", SDL_GetError());
+    }
 }
 
 void Map::Unload() 
@@ -188,6 +194,10 @@ void Map::Unload()
     {
         SDL_ReleaseGPUShader(rc2d_gpu_getDevice(), (SDL_GPUShader*)this->oceanShader);
         this->oceanShader = NULL;
+    }
+
+    if (this->shipAtlas.frames) {
+        rc2d_tp_freeAtlas(&this->shipAtlas);
     }
 }
 
@@ -262,18 +272,15 @@ void Map::Draw()
             (float)this->MAP_HEIGHT * this->camera.zoom
         };
 
-        // Log pour déboguer les dimensions
-        RC2D_log(RC2D_LOG_INFO, "mapRect: x=%.1f, y=%.1f, w=%.1f, h=%.1f\n",
-                 this->mapRect.x, this->mapRect.y, this->mapRect.w, this->mapRect.h);
-        RC2D_log(RC2D_LOG_INFO, "mapFullRect: x=%.1f, y=%.1f, w=%.1f, h=%.1f, zoom=%.2f\n",
-                 mapFullRect.x, mapFullRect.y, mapFullRect.w, mapFullRect.h, this->camera.zoom);
-
         // Dessiner l'océan en tiling pour couvrir toute la carte avec le shader
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, this->oceanRenderState);
         SDL_RenderTexture(rc2d_engine_state.renderer, this->oceanTile.sdl_texture, NULL, &mapFullRect);
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
 
-        // Afficher les navires, scintillements, etc. (à implémenter)
+        // Dessine les éléments du jeu ici (ex: navire)
+        float shipX = mapFullRect.x + 10.0f;
+        float shipY = mapFullRect.y + 10.0f;
+        rc2d_tp_drawFrameByName(&this->shipAtlas, "1.png", shipX, shipY, 0.0, 1.0f, 1.0f, -1.0f, -1.0f, false, false);
 
         // Réinitialiser l'échelle et le clip après le rendu
         SDL_SetRenderScale(rc2d_engine_state.renderer, 1.0f, 1.0f);
@@ -296,11 +303,11 @@ void Map::KeyPressed(const char* key, SDL_Scancode scancode, SDL_Keycode keycode
         this->currentLayoutMode = MAP_LAYOUT_TOP_BAR;
     }
     // Gérer le zoom avec les touches du pavé numérique
-    else if (rc2d_keyboard_isDown(RC2D_KP_PLUS) && !isrepeat) 
+    else if (SDL_strcmp(key, "Keypad +") == 0 && !isrepeat) 
     {
         this->UpdateCamera(0.0f, 0.0f, 0.1f); // ZOOM_SPEED = 0.1f
     }
-    else if (rc2d_keyboard_isDown(RC2D_KP_MINUS) && !isrepeat) 
+    else if (SDL_strcmp(key, "Keypad -") == 0 && !isrepeat) 
     {
         this->UpdateCamera(0.0f, 0.0f, -0.1f); // -ZOOM_SPEED
     }

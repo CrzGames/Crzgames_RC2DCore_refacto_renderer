@@ -122,6 +122,9 @@ private:
     static const float MIN_ZOOM;    /**< Zoom minimum (0.3 = 30%). */
     static const float MAX_ZOOM;    /**< Zoom maximum (1.0 = 100%). */
 
+    // Atlas de sprites pour les éléments de la carte (ex: navire)
+    RC2D_TP_Atlas shipAtlas = {0}; /**< Atlas TexturePacker pour les sprites du jeu (ex: navire). */
+
     // Mode courant d'agencement (modifiable à chaud via input).
     MapLayoutMode currentLayoutMode = MAP_LAYOUT_FRAMED;
 
