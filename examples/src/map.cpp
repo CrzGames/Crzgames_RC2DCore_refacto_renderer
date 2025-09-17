@@ -68,23 +68,17 @@ void Map::UpdateOceanUniforms(double dt)
 {
     timeSeconds += dt;
 
-    // params0: [time, camX, camY, zoom]
-    oceanUniforms.params0[0] = (float)timeSeconds;
-    oceanUniforms.params0[1] = camera.x;
-    oceanUniforms.params0[2] = camera.y;
-    oceanUniforms.params0[3] = camera.zoom;
+    oceanUniforms.params0[0] = timeSeconds; // time
+    oceanUniforms.params0[1] = 0.6f;   // strength (0.4..0.8 pour un menu)
+    oceanUniforms.params0[2] = 30.0f;  // px_amp : ~18 px visibles
+    oceanUniforms.params0[3] = 3.0f;   // tiling : 6 répétitions
 
-    // Replie strength dans px_amp_eff (comme avant mais multiplié)
-    const float strength = 0.6f;   // ta valeur
-    const float px_amp   = 30.0f;  // ta valeur
-    const float px_amp_eff = px_amp * strength;
+    oceanUniforms.params1[0] = 1280.0f; // width
+    oceanUniforms.params1[1] = 720.0f;  // height
+    oceanUniforms.params1[2] = 0.60f;   // speed (0.0..1.0)
+    oceanUniforms.params1[3] = 0.25f; // reflet/Fresnel
 
-    // params1: [viewW, viewH, speed, px_amp_eff]
-    oceanUniforms.params1[0] = mapRect.w;   // largeur fenêtre logique
-    oceanUniforms.params1[1] = mapRect.h;   // hauteur fenêtre logique
-    oceanUniforms.params1[2] = 0.60f;       // speed
-    oceanUniforms.params1[3] = px_amp_eff;  // amplitude écran (px)
-
+    // Appliquer les uniforms au render state
     SDL_SetGPURenderStateFragmentUniforms(oceanRenderState, 0,
         &oceanUniforms, sizeof(oceanUniforms));
 }
