@@ -9,6 +9,11 @@
 
 #include <SDL3/SDL.h>
 
+/* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * \brief Modes d'agencement possibles pour la carte (map).
  *
@@ -67,11 +72,34 @@ typedef struct OceanUniforms {
 } OceanUniforms;
 
 /**
+ * \brief Structure représentant la caméra de la carte.
+ *
+ * Cette structure définit la position et le zoom de la caméra pour visualiser la carte.
+ * Le zoom est exprimé en pourcentage (1.0 = 100%). Les limites empêchent la caméra de sortir de la carte.
+ *
+ * \since Cette structure est disponible depuis la version 1.1 du module Map.
+ */
+typedef struct Camera {
+    float x;       /**< Position X de la caméra (en pixels, dans l'espace de la carte). */
+    float y;       /**< Position Y de la caméra (en pixels, dans l'espace de la carte). */
+    float zoom;    /**< Facteur de zoom (1.0 = 100%, <1.0 = dézoom). */
+    float minX;    /**< Limite minimale X pour la caméra. */
+    float maxX;    /**< Limite maximale X pour la caméra. */
+    float minY;    /**< Limite minimale Y pour la caméra. */
+    float maxY;    /**< Limite maximale Y pour la caméra. */
+} Camera;
+
+/* Termine les définitions de fonctions C lors de l'utilisation de C++ */
+#ifdef __cplusplus
+}
+#endif
+
+/**
  * \class Map
- * \brief Classe gérant la carte (map) du jeu, incluant son agencement et l'effet océan.
+ * \brief Classe gérant la carte (map) du jeu, incluant son agencement, l'effet océan, et la caméra.
  *
  * Cette classe encapsule toute la logique liée à la carte : modes d'agencement, calcul des rectangles,
- * gestion de l'effet océan animé via shader GPU, et intégration avec les callbacks du moteur RC2D.
+ * gestion de l'effet océan animé via shader GPU, gestion de la caméra, et intégration avec les callbacks du moteur RC2D.
  * Elle est conçue pour être simple à utiliser en C++ tout en restant proche d'un style procédural.
  *
  * Utilisation typique :
@@ -87,6 +115,16 @@ typedef struct OceanUniforms {
  */
 class Map {
 private:
+    // Constantes pour la grille de la carte
+    static const float TILE_WIDTH;  /**< Largeur d'une tuile en pixels. */
+    static const float TILE_HEIGHT; /**< Hauteur d'une tuile en pixels. */
+    static const int COLUMN;        /**< Nombre de colonnes de tuiles dans la carte. */
+    static const int ROW;           /**< Nombre de lignes de tuiles dans la carte. */
+    static const float MAP_WIDTH;   /**< Largeur totale de la carte (COLUMN * TILE_WIDTH). */
+    static const float MAP_HEIGHT;  /**< Hauteur totale de la carte (ROW * TILE_HEIGHT). */
+    static const float MIN_ZOOM;    /**< Zoom minimum (0.3 = 30%). */
+    static const float MAX_ZOOM;    /**< Zoom maximum (1.0 = 100%). */
+
     // Mode courant d'agencement (modifiable à chaud via input).
     MapLayoutMode currentLayoutMode = MAP_LAYOUT_FRAMED;
 
@@ -99,6 +137,9 @@ private:
 
     // Rectangle final de la carte (dans l'espace logique rendu). Mis à jour à chaque update.
     SDL_FRect mapRect = {0,0,0,0};
+
+    // Caméra pour visualiser la carte.
+    Camera camera = {0};
 
     // Éléments pour l'effet océan.
     RC2D_Image          oceanTile        = {0};   /**< Texture de base pour l'eau (tile). */
@@ -140,7 +181,7 @@ private:
      * \brief Met à jour les uniforms du shader océan.
      *
      * Cette méthode incrémente l'horloge locale et met à jour les uniforms avec le temps écoulé,
-     * la taille de la zone de la carte, etc. Elle applique ensuite les uniforms au render state.
+     * la taille de la zone visible de la carte, etc. Elle applique ensuite les uniforms au render state.
      *
      * \param dt Temps écoulé depuis la dernière frame (en secondes).
      *
@@ -148,11 +189,26 @@ private:
      */
     void UpdateOceanUniforms(double dt);
 
+    /**
+     * \brief Met à jour la position et le zoom de la caméra.
+     *
+     * Cette méthode ajuste la position (x, y) ou le zoom de la caméra en fonction de l'entrée spécifiée,
+     * et s'assure que la caméra reste dans les limites de la carte (basées sur MAP_WIDTH et MAP_HEIGHT).
+     *
+     * \param dx Déplacement en X (positif ou négatif).
+     * \param dy Déplacement en Y (positif ou négatif).
+     * \param dz Changement de zoom (positif ou négatif).
+     *
+     * \since Cette méthode est disponible depuis la version 1.1 du module Map.
+     */
+    void UpdateCamera(float dx, float dy, float dz);
+
 public:
     /**
      * \brief Constructeur par défaut de la classe Map.
      *
-     * Initialise les valeurs par défaut, y compris le mode d'agencement initial et les uniforms océan.
+     * Initialise les valeurs par défaut, y compris le mode d'agencement initial, les uniforms océan,
+     * et la caméra.
      *
      * \since Ce constructeur est disponible depuis la version initiale du module Map.
      */
@@ -191,7 +247,7 @@ public:
      * \brief Met à jour l'état de la carte à chaque frame.
      *
      * Cette méthode recalcule le rectangle de la carte en fonction du mode d'agencement
-     * et met à jour les uniforms du shader océan avec le temps écoulé et les dimensions.
+     * et met à jour les uniforms du shader océan.
      *
      * \param dt Temps écoulé depuis la dernière frame (en secondes).
      *
@@ -200,20 +256,21 @@ public:
     void Update(double dt);
 
     /**
-     * \brief Dessine la carte et l'effet océan.
+     * \brief Dessine la carte et l'effet océan en utilisant la caméra.
      *
-     * Cette méthode rend l'océan animé dans le rectangle de la carte en utilisant le shader GPU.
-     * Les éléments UI peuvent être dessinés par-dessus dans les marges.
+     * Cette méthode rend l'océan animé dans la zone visible de la carte, en appliquant
+     * le zoom via SDL_SetRenderScale. Les éléments UI peuvent être dessinés par-dessus dans les marges.
      *
      * \since Cette méthode est disponible depuis la version initiale du module Map.
      */
     void Draw();
 
     /**
-     * \brief Gère les entrées clavier pour changer le mode d'agencement.
+     * \brief Gère les entrées clavier pour changer le mode d'agencement et contrôler la caméra.
      *
-     * Cette méthode change le mode d'agencement (framed ou top-bar) en fonction des touches pressées
-     * (par exemple, '1' pour framed, '2' pour top-bar).
+     * Cette méthode change le mode d'agencement (framed ou top-bar) et ajuste la position/zoom
+     * de la caméra en fonction des touches pressées (par exemple, touches fléchées pour déplacer,
+     * '+' et '-' pour zoomer).
      *
      * \param key Nom de la touche pressée.
      * \param scancode Code de scan SDL de la touche.
@@ -227,7 +284,7 @@ public:
     void KeyPressed(const char* key, SDL_Scancode scancode, SDL_Keycode keycode, SDL_Keymod mod, bool isrepeat, SDL_KeyboardID keyboardID);
 
     /**
-     * \brief Gère les entrées de la souris.
+     * \brief Gère les entrées de la souris pour interagir avec la carte.
      *
      * Cette méthode enregistre les clics de souris pour un traitement futur (par exemple, interactions avec la carte).
      *

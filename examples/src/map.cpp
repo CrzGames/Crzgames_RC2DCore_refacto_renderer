@@ -1,5 +1,15 @@
 #include <mygame/map.h>
 
+/* --- Constantes de la carte --- */
+const float Map::TILE_WIDTH  = 48.0f;  // Largeur d'une tuile en pixels
+const float Map::TILE_HEIGHT = 32.0f;  // Hauteur d'une tuile en pixels
+const int Map::COLUMN       = 100;     // Nombre de colonnes de tuiles
+const int Map::ROW          = 100;     // Nombre de lignes de tuiles
+const float Map::MAP_WIDTH  = Map::COLUMN * Map::TILE_WIDTH;  // Largeur totale
+const float Map::MAP_HEIGHT = Map::ROW * Map::TILE_HEIGHT;    // Hauteur totale
+const float Map::MIN_ZOOM   = 0.3f;    // Zoom minimum (30%)
+const float Map::MAX_ZOOM   = 1.0f;    // Zoom maximum (100%)
+
 /* --- Presets de marges (constantes) --- */
 
 // Preset #1 : Mode encadré — place pour minimap + chat + barres
@@ -58,10 +68,36 @@ void Map::UpdateOceanUniforms(double dt)
     this->timeSeconds += dt;
 
     this->oceanUniforms.params0[0] = (float)this->timeSeconds; // Temps animé
-    this->oceanUniforms.params1[0] = this->mapRect.w;          // Largeur zone MAP
-    this->oceanUniforms.params1[1] = this->mapRect.h;          // Hauteur zone MAP
+    this->oceanUniforms.params1[0] = this->mapRect.w;          // Largeur zone visible
+    this->oceanUniforms.params1[1] = this->mapRect.h;          // Hauteur zone visible
 
     SDL_SetGPURenderStateFragmentUniforms(this->oceanRenderState, 0, &this->oceanUniforms, sizeof(this->oceanUniforms));
+}
+
+void Map::UpdateCamera(float dx, float dy, float dz) 
+{
+    // Appliquer les déplacements et le zoom
+    this->camera.x += dx;
+    this->camera.y += dy;
+    this->camera.zoom += dz;
+
+    // Limiter le zoom (30% à 100%)
+    if (this->camera.zoom < this->MIN_ZOOM) this->camera.zoom = this->MIN_ZOOM;
+    if (this->camera.zoom > this->MAX_ZOOM) this->camera.zoom = this->MAX_ZOOM;
+
+    // Calculer les limites de la caméra en fonction de la taille de la carte et du zoom
+    float viewWidth = this->mapRect.w / this->camera.zoom;
+    float viewHeight = this->mapRect.h / this->camera.zoom;
+    this->camera.minX = 0.0f;
+    this->camera.maxX = this->MAP_WIDTH - viewWidth;
+    this->camera.minY = 0.0f;
+    this->camera.maxY = this->MAP_HEIGHT - viewHeight;
+
+    // Clamper la position de la caméra
+    if (this->camera.x < this->camera.minX) this->camera.x = this->camera.minX;
+    if (this->camera.x > this->camera.maxX) this->camera.x = this->camera.maxX;
+    if (this->camera.y < this->camera.minY) this->camera.y = this->camera.minY;
+    if (this->camera.y > this->camera.maxY) this->camera.y = this->camera.maxY;
 }
 
 /* --- Méthodes publiques --- */
@@ -75,6 +111,15 @@ Map::Map()
     this->oceanUniforms.params0[3] = 3.0f;   // tiling
     this->oceanUniforms.params1[2] = 0.60f;  // speed
     this->oceanUniforms.params1[3] = 0.25f;  // extra: reflet/Fresnel
+
+    // Initialisation de la caméra
+    this->camera.x = 0.0f;
+    this->camera.y = 0.0f;
+    this->camera.zoom = 1.0f; // 100%
+    this->camera.minX = 0.0f;
+    this->camera.maxX = this->MAP_WIDTH;
+    this->camera.minY = 0.0f;
+    this->camera.maxY = this->MAP_HEIGHT;
 }
 
 Map::~Map() 
@@ -164,12 +209,23 @@ void Map::Update(double dt)
 
 void Map::Draw() 
 {
-    // Dessiner l'océan dans la zone de la carte
+    // Dessiner l'océan dans la zone visible de la carte, en appliquant le zoom
     if (this->oceanTile.sdl_texture && this->oceanRenderState && this->mapRect.w > 0.f && this->mapRect.h > 0.f) 
     {
+        // Appliquer le zoom via SDL_SetRenderScale
+        SDL_SetRenderScale(rc2d_engine_state.renderer, this->camera.zoom, this->camera.zoom);
+
+        // Ajuster la position pour simuler le déplacement de la caméra
+        SDL_FRect adjustedRect = this->mapRect;
+        adjustedRect.x -= this->camera.x;
+        adjustedRect.y -= this->camera.y;
+
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, this->oceanRenderState);
-        SDL_RenderTexture(rc2d_engine_state.renderer, this->oceanTile.sdl_texture, NULL, &this->mapRect);
+        SDL_RenderTexture(rc2d_engine_state.renderer, this->oceanTile.sdl_texture, NULL, &adjustedRect);
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
+
+        // Réinitialiser l'échelle après le rendu
+        SDL_SetRenderScale(rc2d_engine_state.renderer, 1.0f, 1.0f);
     }
 }
 
@@ -179,13 +235,41 @@ void Map::KeyPressed(const char* key, SDL_Scancode scancode, SDL_Keycode keycode
              key, scancode, keycode, mod, isrepeat, keyboardID);
 
     // Changer le mode d'agencement avec les touches 1 et 2
-    if (SDL_strcmp(key, "1") == 0) 
+    if (SDL_strcmp(key, "1") == 0 && !isrepeat) 
     {
         this->currentLayoutMode = MAP_LAYOUT_FRAMED;
     } 
-    else if (SDL_strcmp(key, "2") == 0) 
+    else if (SDL_strcmp(key, "2") == 0 && !isrepeat) 
     {
         this->currentLayoutMode = MAP_LAYOUT_TOP_BAR;
+    }
+
+    // Gérer la caméra avec les touches fléchées et zoom
+    const float CAMERA_SPEED = 500.0f;
+    const float ZOOM_SPEED = 0.1f;
+    if (SDL_strcmp(key, "left") == 0 && !isrepeat) 
+    {
+        this->UpdateCamera(-CAMERA_SPEED * 0.1f, 0.0f, 0.0f);
+    } 
+    else if (SDL_strcmp(key, "right") == 0 && !isrepeat) 
+    {
+        this->UpdateCamera(CAMERA_SPEED * 0.1f, 0.0f, 0.0f);
+    }
+    else if (SDL_strcmp(key, "up") == 0 && !isrepeat) 
+    {
+        this->UpdateCamera(0.0f, -CAMERA_SPEED * 0.1f, 0.0f);
+    }
+    else if (SDL_strcmp(key, "down") == 0 && !isrepeat) 
+    {
+        this->UpdateCamera(0.0f, CAMERA_SPEED * 0.1f, 0.0f);
+    }
+    else if (SDL_strcmp(key, "kp +") == 0 && !isrepeat) 
+    {
+        this->UpdateCamera(0.0f, 0.0f, ZOOM_SPEED);
+    }
+    else if (SDL_strcmp(key, "kp -") == 0 && !isrepeat) 
+    {
+        this->UpdateCamera(0.0f, 0.0f, -ZOOM_SPEED);
     }
 }
 
