@@ -3,81 +3,114 @@
 #include <RC2D/RC2D_internal.h>
 #include <SDL3/SDL.h>
 
-/* ===== Gouttières autour de la MAP (logic coords, safe & overscan aware) ===== */
-typedef struct RC2D_UIGutters {
-    float left, top, right, bottom; /* px logiques ou % si percent=true */
-    bool  percent;
-} RC2D_UIGutters;
+/* =========================================================================
+   MAP LAYOUT (placement de la carte / océan dans la zone visible)
+   -------------------------------------------------------------------------
+   Objectif :
+   - On récupère la "zone sûre visible" via rc2d_engine_getVisibleSafeRectRender(),
+     c’est-à-dire la portion garantie visible (safe area ∩ overscan).
+   - On enlève des marges ("insets") pour laisser de la place à l’interface
+     (minimap, chat, boutons…).
+   - Contrairement au HUD, ici la MAP est un fond de jeu → pas de gestion
+     de ratio, SDL Logical Presentation s’en occupe déjà.
+   ========================================================================= */
 
-/* Ton besoin : peu en haut/bas, beaucoup à gauche/droite */
-static RC2D_UIGutters g_gui_gutters = {
-    420.0f,   /* left   : minimap / panel gauche */
-    16.0f,    /* top    : barre boutons top */
-    520.0f,   /* right  : chat / events / panel droit */
-    56.0f,    /* bottom : barre boutons bas */
-    false     /* percent = false (pixels logiques) */
+/**
+ * \brief Marges autour de la zone visible.
+ * - Si percent==false : valeurs en pixels logiques.
+ * - Si percent==true  : valeurs proportionnelles (0.0–1.0).
+ */
+typedef struct MapInsets {
+    float left;    /**< marge gauche   */
+    float top;     /**< marge haut     */
+    float right;   /**< marge droite   */
+    float bottom;  /**< marge bas      */
+    bool  percent; /**< true = %age, false = pixels logiques */
+} MapInsets;
+
+/* Exemple de configuration :
+   - 200px à gauche/droite (pour minimap, chat…)
+   - 50px en haut/bas (barres de boutons)
+ */
+static MapInsets mapInsets = {
+    200.0f,  // left
+    50.0f,   // top
+    200.0f,  // right
+    50.0f,   // bottom
+    false    // interprétation en pixels logiques
 };
 
-static SDL_FRect g_ocean_dst = SDL_FRect{0,0,0,0};
+/**
+ * \brief Rectangle final de la MAP (dans l’espace logique rendu).
+ * 
+ * Mis à jour à chaque frame dans `rc2d_update()`, utilisé pour :
+ * - dessiner l’océan,
+ * - placer d’autres entités “dans le monde”.
+ */
+static SDL_FRect mapRect = {0,0,0,0};
 
-static SDL_FRect rc2d_get_available_rect_with_gutters(RC2D_UIGutters G)
+/**
+ * \brief Calcule un rectangle en retirant les insets d’une zone donnée.
+ * 
+ * @param visibleSafe zone visible et sûre (safe-area ∩ overscan)
+ * @param insets marges à appliquer
+ * @return rectangle final (jamais négatif)
+ */
+static inline SDL_FRect computeMapRect(const SDL_FRect visibleSafe, const MapInsets insets)
 {
-    SDL_FRect V = rc2d_engine_getVisibleSafeRectRender(); /* déjà OVERSCAN + safe */
-    if (V.w <= 0.f || V.h <= 0.f) return SDL_FRect{0,0,0,0};
+    // Conversion : pixels logiques OU %age de la zone
+    const float L = insets.percent ? visibleSafe.w * insets.left   : insets.left;
+    const float T = insets.percent ? visibleSafe.h * insets.top    : insets.top;
+    const float R = insets.percent ? visibleSafe.w * insets.right  : insets.right;
+    const float B = insets.percent ? visibleSafe.h * insets.bottom : insets.bottom;
 
-    float L = G.percent ? V.w * G.left   : G.left;
-    float T = G.percent ? V.h * G.top    : G.top;
-    float R = G.percent ? V.w * G.right  : G.right;
-    float B = G.percent ? V.h * G.bottom : G.bottom;
+    SDL_FRect out;
+    out.x = visibleSafe.x + L;
+    out.y = visibleSafe.y + T;
+    out.w = visibleSafe.w - (L + R);
+    out.h = visibleSafe.h - (T + B);
 
-    SDL_FRect A = SDL_FRect{ V.x + L, V.y + T, V.w - (L + R), V.h - (T + B) };
-    if (A.w < 0.f) A.w = 0.f;
-    if (A.h < 0.f) A.h = 0.f;
-    return A;
+    // Clamp pour éviter des valeurs négatives
+    if (out.w < 0.f) out.w = 0.f;
+    if (out.h < 0.f) out.h = 0.f;
+    return out;
 }
 
-/* Option ratio 16:9, ancré TOP-LEFT, clampé à la zone dispo */
-static inline SDL_FRect ocean_layout_fit_ratio_top_left(SDL_FRect avail, float targetW, float targetH)
-{
-    if (avail.w <= 0.f || avail.h <= 0.f) return SDL_FRect{0,0,0,0};
-    float s = SDL_min(avail.w / targetW, avail.h / targetH);
-    if (s <= 0.f) return SDL_FRect{avail.x, avail.y, 0, 0};
-    float w = targetW * s, h = targetH * s;
-    return SDL_FRect{ avail.x, avail.y, w, h }; /* TOP-LEFT */
-}
-
-/* ========================================================================= */
-/*                          GPU EFFECT: OCEAN                                */
-/* ========================================================================= */
+/* =========================================================================
+   GPU EFFECT: OCEAN
+   -------------------------------------------------------------------------
+   Le fond de la MAP est un océan animé via un shader.
+   Uniforms :
+   - params0 : [ time, strength, px_amp, tiling ]
+   - params1 : [ width, height, speed, extra ]
+   ========================================================================= */
 
 typedef struct OceanUniforms {
-    float params0[4]; // time, strength, px_amp, tiling
-    float params1[4]; // width, height, speed, unused
-} OceanUniforms; // 32 bytes, aligné 16B
+    float params0[4]; /**< time, strength, px_amp, tiling   */
+    float params1[4]; /**< width, height, speed, extra(use) */
+} OceanUniforms;
 
-static RC2D_Image          tile_ocean_image = {0};
-static RC2D_GPUShader*     g_ocean_fragment_shader = NULL;
-static SDL_GPURenderState* g_ocean_state = NULL;
-static OceanUniforms       g_ocean_u     = {0};
-static double              g_time_accum  = 0.0;
-static SDL_GPUSampler*     g_repeat_sampler = NULL;
+static RC2D_Image          oceanTile        = {0};   /**< texture de base (tile eau) */
+static RC2D_GPUShader*     oceanShader      = NULL;  /**< fragment shader eau        */
+static SDL_GPURenderState* oceanRenderState = NULL;  /**< pipeline rendu eau         */
+static SDL_GPUSampler*     repeatSampler    = NULL;  /**< sampler REPEAT             */
+static OceanUniforms       oceanU           = {0};   /**< uniforms shader            */
+static double              timeSeconds      = 0.0;   /**< horloge locale             */
 
-/* ========================================================================= */
-/*                              RESSOURCES                                   */
-/* ========================================================================= */
-static RC2D_TP_Atlas g_elite27_atlas = {0};
-
-static const char* s_elite27_names[] = {
-    "1.png","2.png","3.png","4.png","5.png","6.png","7.png","8.png"
-};
-
-static void Ocean_UpdateUniforms(double dt)
+/**
+ * \brief Met à jour les uniforms du shader océan.
+ * 
+ * @param dt temps écoulé depuis la dernière frame (secondes)
+ */
+static void updateOceanUniforms(double dt)
 {
-    g_time_accum += dt;
-    g_ocean_u.params0[0] = (float)g_time_accum;
-    g_ocean_u.params1[0] = g_ocean_dst.w;
-    g_ocean_u.params1[1] = g_ocean_dst.h;
-    SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u));
+    timeSeconds += dt;
+
+    oceanU.params0[0] = (float)timeSeconds; // temps animé
+    oceanU.params1[0] = mapRect.w;          // largeur zone MAP
+    oceanU.params1[1] = mapRect.h;          // hauteur zone MAP
+
+    SDL_SetGPURenderStateFragmentUniforms(oceanRenderState, 0, &oceanU, sizeof(oceanU));
 }
 
 /* ========================================================================= */
@@ -85,15 +118,13 @@ static void Ocean_UpdateUniforms(double dt)
 /* ========================================================================= */
 void rc2d_unload(void)
 {
-    rc2d_graphics_freeImage(&tile_ocean_image);
-    rc2d_tp_freeAtlas(&g_elite27_atlas);
+    rc2d_graphics_freeImage(&oceanTile);
 
-    if (g_ocean_state) {
-        SDL_DestroyGPURenderState(g_ocean_state);
-        g_ocean_state = NULL;
+    if (oceanRenderState) 
+    {
+        SDL_DestroyGPURenderState(oceanRenderState);
+        oceanRenderState = NULL;
     }
-    
-    RC2D_log(RC2D_LOG_INFO, "My game is unloading...\n");
 }
 
 /* ========================================================================= */
@@ -101,97 +132,66 @@ void rc2d_unload(void)
 /* ========================================================================= */
 void rc2d_load(void)
 {
-    RC2D_log(RC2D_LOG_INFO, "My game is loading...\n");
-
-    // Set window size to 1280x720 for testing
+    // Fenêtre de test (peut être enlevée si tu as déjà un rc2d_window_setSize ailleurs)
     rc2d_window_setSize(1280, 720);
 
-    // Charger le shader depuis le stockage
-    g_ocean_fragment_shader = rc2d_gpu_loadGraphicsShaderFromStorage("water.fragment", RC2D_STORAGE_TITLE);
-    if (!g_ocean_fragment_shader) {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load ocean shader from assets/water.fragment: %s", SDL_GetError());
+    // 1) Charger le shader
+    oceanShader = rc2d_gpu_loadGraphicsShaderFromStorage("water.fragment", RC2D_STORAGE_TITLE);
+    if (!oceanShader) {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load ocean shader: %s", SDL_GetError());
         return;
     }
 
-    // Initialiser les uniforms
-    g_ocean_u.params0[0] = 0.0f;   // time
-    g_ocean_u.params0[1] = 0.6f;   // strength
-    g_ocean_u.params0[2] = 30.0f;  // px_amp
-    g_ocean_u.params0[3] = 3.0f;   // tiling
+    // 2) Initialiser les uniforms
+    oceanU.params0[0] = 0.0f;   // time
+    oceanU.params0[1] = 0.6f;   // strength
+    oceanU.params0[2] = 30.0f;  // px_amp
+    oceanU.params0[3] = 3.0f;   // tiling
+    oceanU.params1[2] = 0.60f;  // speed
+    oceanU.params1[3] = 0.25f;  // extra: reflet/Fresnel
 
-    g_ocean_u.params1[0] = 1280.0f; // width
-    g_ocean_u.params1[1] = 720.0f;  // height
-    g_ocean_u.params1[2] = 0.60f;   // speed
-    g_ocean_u.params1[3] = 0.25f;   // reflet/Fresnel
-
-    /* 1) Sampler REPEAT */
+    // 3) Créer un sampler REPEAT
     SDL_GPUSamplerCreateInfo s = {0};
-    s.min_filter = SDL_GPU_FILTER_LINEAR;
-    s.mag_filter = SDL_GPU_FILTER_LINEAR;
-    s.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
-    s.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    s.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    s.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    g_repeat_sampler = SDL_CreateGPUSampler(rc2d_engine_state.gpu_device, &s);
+    s.min_filter    = SDL_GPU_FILTER_LINEAR;
+    s.mag_filter    = SDL_GPU_FILTER_LINEAR;
+    s.mipmap_mode   = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+    s.address_mode_u= SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    s.address_mode_v= SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    s.address_mode_w= SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    repeatSampler = SDL_CreateGPUSampler(rc2d_engine_state.gpu_device, &s);
 
-    /* 2) Texture GPU de la tile eau */
-    tile_ocean_image = rc2d_graphics_loadImageFromStorage("assets/images/tile-water.png", RC2D_STORAGE_TITLE);
-    SDL_PropertiesID props = SDL_GetTextureProperties(tile_ocean_image.sdl_texture);
-    if (!props) {
-        RC2D_log(RC2D_LOG_ERROR, "SDL_GetTextureProperties failed: %s", SDL_GetError());
-        return;
-    }
-    SDL_GPUTexture* textureGPUWater = (SDL_GPUTexture*)SDL_GetPointerProperty(
+    // 4) Charger la texture tile
+    oceanTile = rc2d_graphics_loadImageFromStorage("assets/images/tile-water.png", RC2D_STORAGE_TITLE);
+    SDL_PropertiesID props = SDL_GetTextureProperties(oceanTile.sdl_texture);
+    SDL_GPUTexture* texGPU = (SDL_GPUTexture*)SDL_GetPointerProperty(
         props, SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER, NULL
     );
-    if (!textureGPUWater) {
-        RC2D_log(RC2D_LOG_ERROR, "(1)No SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER on this texture");
-        return;
-    }
 
-    /* 3) RenderState avec shader + sampler */
+    // 5) Construire l’état GPU (shader + sampler)
     SDL_GPUTextureSamplerBinding sb[1] = {0};
-    sb[0].texture = textureGPUWater;
-    sb[0].sampler = g_repeat_sampler;
+    sb[0].texture = texGPU;
+    sb[0].sampler = repeatSampler;
 
     SDL_GPURenderStateCreateInfo rs = {0};
-    rs.fragment_shader      = g_ocean_fragment_shader;
+    rs.fragment_shader      = oceanShader;
     rs.num_sampler_bindings = 1;
     rs.sampler_bindings     = sb;
-    g_ocean_state = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs);
-    if (!g_ocean_state) {
-        RC2D_log(RC2D_LOG_ERROR, "SDL_CreateGPURenderState failed: %s", SDL_GetError());
-    }
-
-    /* 4) Uniforms init */
-    if (!SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u))) {
-        RC2D_log(RC2D_LOG_ERROR, "Set uniforms failed: %s", SDL_GetError());
-    }
-
-    /* 5) Atlas */
-    g_elite27_atlas = rc2d_tp_loadAtlasFromStorage("assets/atlas/elite24/elite24.json", RC2D_STORAGE_TITLE);
-    if (!g_elite27_atlas.atlas_image.sdl_texture) {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load elite27 atlas");
-    }
+    oceanRenderState = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs);
 }
 
 /* ========================================================================= */
-/*                                UPDATE                                     */
+/*                            UPDATE                                         */
 /* ========================================================================= */
 void rc2d_update(double dt)
 {
-    SDL_FRect avail = rc2d_get_available_rect_with_gutters(g_gui_gutters);
+    // Zone visible (safe + overscan corrigé)
+    const SDL_FRect visibleSafe = rc2d_engine_getVisibleSafeRectRender();
 
-    /* MAP/OCEAN top-left en 16:9 dans l’espace dispo */
-    g_ocean_dst = ocean_layout_fit_ratio_top_left(avail, 1920.f, 1080.f);
+    // Calcul ou se situera la MAP dans la zone visible par rapport aux insets
+    mapRect = computeMapRect(visibleSafe, mapInsets);
 
-    /* --- Uniforms shader : résolution = taille locale DU RECT --- */
-    g_time_accum            += dt;
-    g_ocean_u.params0[0]     = (float)g_time_accum;  /* time */
-    g_ocean_u.params1[0]     = g_ocean_dst.w;        /* width locale */
-    g_ocean_u.params1[1]     = g_ocean_dst.h;        /* height locale */
-
-    SDL_SetGPURenderStateFragmentUniforms(g_ocean_state, 0, &g_ocean_u, sizeof(g_ocean_u));
+    // Mise à jour des uniforms océan
+    updateOceanUniforms(dt);
 }
 
 /* ========================================================================= */
@@ -199,14 +199,15 @@ void rc2d_update(double dt)
 /* ========================================================================= */
 void rc2d_draw(void)
 {
-    if (tile_ocean_image.sdl_texture && g_ocean_state && g_ocean_dst.w > 0.f && g_ocean_dst.h > 0.f)
+    // 1) Dessiner l’océan dans la zone MAP
+    if (oceanTile.sdl_texture && oceanRenderState && mapRect.w > 0.f && mapRect.h > 0.f)
     {
-        SDL_SetRenderGPUState(rc2d_engine_state.renderer, g_ocean_state);
-        SDL_RenderTexture(rc2d_engine_state.renderer, tile_ocean_image.sdl_texture, NULL, &g_ocean_dst);
+        SDL_SetRenderGPUState(rc2d_engine_state.renderer, oceanRenderState);
+        SDL_RenderTexture(rc2d_engine_state.renderer, oceanTile.sdl_texture, NULL, &mapRect);
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
     }
 
-    /* ... dessine ta GUI dans les zones "gouttières" autour de g_ocean_dst ... */
+    // Ensuite : dessiner l’UI par-dessus dans les marges
 }
 
 /* ========================================================================= */
