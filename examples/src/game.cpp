@@ -32,7 +32,7 @@ void rc2d_draw(void)
     // Background UI pour le fond
     if (backgroundUI.sdl_texture) 
     {
-        rc2d_graphics_drawImage(&backgroundUI, 0.0f, 0.0f, 0.0, 0.0f, 0.0f, 0.0f, 0.0f, false, false);
+        rc2d_graphics_drawImage(&backgroundUI, 0.0f, 0.0f, 0.0, 1.0f, 1.0f, 0.0f, 0.0f, false, false);
     }
 
     map.Draw();
