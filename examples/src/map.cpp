@@ -1,14 +1,14 @@
 #include <mygame/map.h>
 
 /* --- Constantes de la carte --- */
-const float Map::TILE_WIDTH  = 48.0f;  // Largeur d'une tuile en pixels
-const float Map::TILE_HEIGHT = 32.0f;  // Hauteur d'une tuile en pixels
-const int Map::COLUMN       = 100;     // Nombre de colonnes de tuiles
-const int Map::ROW          = 100;     // Nombre de lignes de tuiles
-const float Map::MAP_WIDTH  = Map::COLUMN * Map::TILE_WIDTH;  // Largeur totale
-const float Map::MAP_HEIGHT = Map::ROW * Map::TILE_HEIGHT;    // Hauteur totale
-const float Map::MIN_ZOOM   = 0.3f;    // Zoom minimum (30%)
-const float Map::MAX_ZOOM   = 1.0f;    // Zoom maximum (100%)
+const int Map::TILE_WIDTH  = 48;      // Largeur d'une tuile en pixels
+const int Map::TILE_HEIGHT = 32;      // Hauteur d'une tuile en pixels
+const int Map::COLUMN      = 100;     // Nombre de colonnes de tuiles
+const int Map::ROW         = 100;     // Nombre de lignes de tuiles
+const int Map::MAP_WIDTH   = Map::COLUMN * Map::TILE_WIDTH;  // Largeur totale (4800)
+const int Map::MAP_HEIGHT  = Map::ROW * Map::TILE_HEIGHT;    // Hauteur totale (3200)
+const float Map::MIN_ZOOM  = 0.3f;    // Zoom minimum (30%)
+const float Map::MAX_ZOOM  = 1.0f;    // Zoom maximum (100%)
 
 /* --- Presets de marges (constantes) --- */
 
@@ -85,13 +85,13 @@ void Map::UpdateCamera(float dx, float dy, float dz)
     if (this->camera.zoom < this->MIN_ZOOM) this->camera.zoom = this->MIN_ZOOM;
     if (this->camera.zoom > this->MAX_ZOOM) this->camera.zoom = this->MAX_ZOOM;
 
-    // Calculer les limites de la caméra en fonction de la taille de la carte et du zoom
+    // Calculer les limites de la caméra en fonction de la taille de la carte totale et du zoom
     float viewWidth = this->mapRect.w / this->camera.zoom;
     float viewHeight = this->mapRect.h / this->camera.zoom;
     this->camera.minX = 0.0f;
-    this->camera.maxX = this->MAP_WIDTH - viewWidth;
+    this->camera.maxX = (float)this->MAP_WIDTH - viewWidth;
     this->camera.minY = 0.0f;
-    this->camera.maxY = this->MAP_HEIGHT - viewHeight;
+    this->camera.maxY = (float)this->MAP_HEIGHT - viewHeight;
 
     // Clamper la position de la caméra
     if (this->camera.x < this->camera.minX) this->camera.x = this->camera.minX;
@@ -117,9 +117,9 @@ Map::Map()
     this->camera.y = 0.0f;
     this->camera.zoom = 1.0f; // 100%
     this->camera.minX = 0.0f;
-    this->camera.maxX = this->MAP_WIDTH;
+    this->camera.maxX = (float)this->MAP_WIDTH;
     this->camera.minY = 0.0f;
-    this->camera.maxY = this->MAP_HEIGHT;
+    this->camera.maxY = (float)this->MAP_HEIGHT;
 }
 
 Map::~Map() 
@@ -145,7 +145,7 @@ void Map::Load()
     s.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
     s.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
     s.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    this->repeatSampler = SDL_CreateGPUSampler(rc2d_engine_state.gpu_device, &s);
+    this->repeatSampler = SDL_CreateGPUSampler(rc2d_gpu_getDevice(), &s);
 
     // 3) Charger la texture tile
     this->oceanTile = rc2d_graphics_loadImageFromStorage("assets/images/tile-water.png", RC2D_STORAGE_TITLE);
@@ -212,20 +212,34 @@ void Map::Draw()
     // Dessiner l'océan dans la zone visible de la carte, en appliquant le zoom
     if (this->oceanTile.sdl_texture && this->oceanRenderState && this->mapRect.w > 0.f && this->mapRect.h > 0.f) 
     {
+        // Convertir mapRect (SDL_FRect) en SDL_Rect pour le clip
+        SDL_Rect clipRect = {
+            static_cast<int>(SDL_roundf(this->mapRect.x)),
+            static_cast<int>(SDL_roundf(this->mapRect.y)),
+            static_cast<int>(SDL_roundf(this->mapRect.w)),
+            static_cast<int>(SDL_roundf(this->mapRect.h))
+        };
+        SDL_SetRenderClipRect(rc2d_engine_state.renderer, &clipRect);
+
         // Appliquer le zoom via SDL_SetRenderScale
         SDL_SetRenderScale(rc2d_engine_state.renderer, this->camera.zoom, this->camera.zoom);
 
-        // Ajuster la position pour simuler le déplacement de la caméra
-        SDL_FRect adjustedRect = this->mapRect;
-        adjustedRect.x -= this->camera.x;
-        adjustedRect.y -= this->camera.y;
+        // Créer un rectangle pour la carte entière avec décalage correct
+        SDL_FRect mapFullRect = {
+            this->mapRect.x - this->camera.x * this->camera.zoom,
+            this->mapRect.y - this->camera.y * this->camera.zoom,
+            (float)this->MAP_WIDTH * this->camera.zoom,
+            (float)this->MAP_HEIGHT * this->camera.zoom
+        };
 
+        // Dessiner la texture
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, this->oceanRenderState);
-        SDL_RenderTexture(rc2d_engine_state.renderer, this->oceanTile.sdl_texture, NULL, &adjustedRect);
+        SDL_RenderTexture(rc2d_engine_state.renderer, this->oceanTile.sdl_texture, NULL, &mapFullRect);
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
 
-        // Réinitialiser l'échelle après le rendu
+        // Réinitialiser l'échelle et le clip après le rendu
         SDL_SetRenderScale(rc2d_engine_state.renderer, 1.0f, 1.0f);
+        SDL_SetRenderClipRect(rc2d_engine_state.renderer, NULL);
     }
 }
 

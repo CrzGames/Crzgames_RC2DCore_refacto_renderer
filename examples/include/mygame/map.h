@@ -116,12 +116,12 @@ typedef struct Camera {
 class Map {
 private:
     // Constantes pour la grille de la carte
-    static const float TILE_WIDTH;  /**< Largeur d'une tuile en pixels. */
-    static const float TILE_HEIGHT; /**< Hauteur d'une tuile en pixels. */
+    static const int TILE_WIDTH;    /**< Largeur d'une tuile en pixels. */
+    static const int TILE_HEIGHT;   /**< Hauteur d'une tuile en pixels. */
     static const int COLUMN;        /**< Nombre de colonnes de tuiles dans la carte. */
     static const int ROW;           /**< Nombre de lignes de tuiles dans la carte. */
-    static const float MAP_WIDTH;   /**< Largeur totale de la carte (COLUMN * TILE_WIDTH). */
-    static const float MAP_HEIGHT;  /**< Hauteur totale de la carte (ROW * TILE_HEIGHT). */
+    static const int MAP_WIDTH;     /**< Largeur totale de la carte (COLUMN * TILE_WIDTH). */
+    static const int MAP_HEIGHT;    /**< Hauteur totale de la carte (ROW * TILE_HEIGHT). */
     static const float MIN_ZOOM;    /**< Zoom minimum (0.3 = 30%). */
     static const float MAX_ZOOM;    /**< Zoom maximum (1.0 = 100%). */
 
@@ -193,7 +193,7 @@ private:
      * \brief Met à jour la position et le zoom de la caméra.
      *
      * Cette méthode ajuste la position (x, y) ou le zoom de la caméra en fonction de l'entrée spécifiée,
-     * et s'assure que la caméra reste dans les limites de la carte (basées sur MAP_WIDTH et MAP_HEIGHT).
+     * et s'assure que la caméra reste dans les limites de la carte (basées sur mapRect).
      *
      * \param dx Déplacement en X (positif ou négatif).
      * \param dy Déplacement en Y (positif ou négatif).
