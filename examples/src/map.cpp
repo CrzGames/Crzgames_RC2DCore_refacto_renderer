@@ -1,4 +1,5 @@
 #include <mygame/map.h>
+#include <cmath> // Pour std::sqrt
 
 /* --- Constantes de la carte --- */
 const int Map::TILE_WIDTH  = 48;      // Largeur d'une tuile en pixels
@@ -70,6 +71,7 @@ void Map::UpdateOceanUniforms(double dt)
     this->oceanUniforms.params0[0] = (float)this->timeSeconds; // Temps animé
     this->oceanUniforms.params1[0] = this->mapRect.w;          // Largeur zone visible
     this->oceanUniforms.params1[1] = this->mapRect.h;          // Hauteur zone visible
+    this->oceanUniforms.params0[3] = 1.0f;                    // Tiling réduit pour éviter zoom excessif
 
     SDL_SetGPURenderStateFragmentUniforms(this->oceanRenderState, 0, &this->oceanUniforms, sizeof(this->oceanUniforms));
 }
@@ -108,7 +110,7 @@ Map::Map()
     this->oceanUniforms.params0[0] = 0.0f;   // time
     this->oceanUniforms.params0[1] = 0.6f;   // strength
     this->oceanUniforms.params0[2] = 30.0f;  // px_amp
-    this->oceanUniforms.params0[3] = 3.0f;   // tiling
+    this->oceanUniforms.params0[3] = 1.0f;   // tiling (réduit pour éviter zoom excessif)
     this->oceanUniforms.params1[2] = 0.60f;  // speed
     this->oceanUniforms.params1[3] = 0.25f;  // extra: reflet/Fresnel
 
@@ -205,6 +207,34 @@ void Map::Update(double dt)
     {
         this->UpdateOceanUniforms(dt);
     }
+
+    // 5) Gérer les déplacements de la caméra avec les touches fléchées
+    const float CAMERA_SPEED = 500.0f;
+    float dtf = (float)dt;
+    float dx = 0.0f, dy = 0.0f;
+    if (rc2d_keyboard_isDown(RC2D_LEFT)) dx -= CAMERA_SPEED * dtf;
+    if (rc2d_keyboard_isDown(RC2D_RIGHT)) dx += CAMERA_SPEED * dtf;
+    if (rc2d_keyboard_isDown(RC2D_UP)) dy -= CAMERA_SPEED * dtf;
+    if (rc2d_keyboard_isDown(RC2D_DOWN)) dy += CAMERA_SPEED * dtf;
+
+    // Normaliser la vitesse pour les mouvements diagonaux
+    if (dx != 0.0f && dy != 0.0f) 
+    {
+        float magnitude = std::sqrt(dx * dx + dy * dy);
+        if (magnitude > 0.0f) 
+        {
+            float scale = (CAMERA_SPEED * dtf) / magnitude;
+            dx *= scale;
+            dy *= scale;
+        }
+    }
+
+    if (dx != 0.0f || dy != 0.0f) 
+    {
+        RC2D_log(RC2D_LOG_INFO, "Camera move: dx=%.1f, dy=%.1f, camera=(%.1f, %.1f, %.2f)\n",
+                 dx, dy, this->camera.x, this->camera.y, this->camera.zoom);
+        this->UpdateCamera(dx, dy, 0.0f);
+    }
 }
 
 void Map::Draw() 
@@ -232,10 +262,18 @@ void Map::Draw()
             (float)this->MAP_HEIGHT * this->camera.zoom
         };
 
-        // Dessiner la texture
+        // Log pour déboguer les dimensions
+        RC2D_log(RC2D_LOG_INFO, "mapRect: x=%.1f, y=%.1f, w=%.1f, h=%.1f\n",
+                 this->mapRect.x, this->mapRect.y, this->mapRect.w, this->mapRect.h);
+        RC2D_log(RC2D_LOG_INFO, "mapFullRect: x=%.1f, y=%.1f, w=%.1f, h=%.1f, zoom=%.2f\n",
+                 mapFullRect.x, mapFullRect.y, mapFullRect.w, mapFullRect.h, this->camera.zoom);
+
+        // Dessiner l'océan en tiling pour couvrir toute la carte avec le shader
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, this->oceanRenderState);
         SDL_RenderTexture(rc2d_engine_state.renderer, this->oceanTile.sdl_texture, NULL, &mapFullRect);
         SDL_SetRenderGPUState(rc2d_engine_state.renderer, NULL);
+
+        // Afficher les navires, scintillements, etc. (à implémenter)
 
         // Réinitialiser l'échelle et le clip après le rendu
         SDL_SetRenderScale(rc2d_engine_state.renderer, 1.0f, 1.0f);
@@ -257,33 +295,14 @@ void Map::KeyPressed(const char* key, SDL_Scancode scancode, SDL_Keycode keycode
     {
         this->currentLayoutMode = MAP_LAYOUT_TOP_BAR;
     }
-
-    // Gérer la caméra avec les touches fléchées et zoom
-    const float CAMERA_SPEED = 500.0f;
-    const float ZOOM_SPEED = 0.1f;
-    if (SDL_strcmp(key, "Left") == 0 && !isrepeat) 
+    // Gérer le zoom avec les touches du pavé numérique
+    else if (rc2d_keyboard_isDown(RC2D_KP_PLUS) && !isrepeat) 
     {
-        this->UpdateCamera(-CAMERA_SPEED * 0.1f, 0.0f, 0.0f);
-    } 
-    else if (SDL_strcmp(key, "Right") == 0 && !isrepeat) 
-    {
-        this->UpdateCamera(CAMERA_SPEED * 0.1f, 0.0f, 0.0f);
+        this->UpdateCamera(0.0f, 0.0f, 0.1f); // ZOOM_SPEED = 0.1f
     }
-    else if (SDL_strcmp(key, "Up") == 0 && !isrepeat) 
+    else if (rc2d_keyboard_isDown(RC2D_KP_MINUS) && !isrepeat) 
     {
-        this->UpdateCamera(0.0f, -CAMERA_SPEED * 0.1f, 0.0f);
-    }
-    else if (SDL_strcmp(key, "Down") == 0 && !isrepeat) 
-    {
-        this->UpdateCamera(0.0f, CAMERA_SPEED * 0.1f, 0.0f);
-    }
-    else if (SDL_strcmp(key, "kp +") == 0 && !isrepeat) 
-    {
-        this->UpdateCamera(0.0f, 0.0f, ZOOM_SPEED);
-    }
-    else if (SDL_strcmp(key, "kp -") == 0 && !isrepeat) 
-    {
-        this->UpdateCamera(0.0f, 0.0f, -ZOOM_SPEED);
+        this->UpdateCamera(0.0f, 0.0f, -0.1f); // -ZOOM_SPEED
     }
 }
 

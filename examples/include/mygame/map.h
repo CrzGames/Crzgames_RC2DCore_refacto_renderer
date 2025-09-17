@@ -3,9 +3,6 @@
 
 #include <RC2D/RC2D.h>
 #include <RC2D/RC2D_internal.h>
-#include <RC2D/RC2D_engine.h>
-#include <RC2D/RC2D_gpu.h>
-#include <RC2D/RC2D_storage.h>
 
 #include <SDL3/SDL.h>
 
