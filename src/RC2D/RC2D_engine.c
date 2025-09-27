@@ -2327,4 +2327,14 @@ void rc2d_engine_configure(const RC2D_EngineConfig* config)
         RC2D_log(RC2D_LOG_WARN, "Invalid presentation mode provided. Using default values.\n");
         rc2d_engine_state.config->logicalPresentationMode = RC2D_LOGICAL_PRESENTATION_LETTERBOX;
     }
+
+    if(config->pixelartMode == true || config->pixelartMode == false)
+    {
+        rc2d_engine_state.config->pixelartMode = config->pixelartMode;
+    }
+    else
+    {
+        RC2D_log(RC2D_LOG_WARN, "Invalid pixelart mode provided. Using default values.\n");
+        rc2d_engine_state.config->pixelartMode = false;
+    }
 }
