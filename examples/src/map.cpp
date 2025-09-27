@@ -1,5 +1,4 @@
 #include <mygame/map.h>
-#include <cmath> // Pour std::sqrt
 
 /* --- Constantes de la carte --- */
 const int Map::TILE_WIDTH  = 48;      // Largeur d'une tuile en pixels
@@ -10,6 +9,7 @@ const int Map::MAP_WIDTH   = Map::COLUMN * Map::TILE_WIDTH;  // Largeur totale (
 const int Map::MAP_HEIGHT  = Map::ROW * Map::TILE_HEIGHT;    // Hauteur totale (3200)
 const float Map::MIN_ZOOM  = 0.6f;    // Zoom minimum (60%)
 const float Map::MAX_ZOOM  = 1.0f;    // Zoom maximum (100%)
+const float Map::ZOOM_STEP = 0.1f;    // Incrément de zoom par pression (10%)
 
 /* --- Presets de marges (constantes) --- */
 
@@ -79,8 +79,7 @@ void Map::UpdateOceanUniforms(double dt)
     oceanUniforms.params1[3] = 0.25f; // reflet/Fresnel
 
     // Appliquer les uniforms au render state
-    SDL_SetGPURenderStateFragmentUniforms(oceanRenderState, 0,
-        &oceanUniforms, sizeof(oceanUniforms));
+    SDL_SetGPURenderStateFragmentUniforms(oceanRenderState, 0,&oceanUniforms, sizeof(oceanUniforms));
 }
 
 void Map::UpdateCamera(float dx, float dy, float dz) 
@@ -90,7 +89,7 @@ void Map::UpdateCamera(float dx, float dy, float dz)
     this->camera.y += dy;
     this->camera.zoom += dz;
 
-    // Limiter le zoom (30% à 100%)
+    // Limiter le zoom (60% à 100%)
     if (this->camera.zoom < this->MIN_ZOOM) this->camera.zoom = this->MIN_ZOOM;
     if (this->camera.zoom > this->MAX_ZOOM) this->camera.zoom = this->MAX_ZOOM;
 
@@ -109,8 +108,8 @@ void Map::UpdateCamera(float dx, float dy, float dz)
     if (this->camera.y > this->camera.maxY) this->camera.y = this->camera.maxY;
 }
 
-/* --- Méthodes publiques --- */
 
+/* --- Méthodes publiques --- */
 Map::Map() 
 {
     // Initialisation des uniforms océan
@@ -133,12 +132,12 @@ Map::Map()
     this->camera.maxX = (float)this->MAP_WIDTH;
     this->camera.minY = 0.0f;
     this->camera.maxY = (float)this->MAP_HEIGHT;
+
+    // Initialisation de la grille (0=libre, 1=collision)
+    this->grid.resize(COLUMN * ROW, 0); // Tout libre au départ
 }
 
-Map::~Map() 
-{
-    this->Unload(); // Assure que les ressources sont libérées
-}
+Map::~Map() {}
 
 void Map::Load() 
 {
@@ -183,6 +182,9 @@ void Map::Load()
     if (this->shipAtlas.frame_count == 0) {
         RC2D_log(RC2D_LOG_ERROR, "Failed to load ship atlas: %s", SDL_GetError());
     }
+
+    // 6) Initialiser la grille de la carte
+    this->InitializeGrid();
 }
 
 void Map::Unload() 
@@ -214,22 +216,16 @@ void Map::Unload()
 
 void Map::Update(double dt) 
 {
-    // 1) Choisir les marges selon le mode courant
-    this->currentInsets = this->GetInsetsForLayoutMode(this->currentLayoutMode);
+    // 1) Mettre à jour le rectangle de la carte selon le layout
+    this->UpdateMapRect();
 
-    // 2) Zone visible (safe-area ∩ overscan) en coordonnées logiques
-    const SDL_FRect visibleSafe = rc2d_engine_getVisibleSafeRectRender();
-
-    // 3) Calcul du rectangle final de la carte
-    this->mapRect = this->ComputeRectFromVisibleSafeAndInsets(visibleSafe, this->currentInsets);
-
-    // 4) Mettre à jour les uniforms océan
+    // 2) Mettre à jour les uniforms océan
     if (this->oceanRenderState) 
     {
         this->UpdateOceanUniforms(dt);
     }
 
-    // 5) Gérer les déplacements de la caméra avec les touches fléchées
+    // 3) Gérer les déplacements de la caméra avec les touches fléchées
     const float CAMERA_SPEED = 500.0f;
     float dtf = (float)dt;
     float dx = 0.0f, dy = 0.0f;
@@ -241,7 +237,7 @@ void Map::Update(double dt)
     // Normaliser la vitesse pour les mouvements diagonaux
     if (dx != 0.0f && dy != 0.0f) 
     {
-        float magnitude = std::sqrt(dx * dx + dy * dy);
+        float magnitude = SDL_sqrt(dx * dx + dy * dy);
         if (magnitude > 0.0f) 
         {
             float scale = (CAMERA_SPEED * dtf) / magnitude;
@@ -260,10 +256,7 @@ void Map::Update(double dt)
 
 void Map::Draw()
 {
-    if (!(this->oceanTile.sdl_texture && this->oceanRenderState && this->mapRect.w > 0.f && this->mapRect.h > 0.f))
-        return;
-
-    // 1) Clip à la fenêtre fixe
+    // 1) Définir le clip rect pour dessiner uniquement dans la zone de la carte
     SDL_Rect clipRect = {
         (int)SDL_roundf(this->mapRect.x),
         (int)SDL_roundf(this->mapRect.y),
@@ -278,21 +271,15 @@ void Map::Draw()
     SDL_SetRenderGPUState(rc2d_engine_state.renderer, nullptr);
 
     // 3) Exemple : dessiner un navire à une position "monde"
-    //    Position monde (exemple bidon)
     float shipWorldX = 10.0f;
     float shipWorldY = 10.0f;
-
     float shipScreenX = WorldToScreenX(shipWorldX);
     float shipScreenY = WorldToScreenY(shipWorldY);
-
-    // Scale visuel = scaleSprite * zoomCam
-    float spriteScale = 1.0f * this->camera.zoom;
-
     rc2d_tp_drawFrameByName(&this->shipAtlas,
                             "1.png",
                             shipScreenX, shipScreenY,
                             0.0,
-                            spriteScale, spriteScale,
+                            1.0f, 1.0f,
                             -1.0f, -1.0f,
                             false, false);
 
@@ -317,11 +304,11 @@ void Map::KeyPressed(const char* key, SDL_Scancode scancode, SDL_Keycode keycode
     // Gérer le zoom avec les touches du pavé numérique
     else if (SDL_strcmp(key, "Keypad +") == 0 && !isrepeat) 
     {
-        this->UpdateCamera(0.0f, 0.0f, 0.1f); // ZOOM_SPEED = 0.1f
+        this->UpdateCamera(0.0f, 0.0f, this->ZOOM_STEP); // ZOOM_SPEED = 0.1f
     }
     else if (SDL_strcmp(key, "Keypad -") == 0 && !isrepeat) 
     {
-        this->UpdateCamera(0.0f, 0.0f, -0.1f); // -ZOOM_SPEED
+        this->UpdateCamera(0.0f, 0.0f, -this->ZOOM_STEP); // -ZOOM_SPEED
     }
 }
 
@@ -329,4 +316,33 @@ void Map::MousePressed(float x, float y, RC2D_MouseButton button, int clicks, SD
 {
     RC2D_log(RC2D_LOG_INFO, "Mouse pressed at (%.1f, %.1f), button=%d, clicks=%d, mouseID=%d\n",
              x, y, button, clicks, mouseID);
+}
+
+void Map::InitializeGrid() 
+{
+    // Exemple : ligne horizontale de collisions au milieu
+    for (int i = 20; i < 80; ++i) 
+    {
+        setCell(i, 50, 1);
+    }
+    // FIXEME: Ajouter réellement des collisions d'îles, guilds, etc.
+}
+
+uint8_t Map::getCell(int i, int j) const
+{
+    if (i < 0 || j < 0 || i >= COLUMN || j >= ROW) return 1; // collision si hors carte
+    return this->grid[j * COLUMN + i]; // 0=libre, 1=collision
+}
+
+void Map::setCell(int i, int j, uint8_t v)
+{
+    if (i < 0 || j < 0 || i >= COLUMN || j >= ROW) return; // ignorer si hors carte
+    this->grid[j * COLUMN + i] = v ? 1 : 0; // forcer 0 ou 1 (libre ou collision)
+}
+
+void Map::UpdateMapRect()
+{
+    this->currentInsets = this->GetInsetsForLayoutMode(this->currentLayoutMode);
+    const SDL_FRect visibleSafe = rc2d_engine_getVisibleSafeRectRender();
+    this->mapRect = this->ComputeRectFromVisibleSafeAndInsets(visibleSafe, this->currentInsets);
 }

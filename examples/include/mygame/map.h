@@ -6,6 +6,8 @@
 
 #include <SDL3/SDL.h>
 
+#include <vector>
+
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus
 extern "C" {
@@ -121,7 +123,8 @@ private:
     static const int MAP_HEIGHT;    /**< Hauteur totale de la carte (ROW * TILE_HEIGHT). */
     static const float MIN_ZOOM;    /**< Zoom minimum (0.3 = 30%). */
     static const float MAX_ZOOM;    /**< Zoom maximum (1.0 = 100%). */
-
+    static const float ZOOM_STEP;   /**< Incrément de zoom par pression de touche (ex: 0.1f pour 10%). */
+    
     // Atlas de sprites pour les éléments de la carte (ex: navire)
     RC2D_TP_Atlas shipAtlas = {0}; /**< Atlas TexturePacker pour les sprites du jeu (ex: navire). */
 
@@ -135,11 +138,28 @@ private:
     // Marges actives (copiées du preset selon le mode courant).
     MapInsets currentInsets = {0};
 
-    // Rectangle final de la carte (dans l'espace logique rendu). Mis à jour à chaque update.
+    // Cadre écran du joueur, ce qui voit dans la fenêtre de jeu.
     SDL_FRect mapRect = {0,0,0,0};
+
+    /**
+    * Rectangle du monde (en unités monde, fixe). La carte complète.
+    */
+    SDL_FRect worldRect = {0,0,(float)MAP_WIDTH,(float)MAP_HEIGHT};
+
+    /**
+    * View Rect (en unités monde) = portion de la carte visible selon la caméra et le zoom de la caméra.
+    * C'est le rectangle dans le monde que la caméra "voit" donc dans la carte (worldRect ⊃ viewRect).
+    */
+    SDL_FRect viewRect = {0,0,0,0};
 
     // Caméra pour visualiser la carte.
     Camera camera = {0};
+
+    /**
+    * Grille binaire 0=libre, 1=collision (collision îles de guilds etc.).
+    * Stockée en ligne par ligne (row-major order).
+    */
+    std::vector<uint8_t> grid;
 
     // Éléments pour l'effet océan.
     RC2D_Image          oceanTile        = {0};   /**< Texture de base pour l'eau (tile). */
@@ -203,25 +223,22 @@ private:
      */
     void UpdateCamera(float dx, float dy, float dz);
 
-    // Helpers monde -> écran (viewport = mapRect, caméra + zoom appliqués)
+    /** Accès grille binaire 0=libre, 1=collision (collision îles de guilds etc.). */
+    uint8_t getCell(int i, int j) const;
+    void    setCell(int i, int j, uint8_t v);
+
+    /** Initialisation de la grille avec des exemples de collisions. */
+    void InitializeGrid(void);
+
+    // 1) Layout → mapRect (écran)
+    void UpdateMapRect();
+
     inline float WorldToScreenX(float wx) const {
         return this->mapRect.x + (wx - this->camera.x) * this->camera.zoom;
     }
+    
     inline float WorldToScreenY(float wy) const {
         return this->mapRect.y + (wy - this->camera.y) * this->camera.zoom;
-    }
-
-    // Option pratique
-    inline SDL_FPoint WorldToScreen(float wx, float wy) const {
-        return SDL_FPoint{ WorldToScreenX(wx), WorldToScreenY(wy) };
-    }
-
-    // (si besoin plus tard)
-    inline float ScreenToWorldX(float sx) const {
-        return this->camera.x + (sx - this->mapRect.x) / this->camera.zoom;
-    }
-    inline float ScreenToWorldY(float sy) const {
-        return this->camera.y + (sy - this->mapRect.y) / this->camera.zoom;
     }
 
 public:
