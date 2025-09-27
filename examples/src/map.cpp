@@ -108,7 +108,6 @@ void Map::UpdateCamera(float dx, float dy, float dz)
     if (this->camera.y > this->camera.maxY) this->camera.y = this->camera.maxY;
 }
 
-
 /* --- Méthodes publiques --- */
 Map::Map() 
 {
@@ -225,7 +224,7 @@ void Map::Update(double dt)
         this->UpdateOceanUniforms(dt);
     }
 
-    // 3) Gérer les déplacements de la caméra avec les touches fléchées
+    // 3) Gérer les déplacements de la caméra avec les touches fléchées (horizontal + vertical + diagonales)
     const float CAMERA_SPEED = 500.0f;
     float dtf = (float)dt;
     float dx = 0.0f, dy = 0.0f;
@@ -283,7 +282,7 @@ void Map::Draw()
                             -1.0f, -1.0f,
                             false, false);
 
-    // 4) Reset du clip
+    // 4) Réinitialiser le clip rect
     SDL_SetRenderClipRect(rc2d_engine_state.renderer, nullptr);
 }
 

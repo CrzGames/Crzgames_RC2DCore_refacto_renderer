@@ -141,17 +141,6 @@ private:
     // Cadre écran du joueur, ce qui voit dans la fenêtre de jeu.
     SDL_FRect mapRect = {0,0,0,0};
 
-    /**
-    * Rectangle du monde (en unités monde, fixe). La carte complète.
-    */
-    SDL_FRect worldRect = {0,0,(float)MAP_WIDTH,(float)MAP_HEIGHT};
-
-    /**
-    * View Rect (en unités monde) = portion de la carte visible selon la caméra et le zoom de la caméra.
-    * C'est le rectangle dans le monde que la caméra "voit" donc dans la carte (worldRect ⊃ viewRect).
-    */
-    SDL_FRect viewRect = {0,0,0,0};
-
     // Caméra pour visualiser la carte.
     Camera camera = {0};
 
@@ -233,12 +222,11 @@ private:
     // 1) Layout → mapRect (écran)
     void UpdateMapRect();
 
-    inline float WorldToScreenX(float wx) const {
-        return this->mapRect.x + (wx - this->camera.x) * this->camera.zoom;
+    inline float WorldToScreenX(float positionX) const {
+        return this->mapRect.x + (positionX - this->camera.x) * this->camera.zoom;
     }
-    
-    inline float WorldToScreenY(float wy) const {
-        return this->mapRect.y + (wy - this->camera.y) * this->camera.zoom;
+    inline float WorldToScreenY(float positionY) const {
+        return this->mapRect.y + (positionY - this->camera.y) * this->camera.zoom;
     }
 
 public:
