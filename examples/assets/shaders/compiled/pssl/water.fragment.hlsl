@@ -3,6 +3,7 @@ cbuffer type_Context : register(b0)
     float Context_time : packoffset(c0);
     float2 Context_resolution : packoffset(c0.y);
     float Context_strength : packoffset(c0.w);
+    float Context_padding : packoffset(c1);
 };
 
 Texture2D<float4> u_texture : register(t0);

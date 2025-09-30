@@ -8,6 +8,7 @@ struct type_Context
     float time;
     packed_float2 resolution;
     float strength;
+    float padding;
 };
 
 struct main0_out
