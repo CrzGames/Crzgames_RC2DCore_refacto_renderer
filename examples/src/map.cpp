@@ -68,18 +68,40 @@ void Map::UpdateOceanUniforms(double dt)
 {
     timeSeconds += dt;
 
-    oceanUniforms.params0[0] = timeSeconds; // time
-    oceanUniforms.params0[1] = 0.6f;   // strength (0.4..0.8 pour un menu)
-    oceanUniforms.params0[2] = 30.0f;  // px_amp : ~18 px visibles
-    oceanUniforms.params0[3] = 3.0f;   // tiling : 6 répétitions
+    this->oceanUniforms.params0[0] = timeSeconds; // time
+    this->oceanUniforms.params0[1] = 0.6f;   // strength (0.4..0.8 pour un menu)
+    this->oceanUniforms.params0[2] = 30.0f;  // px_amp : ~18 px visibles
+    this->oceanUniforms.params0[3] = 3.0f;   // tiling : 6 répétitions
 
-    oceanUniforms.params1[0] = this->mapRect.w; // width
-    oceanUniforms.params1[1] = this->mapRect.h;  // height
-    oceanUniforms.params1[2] = 0.60f;   // speed (0.0..1.0)
-    oceanUniforms.params1[3] = 0.25f; // reflet/Fresnel
+    this->oceanUniforms.params1[0] = this->mapRect.w; // width
+    this->oceanUniforms.params1[1] = this->mapRect.h;  // height
+    this->oceanUniforms.params1[2] = 0.60f;   // speed (0.0..1.0)
+    this->oceanUniforms.params1[3] = 0.25f; // reflet/Fresnel
 
     // Appliquer les uniforms au render state
-    SDL_SetGPURenderStateFragmentUniforms(oceanRenderState, 0,&oceanUniforms, sizeof(oceanUniforms));
+    SDL_SetGPURenderStateFragmentUniforms(this->oceanRenderState, 0,&this->oceanUniforms, sizeof(this->oceanUniforms));
+}
+
+void Map::UpdateFOWUniforms(double dt)
+{
+    fowTimeSeconds += dt;
+
+    fowUniforms.p0[0] = 2.0f;  // tiling (↑ => plus de répétitions)
+    fowUniforms.p0[1] = 0.65f; // opacity globale
+    fowUniforms.p0[2] = 0.0f;
+    fowUniforms.p0[3] = 0.0f;
+
+    // unused
+    fowUniforms.p1[0] = fowUniforms.p1[1] = fowUniforms.p1[2] = fowUniforms.p1[3] = 0.0f;
+    fowUniforms.p2[0] = fowUniforms.p2[1] = fowUniforms.p2[2] = fowUniforms.p2[3] = 0.0f;
+
+    // tint neutre (pas de coloration)
+    fowUniforms.p3[0] = 1.0f;
+    fowUniforms.p3[1] = 1.0f;
+    fowUniforms.p3[2] = 1.0f;
+    fowUniforms.p3[3] = 0.0f;
+    
+    SDL_SetGPURenderStateFragmentUniforms(this->fowRenderState, 0, &this->fowUniforms, sizeof(this->fowUniforms));
 }
 
 void Map::UpdateCamera(float dx, float dy, float dz) 
@@ -111,16 +133,29 @@ void Map::UpdateCamera(float dx, float dy, float dz)
 /* --- Méthodes publiques --- */
 Map::Map() 
 {
-    // Initialisation des uniforms océan
+    // Initialisation des uniforms océan et des ressources
     this->oceanUniforms = { {0,0,0,0}, {0,0,0,0} };
     this->timeSeconds = 0.0;
     this->oceanShader = NULL;
     this->repeatSampler = NULL;
     this->oceanRenderState = NULL;
     this->oceanTile = { NULL };
+
+    // Initialisation des uniforms pour le brouillard de guerre (FOW)
+    this->fowUniforms = { {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} };
+    this->fowTimeSeconds = 0.0;
+    this->fowShader = NULL;
+    this->fowRenderState = NULL;
+    this->fowNoiseTile = { NULL };
+
+    // Initialisation de l'atlas de navires
     this->shipAtlas = { 0 };
+
+    // Initialisation du layout
     this->currentLayoutMode = MAP_LAYOUT_FRAMED;
     this->currentInsets = this->kInsetsFramed;
+
+    // Initialisation du rectangle de la carte
     this->mapRect = { 0, 0, 0, 0 };
 
     // Initialisation de la caméra
@@ -132,59 +167,11 @@ Map::Map()
     this->camera.minY = 0.0f;
     this->camera.maxY = (float)this->MAP_HEIGHT;
 
-    // Initialisation de la grille (0=libre, 1=collision)
-    this->grid.resize(COLUMN * ROW, 0); // Tout libre au départ
+    // Allouer la grille
+    grid.resize(this->COLUMN * this->ROW);
 }
 
 Map::~Map() {}
-
-void Map::Load() 
-{
-    // 1) Charger le shader
-    this->oceanShader = rc2d_gpu_loadGraphicsShaderFromStorage("water.fragment", RC2D_STORAGE_TITLE);
-    if (!this->oceanShader) 
-    {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load ocean shader: %s", SDL_GetError());
-        return;
-    }
-
-    // 2) Créer un sampler REPEAT
-    SDL_GPUSamplerCreateInfo s = {0};
-    s.min_filter = SDL_GPU_FILTER_LINEAR;
-    s.mag_filter = SDL_GPU_FILTER_LINEAR;
-    s.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
-    s.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    s.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    s.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-    this->repeatSampler = SDL_CreateGPUSampler(rc2d_gpu_getDevice(), &s);
-
-    // 3) Charger la texture tile
-    this->oceanTile = rc2d_graphics_loadImageFromStorage("assets/images/tile-water.png", RC2D_STORAGE_TITLE);
-    SDL_PropertiesID props = SDL_GetTextureProperties(this->oceanTile.sdl_texture);
-    SDL_GPUTexture* texGPU = (SDL_GPUTexture*)SDL_GetPointerProperty(
-        props, SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER, NULL
-    );
-
-    // 4) Construire l'état GPU (shader + sampler)
-    SDL_GPUTextureSamplerBinding sb[1] = {0};
-    sb[0].texture = texGPU;
-    sb[0].sampler = this->repeatSampler;
-
-    SDL_GPURenderStateCreateInfo rs = {0};
-    rs.fragment_shader = this->oceanShader;
-    rs.num_sampler_bindings = 1;
-    rs.sampler_bindings = sb;
-    this->oceanRenderState = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs);
-
-    // 5) Charger l'atlas TexturePacker
-    this->shipAtlas = rc2d_tp_loadAtlasFromStorage("assets/atlas/elite24/elite24.json", RC2D_STORAGE_TITLE);
-    if (this->shipAtlas.frame_count == 0) {
-        RC2D_log(RC2D_LOG_ERROR, "Failed to load ship atlas: %s", SDL_GetError());
-    }
-
-    // 6) Initialiser la grille de la carte
-    this->InitializeGrid();
-}
 
 void Map::Unload() 
 {
@@ -208,9 +195,100 @@ void Map::Unload()
         this->oceanShader = NULL;
     }
 
+    if (this->fowShader) 
+    {
+        SDL_ReleaseGPUShader(rc2d_gpu_getDevice(), (SDL_GPUShader*)this->fowShader);
+        this->fowShader = NULL;
+    }
+
+    if (this->fowRenderState) 
+    {
+        SDL_DestroyGPURenderState(this->fowRenderState);
+        this->fowRenderState = NULL;
+    }
+
     if (this->shipAtlas.frames) {
         rc2d_tp_freeAtlas(&this->shipAtlas);
     }
+}
+
+void Map::Load() 
+{
+    // 1) Charger le shader océan + shader FOW
+    this->oceanShader = rc2d_gpu_loadGraphicsShaderFromStorage("water.fragment", RC2D_STORAGE_TITLE);
+    if (!this->oceanShader) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load ocean shader: %s", SDL_GetError());
+        return;
+    }
+    this->fowShader = rc2d_gpu_loadGraphicsShaderFromStorage("fogofwar.fragment", RC2D_STORAGE_TITLE);
+    if (!this->fowShader) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load FOW shader: %s", SDL_GetError());
+        return;
+    }
+
+    // 2) Créer un sampler REPEAT
+    SDL_GPUSamplerCreateInfo s = {0};
+    s.min_filter = SDL_GPU_FILTER_LINEAR;
+    s.mag_filter = SDL_GPU_FILTER_LINEAR;
+    s.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+    s.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    s.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    s.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    this->repeatSampler = SDL_CreateGPUSampler(rc2d_gpu_getDevice(), &s);
+
+    // 3) Charger la texture tile de l'océan et la texture de bruit pour le FOW
+    this->oceanTile = rc2d_graphics_loadImageFromStorage("assets/images/tile-water.png", RC2D_STORAGE_TITLE);
+    SDL_PropertiesID props = SDL_GetTextureProperties(this->oceanTile.sdl_texture);
+    SDL_GPUTexture* texGPU = (SDL_GPUTexture*)SDL_GetPointerProperty(
+        props, SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER, NULL
+    );
+
+    this->fowNoiseTile = rc2d_graphics_loadImageFromStorage("assets/images/Matthias_HalloweenNoise.png", RC2D_STORAGE_TITLE);
+    SDL_PropertiesID fowProps = SDL_GetTextureProperties(this->fowNoiseTile.sdl_texture);
+    SDL_GPUTexture* fowTexGPU = (SDL_GPUTexture*)SDL_GetPointerProperty(fowProps, SDL_PROP_TEXTURE_GPU_TEXTURE_POINTER, NULL);
+
+    // 4) Construire l'état GPU (shader + sampler) pour l'océan
+    SDL_GPUTextureSamplerBinding sb[1] = {0};
+    sb[0].texture = texGPU;
+    sb[0].sampler = this->repeatSampler;
+
+    SDL_GPURenderStateCreateInfo rs = {0};
+    rs.fragment_shader = this->oceanShader;
+    rs.num_sampler_bindings = 1;
+    rs.sampler_bindings = sb;
+    this->oceanRenderState = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs);
+    if (!this->oceanRenderState) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to create ocean render state: %s", SDL_GetError());
+        return;
+    }
+
+    // Construire l'état GPU (shader) pour le FOW
+    SDL_GPUTextureSamplerBinding sb_fow[1] = {0};
+    sb_fow[0].texture = fowTexGPU;
+    sb_fow[0].sampler = this->repeatSampler;  // Reuse repeat sampler for tiling
+
+    SDL_GPURenderStateCreateInfo rs2 = {0};
+    rs2.fragment_shader = this->fowShader;
+    rs2.num_sampler_bindings = 1;  // New: Enable texture sampling
+    rs2.sampler_bindings = sb_fow;
+    this->fowRenderState = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &rs2);
+    if (!this->fowRenderState) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to create FOW render state: %s", SDL_GetError());
+        return;
+    }
+
+    // 5) Charger l'atlas TexturePacker
+    this->shipAtlas = rc2d_tp_loadAtlasFromStorage("assets/atlas/elite24/elite24.json", RC2D_STORAGE_TITLE);
+    if (this->shipAtlas.frame_count == 0) {
+        RC2D_log(RC2D_LOG_ERROR, "Failed to load ship atlas: %s", SDL_GetError());
+    }
+
+    // 6) Initialiser la grille de la carte
+    this->InitializeGrid();
 }
 
 void Map::Update(double dt) 
@@ -218,10 +296,14 @@ void Map::Update(double dt)
     // 1) Mettre à jour le rectangle de la carte selon le layout
     this->UpdateMapRect();
 
-    // 2) Mettre à jour les uniforms océan
+    // 2) Mettre à jour les uniforms océan et FOW
     if (this->oceanRenderState) 
     {
         this->UpdateOceanUniforms(dt);
+    }
+    if (this->fowRenderState) 
+    {
+        this->UpdateFOWUniforms(dt);
     }
 
     // 3) Gérer les déplacements de la caméra avec les touches fléchées (horizontal + vertical + diagonales)
@@ -245,6 +327,7 @@ void Map::Update(double dt)
         }
     }
 
+    // Appliquer le déplacement de la caméra
     if (dx != 0.0f || dy != 0.0f) 
     {
         RC2D_log(RC2D_LOG_INFO, "Camera move: dx=%.1f, dy=%.1f, camera=(%.1f, %.1f, %.2f)\n",
@@ -255,34 +338,39 @@ void Map::Update(double dt)
 
 void Map::Draw()
 {
-    // 1) Définir le clip rect pour dessiner uniquement dans la zone de la carte
+    // 1) Clip sur la zone carte
     SDL_Rect clipRect = {
-        (int)SDL_roundf(this->mapRect.x),
-        (int)SDL_roundf(this->mapRect.y),
-        (int)SDL_roundf(this->mapRect.w),
-        (int)SDL_roundf(this->mapRect.h)
+        (int)SDL_roundf(mapRect.x),
+        (int)SDL_roundf(mapRect.y),
+        (int)SDL_roundf(mapRect.w),
+        (int)SDL_roundf(mapRect.h)
     };
     SDL_SetRenderClipRect(rc2d_engine_state.renderer, &clipRect);
 
-    // 2) Rendu océan : on remplit exactement la fenêtre (le shader gère UV/tiling/caméra)
-    SDL_SetRenderGPUState(rc2d_engine_state.renderer, this->oceanRenderState);
-    SDL_RenderTexture(rc2d_engine_state.renderer, this->oceanTile.sdl_texture, nullptr, &this->mapRect);
+    // 2) Océan
+    SDL_SetRenderGPUState(rc2d_engine_state.renderer, oceanRenderState);
+    SDL_RenderTexture(rc2d_engine_state.renderer, oceanTile.sdl_texture, nullptr, &mapRect);
     SDL_SetRenderGPUState(rc2d_engine_state.renderer, nullptr);
 
-    // 3) Exemple : dessiner un navire à une position "monde"
-    float shipWorldX = 10.0f;
-    float shipWorldY = 10.0f;
-    float shipScreenX = WorldToScreenX(shipWorldX);
-    float shipScreenY = WorldToScreenY(shipWorldY);
-    rc2d_tp_drawFrameByName(&this->shipAtlas,
-                            "1.png",
-                            shipScreenX, shipScreenY,
-                            0.0,
-                            1.0f, 1.0f,
-                            -1.0f, -1.0f,
-                            false, false);
+    // Afficher la grille orthographique ou isométrique
+    //this->Draw2DOrthographicGrid();
+    this->Draw2DIsometricGrid();
 
-    // 4) Réinitialiser le clip rect
+    // 3) Îles et autres éléments statiques
+    // drawIslands();
+
+    // 4) Entités (navires…) — seront masquées par le fog
+    float shipScreenX = WorldToScreenX(10.0f);
+    float shipScreenY = WorldToScreenY(10.0f);
+    rc2d_tp_drawFrameByName(&shipAtlas, "1.png", shipScreenX, shipScreenY,
+                            0.0, 1.0f, 1.0f, -1.0f, -1.0f, false, false);
+
+    // 5) Brouillard de guerre (FOW)
+    /*SDL_SetRenderGPUState(rc2d_engine_state.renderer, fowRenderState);
+    SDL_RenderTexture(rc2d_engine_state.renderer, this->fowNoiseTile.sdl_texture, nullptr, &mapRect);
+    SDL_SetRenderGPUState(rc2d_engine_state.renderer, nullptr);*/
+
+    // 6) Reset clip
     SDL_SetRenderClipRect(rc2d_engine_state.renderer, nullptr);
 }
 
@@ -319,24 +407,142 @@ void Map::MousePressed(float x, float y, RC2D_MouseButton button, int clicks, SD
 
 void Map::InitializeGrid() 
 {
-    // Exemple : ligne horizontale de collisions au milieu
-    for (int i = 20; i < 80; ++i) 
+    for (int row = 0; row < this->ROW; ++row) 
     {
-        setCell(i, 50, 1);
+        for (int column = 0; column < this->COLUMN; ++column) 
+        {
+            // Un peu de 0 et 1 aléatoire pour le terrain (0 = océan, 1 = île)
+            int terrainID = (SDL_rand(70) < 20) ? 1 : 0; // 20% d'îles
+
+            // Définir le type de terrain en fonction de la valeur aléatoire
+            this->SetTileTerrain(column, row, terrainID);
+
+            // Collision si île (1=île=bloqué, 0=océan=libre)
+            this->SetTileCollision(column, row, terrainID == 1);
+        }
     }
-    // FIXEME: Ajouter réellement des collisions d'îles, guilds, etc.
 }
 
-uint8_t Map::getCell(int i, int j) const
+int Map::GetTileTerrain(int column, int row) const
 {
-    if (i < 0 || j < 0 || i >= COLUMN || j >= ROW) return 1; // collision si hors carte
-    return this->grid[j * COLUMN + i]; // 0=libre, 1=collision
+    // Hors carte = océan par défaut
+    if (column < 0 || row < 0 || column >= this->COLUMN || row >= this->ROW)
+        return 0;
+
+    // Retourne le type de terrain
+    return this->grid[row * this->COLUMN + column].terrainID;
 }
 
-void Map::setCell(int i, int j, uint8_t v)
+void Map::SetTileTerrain(int column, int row, int id)
 {
-    if (i < 0 || j < 0 || i >= COLUMN || j >= ROW) return; // ignorer si hors carte
-    this->grid[j * COLUMN + i] = v ? 1 : 0; // forcer 0 ou 1 (libre ou collision)
+    // Hors carte = ignorer
+    if (column < 0 || row < 0 || column >= this->COLUMN || row >= this->ROW)
+        return;
+
+    // Définir le type de terrain
+    this->grid[row * this->COLUMN + column].terrainID = id;
+}
+
+bool Map::IsTileBlocked(int column, int row) const
+{
+    // Hors carte = bloqué par défaut
+    if (column < 0 || row < 0 || column >= this->COLUMN || row >= this->ROW)
+        return true;
+
+    // Retourne la collision de la tuile
+    return this->grid[row * this->COLUMN + column].collision;
+}
+
+void Map::SetTileCollision(int column, int row, bool blocked)
+{
+    // Hors carte = ignorer
+    if (column < 0 || row < 0 || column >= this->COLUMN || row >= this->ROW)
+        return;
+
+    // Définir la collision de la tuile
+    this->grid[row * this->COLUMN + column].collision = blocked;
+}
+
+void Map::AddTileEntity(int column, int row, const TileEntity& entity)
+{
+    // Hors carte = ignorer
+    if (column < 0 || row < 0 || column >= this->COLUMN || row >= this->ROW)
+        return;
+
+    // Ajouter l'entité à la liste de la tuile (ajout en fin de liste)
+    this->grid[row * this->COLUMN + column].entities.push_back(entity);
+}
+
+void Map::RemoveTileEntity(int column, int row, const TileEntity& entity)
+{
+    // Hors carte = ignorer
+    if (column < 0 || row < 0 || column >= this->COLUMN || row >= this->ROW)
+        return;
+
+    // Supprimer l'entité de la liste de la tuile
+    auto &entities = this->grid[row * this->COLUMN + column].entities;
+    entities.erase(
+        std::remove_if(entities.begin(), entities.end(),
+                       [&entity](const TileEntity& e) {
+                           return e.type == entity.type && e.id == entity.id;
+                       }),
+        entities.end()
+    );
+}
+
+std::vector<TileEntity>& Map::GetTileEntities(int column, int row)
+{
+    // Hors carte = liste vide
+    static std::vector<TileEntity> empty;
+    if (column < 0 || row < 0 || column >= this->COLUMN || row >= this->ROW)
+        return empty;
+
+    // Retourne la liste des entités de la tuile
+    return this->grid[row * this->COLUMN + column].entities;
+}
+
+RC2D_Vector2D Map::To3DCoordinates(float x, float y) const 
+{
+    RC2D_Vector2D newCoord;
+    newCoord.x = x - y;
+    newCoord.y = (x + y) / 2.0f;
+
+    return newCoord;
+}
+
+void Map::Draw2DIsometricGrid()
+{
+
+}
+
+void Map::Draw2DOrthographicGrid() 
+{
+    for (int row = 0; row < this->ROW; ++row) 
+    {
+        for (int column = 0; column < this->COLUMN; ++column) 
+        {
+            float x = column * (float)this->TILE_WIDTH;    
+            float y = row * (float)this->TILE_HEIGHT;
+
+            float worldX = WorldToScreenX(x);
+            float worldY = WorldToScreenY(y);
+
+            SDL_FRect rect = { worldX, worldY, (float)this->TILE_WIDTH, (float)this->TILE_HEIGHT };
+            if (this->GetTileTerrain(column, row) == 0) 
+            {
+                SDL_SetRenderDrawColor(rc2d_engine_state.renderer, 0, 255, 0, 100); // Vert clair pour océan
+                SDL_RenderFillRect(rc2d_engine_state.renderer, &rect);
+            }
+            else if (this->GetTileTerrain(column, row) == 1) 
+            {
+                SDL_SetRenderDrawColor(rc2d_engine_state.renderer, 139, 69, 19, 200); // Marron pour île
+                SDL_RenderFillRect(rc2d_engine_state.renderer, &rect);
+            }
+        }
+    }
+
+    // reset couleur après la boucle
+    SDL_SetRenderDrawColor(rc2d_engine_state.renderer, 255, 255, 255, 255);
 }
 
 void Map::UpdateMapRect()
