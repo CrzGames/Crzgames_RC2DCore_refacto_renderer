@@ -110,7 +110,9 @@ typedef enum Entity_IsoDirection {
 typedef enum EntityType {
     ENTITY_PLAYER,
     ENTITY_NPC,
-    ENTITY_SCINTILLE
+    ENTITY_SCINTILLE,
+    ENTITY_MONSTER,
+    ENTITY_TOWER
 } EntityType;
 
 // Lien entre une tuile et une entité présente dessus

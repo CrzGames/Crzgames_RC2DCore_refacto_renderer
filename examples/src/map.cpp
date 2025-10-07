@@ -348,9 +348,9 @@ void Map::Draw()
     SDL_SetRenderClipRect(rc2d_engine_state.renderer, &clipRect);
 
     // 2) Océan
-    SDL_SetRenderGPUState(rc2d_engine_state.renderer, oceanRenderState);
+    SDL_SetGPURenderState(rc2d_engine_state.renderer, oceanRenderState);
     SDL_RenderTexture(rc2d_engine_state.renderer, oceanTile.sdl_texture, nullptr, &mapRect);
-    SDL_SetRenderGPUState(rc2d_engine_state.renderer, nullptr);
+    SDL_SetGPURenderState(rc2d_engine_state.renderer, nullptr);
 
     // Afficher la grille orthographique ou isométrique
     //this->Draw2DOrthographicGrid();
@@ -366,9 +366,9 @@ void Map::Draw()
                             0.0, 1.0f, 1.0f, -1.0f, -1.0f, false, false);
 
     // 5) Brouillard de guerre (FOW)
-    /*SDL_SetRenderGPUState(rc2d_engine_state.renderer, fowRenderState);
+    /*SDL_SetGPURenderState(rc2d_engine_state.renderer, fowRenderState);
     SDL_RenderTexture(rc2d_engine_state.renderer, this->fowNoiseTile.sdl_texture, nullptr, &mapRect);
-    SDL_SetRenderGPUState(rc2d_engine_state.renderer, nullptr);*/
+    SDL_SetGPURenderState(rc2d_engine_state.renderer, nullptr);*/
 
     // 6) Reset clip
     SDL_SetRenderClipRect(rc2d_engine_state.renderer, nullptr);
