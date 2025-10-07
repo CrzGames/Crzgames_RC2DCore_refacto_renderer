@@ -689,14 +689,7 @@ static bool rc2d_engine_create_renderergpu(void)
     * Créez un contexte de rendu GPU 2D pour une fenêtre,
     * avec prise en charge du format de shader spécifié.
     */
-    SDL_GPUShaderFormat supported_formats =
-        SDL_GPU_SHADERFORMAT_SPIRV |
-        SDL_GPU_SHADERFORMAT_DXIL  |
-        SDL_GPU_SHADERFORMAT_MSL   |
-        SDL_GPU_SHADERFORMAT_METALLIB |
-        SDL_GPU_SHADERFORMAT_DXBC |
-        SDL_GPU_SHADERFORMAT_PRIVATE;
-    rc2d_engine_state.renderer = SDL_CreateGPURenderer(rc2d_engine_state.window, supported_formats, &rc2d_engine_state.gpu_device);
+    rc2d_engine_state.renderer = SDL_CreateGPURenderer(NULL, rc2d_engine_state.window);
     if (!rc2d_engine_state.renderer) 
     {
         RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de la création du renderer GPU : %s", SDL_GetError());
@@ -705,6 +698,7 @@ static bool rc2d_engine_create_renderergpu(void)
     else
     {
         RC2D_log(RC2D_LOG_INFO, "Renderer GPU créé avec succès.");
+        rc2d_engine_state.gpu_device = SDL_GetGPURendererDevice(rc2d_engine_state.renderer);
     }
 
     /**
