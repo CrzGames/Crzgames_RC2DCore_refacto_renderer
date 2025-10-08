@@ -166,6 +166,7 @@
 | **RCENet**             | Fork de ENet (Communication UDP)                             | `Activé par défault mais optionnel`, mais le module `RC2D_net` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_NET_MODULE_ENABLED=OFF/ON |
 | **OpenSSL**            | Hashing, Chiffrement, Compression..etc                       | `Activé par défault mais optionnel`, mais le module `RC2D_data` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_DATA_MODULE_ENABLED=OFF/ON |
 | **ONNX Runtime**       | Exécution de modèles ONNX pour l'inférence                   | `Activé par défault mais optionnel`, mais le module `RC2D_onnx` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_ONNX_MODULE_ENABLED=OFF/ON |
+| **cJSON**       | Librairie JSON   | `Obligatoire` |
 
 <br /><br /><br /><br />
 

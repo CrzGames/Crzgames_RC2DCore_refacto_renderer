@@ -1,6 +1,6 @@
 # Format: library=repository:tag ou library=repository:commit_sha
 
-SDL=https://github.com/libsdl-org/SDL.git:0bbbf3d43b0fd47c338715ac077e303a14e6f9e4
+SDL=https://github.com/libsdl-org/SDL.git:d4b684311ecb87cc7a017bf3ec9378a5896c7975
 SDL_image=https://github.com/libsdl-org/SDL_image.git:release-3.2.4
 SDL_ttf=https://github.com/libsdl-org/SDL_ttf.git:release-3.2.2
 SDL_mixer=https://github.com/libsdl-org/SDL_mixer.git:93685a9006952fdc49c58fa0f95306a9cff1ed83
