@@ -123,10 +123,25 @@ typedef struct TileEntity {
 
 // Tuile du monde
 typedef struct Tile {
+    float x;
+    float y;
+    int column;                        // Colonne dans la grille
+    int row;                           // Ligne dans la grille
     int terrainID;                     // 0=océan, 1=île, 2=récif...
     bool collision;                    // true = bloqué, false = libre
-    std::vector<TileEntity> entities;  // Liste des entités présentes
+    std::vector<TileEntity> entities;  // Liste des entités présentes au-dessus de la tuile de terrain
 } Tile;
+
+typedef enum GridRenderMode {
+    GRID_ORTHO = 0,
+    GRID_ISO   = 1
+} GridRenderMode;
+
+typedef struct Grid {
+    float origin_x;     // ancrage écran X de la grille (-> mapRect.x)
+    float origin_y;     // ancrage écran Y de la grille (-> mapRect.y)
+    GridRenderMode mode;// ORTHO ou ISO
+} Grid;
 
 class Map {
     private:
@@ -147,6 +162,7 @@ class Map {
         * et les entités présentes.
         */
         std::vector<Tile> grid;
+        Grid gridMeta = {0};
         
         // Atlas de sprites pour les éléments de la carte (ex: navire)
         RC2D_TP_Atlas shipAtlas = {0}; /**< Atlas TexturePacker pour les sprites du jeu (ex: navire). */
@@ -289,6 +305,74 @@ class Map {
         }
         inline float WorldToScreenY(float positionY) const {
             return this->mapRect.y + (positionY - this->camera.y) * this->camera.zoom;
+        }
+
+        /**
+        * @brief Moitié de la largeur d'une tuile isométrique.
+        *
+        * @details En projection isométrique 2:1, une tuile de 48×32 px a une "demi-largeur"
+        *          de 24 px. Cette valeur (half-width) sert directement dans les formules
+        *          de projection :
+        *              screen.x = (c - r) * halfW
+        *          (avant application caméra/zoom/origine).
+        *          On la calcule depuis la largeur de tuile stockée dans la métadonnée
+        *          de grille (gridMeta.tile_w), pour rester cohérent si tu changes de taille.
+        *
+        * @return float - valeur half-width (ex: 24.0f pour 48 px).
+        */
+        inline float IsoHalfW() const
+        {
+            return static_cast<float>(this->TILE_WIDTH) * 0.5f; // 48 * 0.5 = 24
+        }
+
+        /**
+        * @brief Moitié de la hauteur d'une tuile isométrique.
+        *
+        * @details En 2:1, une tuile 48×32 px a une "demi-hauteur" de 16 px. Cette valeur
+        *          (half-height) est utilisée dans :
+        *              screen.y = (c + r) * halfH
+        *          (avant caméra/zoom/origine).
+        *          Comme pour la largeur, on lit depuis gridMeta.tile_h pour supporter
+        *          dynamiquement d'autres tailles de tuiles.
+        *
+        * @return float - valeur half-height (ex: 16.0f pour 32 px).
+        */
+        inline float IsoHalfH() const
+        {
+            return static_cast<float>(this->TILE_HEIGHT) * 0.5f; // 32 * 0.5 = 16
+        }
+
+        // map -> screen (sommet haut du losange)
+        inline void Iso_MapToScreen(float mc, float mr, float& sx, float& sy) const
+        {
+            const float hx = IsoHalfW();
+            const float hy = IsoHalfH();
+
+            // proj 2:1
+            float px = (mc - mr) * hx;
+            float py = (mc + mr) * hy;
+
+            // caméra + zoom
+            px = (px - camera.x) * camera.zoom;
+            py = (py - camera.y) * camera.zoom;
+
+            // origine = coin haut-gauche de la zone carte
+            sx = gridMeta.origin_x + px;
+            sy = gridMeta.origin_y + py;
+        }
+
+        // screen -> map (utile pour le picking plus tard)
+        inline void Iso_ScreenToMap(float sx, float sy, float& mc, float& mr) const
+        {
+            const float hx = IsoHalfW();
+            const float hy = IsoHalfH();
+
+            float px = (sx - gridMeta.origin_x) / camera.zoom + camera.x;
+            float py = (sy - gridMeta.origin_y) / camera.zoom + camera.y;
+
+            // version float “simple” (facteur 2 intégré)
+            mc =  (px / (2.0f * hx)) + (py / (2.0f * hy));
+            mr =  (py / (2.0f * hy)) - (px / (2.0f * hx));
         }
 
     public:

@@ -166,9 +166,6 @@ Map::Map()
     this->camera.maxX = (float)this->MAP_WIDTH;
     this->camera.minY = 0.0f;
     this->camera.maxY = (float)this->MAP_HEIGHT;
-
-    // Allouer la grille
-    grid.resize(this->COLUMN * this->ROW);
 }
 
 Map::~Map() {}
@@ -282,7 +279,7 @@ void Map::Load()
     }
 
     // 5) Charger l'atlas TexturePacker
-    this->shipAtlas = rc2d_tp_loadAtlasFromStorage("assets/atlas/elite24/elite24.json", RC2D_STORAGE_TITLE);
+    this->shipAtlas = rc2d_tp_loadAtlasFromStorage("assets/atlas/redcosar_lvl1/redcosar_lvl1.json", RC2D_STORAGE_TITLE);
     if (this->shipAtlas.frame_count == 0) {
         RC2D_log(RC2D_LOG_ERROR, "Failed to load ship atlas: %s", SDL_GetError());
     }
@@ -407,10 +404,27 @@ void Map::MousePressed(float x, float y, RC2D_MouseButton button, int clicks, SD
 
 void Map::InitializeGrid() 
 {
+    // Allouer la grille
+    this->grid.resize(this->ROW * this->COLUMN);
+
+    // Initialiser les métadonnées de la grille
+    this->gridMeta.origin_x = mapRect.x;
+    this->gridMeta.origin_y = mapRect.y;
+    this->gridMeta.mode     = GRID_ISO;
+
+    // Initialiser chaque tuile de la grille
     for (int row = 0; row < this->ROW; ++row) 
     {
         for (int column = 0; column < this->COLUMN; ++column) 
         {
+            // Set la position dans la grille (colonne, ligne)
+            this->grid[row * this->COLUMN + column].column = column;
+            this->grid[row * this->COLUMN + column].row = row;
+
+            // Calculer la position (x,y) de la tuile en pixels
+            this->grid[row * this->COLUMN + column].x = this->gridMeta.origin_x + column * this->TILE_WIDTH;
+            this->grid[row * this->COLUMN + column].y = this->gridMeta.origin_y + row * this->TILE_HEIGHT;
+
             // Un peu de 0 et 1 aléatoire pour le terrain (0 = océan, 1 = île)
             int terrainID = (SDL_rand(70) < 20) ? 1 : 0; // 20% d'îles
 
@@ -512,7 +526,45 @@ RC2D_Vector2D Map::To3DCoordinates(float x, float y) const
 
 void Map::Draw2DIsometricGrid()
 {
+    // Choisis la tuile à tester (2,1) comme dans le tuto
+    const int c = 2;
+    const int r = 1;
 
+    float topX, topY;
+    Iso_MapToScreen((float)c, (float)r, topX, topY);
+
+    const float hx = IsoHalfW() * camera.zoom; // 24 * zoom
+    const float hy = IsoHalfH() * camera.zoom; // 16 * zoom
+
+    // Sommets du losange
+    const float leftX   = topX - hx;
+    const float leftY   = topY + hy;
+    const float rightX  = topX + hx;
+    const float rightY  = topY + hy;
+    const float bottomX = topX;
+    const float bottomY = topY + 2.0f * hy;
+
+    // Petit culling contre la zone carte
+    SDL_FRect bbox = { topX - hx, topY, 2.0f * hx, 2.0f * hy };
+    if (!SDL_HasRectIntersectionFloat(&bbox, &mapRect)) {
+        return;
+    }
+
+    // Couleur suivant le terrain (optionnel)
+    if (GetTileTerrain(c, r) == 1) {
+        SDL_SetRenderDrawColor(rc2d_engine_state.renderer, 255, 215, 0, 160); // île
+    } else {
+        SDL_SetRenderDrawColor(rc2d_engine_state.renderer, 255, 255, 255, 100); // océan
+    }
+
+    // Trace l’outline de la tuile
+    SDL_RenderLine(rc2d_engine_state.renderer, topX,    topY,    rightX,  rightY);
+    SDL_RenderLine(rc2d_engine_state.renderer, rightX,  rightY,  bottomX, bottomY);
+    SDL_RenderLine(rc2d_engine_state.renderer, bottomX, bottomY, leftX,   leftY);
+    SDL_RenderLine(rc2d_engine_state.renderer, leftX,   leftY,   topX,    topY);
+
+    // reset couleur
+    SDL_SetRenderDrawColor(rc2d_engine_state.renderer, 255, 255, 255, 255);
 }
 
 void Map::Draw2DOrthographicGrid() 
