@@ -47,7 +47,7 @@ option(RC2D_BUILD_TESTS "Build unit tests with Criterion" OFF)
 option(RC2D_BUILD_EXAMPLES "Build examples" ON)
 
 # Option pour choisir entre statique et dynamique
-option(RC2D_BUILD_SHARED_LIBS "Build shared libraries" OFF)
+option(RC2D_BUILDING_SHARED "Build shared libraries" OFF)
 
 # Dossier de sortie
 if(CMAKE_GENERATOR MATCHES "Visual Studio|Xcode")
@@ -927,6 +927,12 @@ endfunction()
 
 # Fonction pour les target_compile_definitions par target
 function(rc2d_target_compile_definitions target_name)
+  if(RC2D_BUILDING_SHARED)
+    target_compile_definitions(${target_name} PUBLIC RC2D_BUILDING_SHARED=1)
+  else()
+    target_compile_definitions(${target_name} PUBLIC RC2D_BUILDING_SHARED=0)
+  endif()
+
   if(RC2D_VIDEO_MODULE_ENABLED)
     target_compile_definitions(${target_name} PUBLIC RC2D_VIDEO_MODULE_ENABLED=1)
   else()
@@ -977,7 +983,7 @@ file(GLOB_RECURSE HEADERS
 )
 
 # Choisir entre bibliothèque dynamique/partagées ou statique pour RC2D
-if(RC2D_BUILD_SHARED_LIBS)
+if(RC2D_BUILDING_SHARED)
   add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 else()
   add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
