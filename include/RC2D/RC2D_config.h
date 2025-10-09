@@ -61,7 +61,7 @@ extern "C" {
  * \since Cette macro de préprocesseur est disponible depuis RC2D 1.0.0.
  */
 #ifndef RC2D_DATA_MODULE_ENABLED
-#define RC2D_DATA_MODULE_ENABLED 1
+#define RC2D_DATA_MODULE_ENABLED 0
 #endif
 
 /**
