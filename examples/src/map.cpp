@@ -71,6 +71,11 @@ Map::Map()
 
     // Initialisation de l'atlas de navires
     this->shipAtlas = { 0 };
+
+    // Position de la tilemap
+    this->tileMap.SetOriginX(this->gameScreen.rect.x);
+    this->tileMap.SetOriginY(this->gameScreen.rect.y);
+
 }
 
 Map::~Map() {}

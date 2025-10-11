@@ -4,6 +4,7 @@
 #include <mygame/tile_map.h>
 #include <mygame/game_screen.h>
 #include <mygame/camera.h>
+#include <mygame/entity.h>
 
 #include <RC2D/RC2D.h>
 #include <RC2D/RC2D_internal.h>
