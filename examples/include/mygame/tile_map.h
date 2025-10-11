@@ -59,6 +59,26 @@ class TileMap {
         TileMap(int columns, int rows, int tileWidth, int tileHeight, float originX, float originY, TileMapRenderMode mode);
         ~TileMap();
 
+        // Setters
+        void SetTileWidth(int width) { tile_width = width; }
+        void SetTileHeight(int height) { tile_height = height; }
+        void SetColumns(int cols) { columns = cols; }
+        void SetRows(int rows) { rows = rows; }
+        void SetOriginX(float x) { origin_x = x; }
+        void SetOriginY(float y) { origin_y = y; }
+        void SetRenderMode(TileMapRenderMode mode) { this->mode = mode; }
+
+        // Getters
+        int GetTileWidth() const { return tile_width; }
+        int GetTileHeight() const { return tile_height; }
+        int GetColumns() const { return columns; }
+        int GetRows() const { return rows; }
+        int GetWidth() const { return width; }
+        int GetHeight() const { return height; }
+        float GetOriginX() const { return origin_x; }
+        float GetOriginY() const { return origin_y; }
+        TileMapRenderMode GetRenderMode() const { return mode; }
+
         // Récupère le type de terrain
         int GetTileTerrain(int column, int row) const;
 

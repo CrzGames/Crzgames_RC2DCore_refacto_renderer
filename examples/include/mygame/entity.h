@@ -5,7 +5,11 @@ typedef enum Direction {
     DIRECTION_NORTH_EAST = 0, /**< Vers le haut-droit.  */
     DIRECTION_NORTH_WEST,     /**< Vers le haut-gauche. */
     DIRECTION_SOUTH_EAST,     /**< Vers le bas-droit.   */
-    DIRECTION_SOUTH_WEST      /**< Vers le bas-gauche.  */
+    DIRECTION_SOUTH_WEST,     /**< Vers le bas-gauche.  */
+    DIRECTION_NORTH,          /**< Vers le haut (Nord). */
+    DIRECTION_SOUTH,          /**< Vers le bas (Sud).   */
+    DIRECTION_EAST,           /**< Vers la droite (Est). */
+    DIRECTION_WEST            /**< Vers la gauche (Ouest). */
 } Direction;
 
 typedef enum EntityType {
@@ -22,6 +26,7 @@ typedef struct Entity {
     Direction direction; /**< Direction de l'entité. */
     float x;             /**< Position en pixels dans la carte. */
     float y;             /**< Position en pixels dans la carte. */
+    int health;          /**< Santé (nouveau : 100 full, <50 low PV). */
 } Entity;
 
 #endif // ENTITY_H
