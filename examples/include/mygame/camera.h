@@ -58,14 +58,6 @@ class Camera {
         * \param zoomDelta Variation de zoom (positive = zoom avant, négative = zoom arrière).
         */
         void AdjustZoom(float zoomDelta);
-
-        /**
-        * \brief Met à jour la position et le zoom avec des valeurs directes.
-        * \param deltaX Déplacement horizontal.
-        * \param deltaY Déplacement vertical.
-        * \param zoomDelta Variation de zoom.
-        */
-        void UpdateCameraTransform(float deltaX, float deltaY, float zoomDelta);
 };
 
 #endif // CAMERA_H

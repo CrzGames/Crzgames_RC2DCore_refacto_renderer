@@ -85,16 +85,3 @@ void Camera::AdjustZoom(float zoomDelta)
     RecalculateVisibleBounds();
     ClampPositionWithinBounds();
 }
-
-void Camera::UpdateCameraTransform(float deltaX, float deltaY, float zoomDelta)
-{
-    this->config.x += deltaX;
-    this->config.y += deltaY;
-    this->config.zoom += zoomDelta;
-
-    if (this->config.zoom < CAMERA_MIN_ZOOM) this->config.zoom = CAMERA_MIN_ZOOM;
-    if (this->config.zoom > CAMERA_MAX_ZOOM) this->config.zoom = CAMERA_MAX_ZOOM;
-
-    RecalculateVisibleBounds();
-    ClampPositionWithinBounds();
-}
