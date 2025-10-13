@@ -11,6 +11,8 @@
 
 #include <SDL3/SDL.h>
 
+#include <vector>
+
 /**
  * \brief Uniforms pour le shader océan.
  *
@@ -88,12 +90,13 @@ class Map {
         */
         void UpdateFOWUniforms(double dt);
 
-        inline float WorldToScreenX(float positionX) const {
-            return this->gameScreen.rect.x + (positionX - this->camera.config.x) * this->camera.config.zoom;
-        }
-        inline float WorldToScreenY(float positionY) const {
-            return this->gameScreen.rect.y + (positionY - this->camera.config.y) * this->camera.config.zoom;
-        }
+        // NOUVEAU : Pour le ship et pathfinding
+        Entity playerShip = {0};  // Ex. : id=1, type=ENTITY_PLAYER, x=0 (proj), y=0 (proj), direction=DIRECTION_SOUTH_EAST
+        float shipSpeed = 100.0f;  // Pixels/seconde (espace projeté)
+        int spriteToggle = 0;  // Pour alternance
+
+        // NOUVEAU : Choisir sprite basé sur direction/angle/health/toggle
+        const char* GetShipSpriteName() const;
 
     public:
         /**

@@ -1,7 +1,6 @@
 #include <mygame/map.h>
 
 /* --- Méthodes privées --- */
-
 void Map::UpdateOceanUniforms(double dt)
 {
     timeSeconds += dt;
@@ -39,6 +38,7 @@ void Map::UpdateFOWUniforms(double dt)
     fowUniforms.p3[2] = 1.0f;
     fowUniforms.p3[3] = 0.0f;
     
+    // Appliquer les uniforms au render state
     SDL_SetGPURenderStateFragmentUniforms(this->fowRenderState, 0, &this->fowUniforms, sizeof(this->fowUniforms));
 }
 
@@ -52,7 +52,7 @@ Map::Map()
           /*originY*/ 0.0f,
           TILEMAP_RENDER_ISOMETRIC),
   gameScreen(GAME_SCREEN_LAYOUT_FRAMED),
-  camera(gameScreen, tileMap, { 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f })
+  camera(gameScreen, tileMap, { TILEMAP_TILE_WIDTH / 2.0f, TILEMAP_TILE_HEIGHT / 2.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f })
 {
     // Initialisation des uniforms océan et des ressources
     this->oceanUniforms = { {0,0,0,0}, {0,0,0,0} };
@@ -76,6 +76,13 @@ Map::Map()
     this->tileMap.SetOriginX(this->gameScreen.rect.x);
     this->tileMap.SetOriginY(this->gameScreen.rect.y);
 
+    // Init ship au centre projeté de la tuile (0,0)
+    this->playerShip.id = 1;
+    this->playerShip.type = ENTITY_PLAYER;
+    this->playerShip.x = 10.0f;
+    this->playerShip.y = 10.0f;
+    this->playerShip.direction = DIRECTION_SOUTH_WEST;
+    this->playerShip.health = 100;
 }
 
 Map::~Map() {}
@@ -83,6 +90,7 @@ Map::~Map() {}
 void Map::Unload() 
 {
     rc2d_graphics_freeImage(&this->oceanTile);
+    rc2d_graphics_freeImage(&this->fowNoiseTile);
 
     if (this->oceanRenderState) 
     {
@@ -210,13 +218,13 @@ void Map::Update(double dt)
         this->UpdateFOWUniforms(dt);
     }
 
-    // 3) Déplacement de la caméra avec les touches fléchées
+    // 3) Déplacement de la caméra avec les touches fléchées (dans espace projeté)
     this->camera.HandleKeyboardMovement((float)dt);
 }
 
 void Map::Draw()
 {
-    // 1) Clip sur la zone carte
+    // 1) Clip zone carte
     SDL_Rect clipRect = {
         (int)SDL_roundf(this->gameScreen.rect.x),
         (int)SDL_roundf(this->gameScreen.rect.y),
@@ -225,29 +233,18 @@ void Map::Draw()
     };
     SDL_SetRenderClipRect(rc2d_engine_state.renderer, &clipRect);
 
-    // 2) Océan
-    SDL_SetGPURenderState(rc2d_engine_state.renderer, oceanRenderState);
+    // 2) Océan avec offset cam (approx ; ok pour fond)
+    SDL_SetGPURenderState(rc2d_engine_state.renderer, this->oceanRenderState);
     SDL_RenderTexture(rc2d_engine_state.renderer, oceanTile.sdl_texture, nullptr, &this->gameScreen.rect);
     SDL_SetGPURenderState(rc2d_engine_state.renderer, nullptr);
 
-    // Afficher la grille orthographique ou isométrique
+    // 3) Dessiner le vaisseau (coordonnées projetées vers écran)
+    float shipScreenX = this->gameScreen.rect.x + (this->playerShip.x - this->camera.config.x) * this->camera.config.zoom;
+    float shipScreenY = this->gameScreen.rect.y + (this->playerShip.y - this->camera.config.y) * this->camera.config.zoom;
+    const char* spriteName = GetShipSpriteName();
+    rc2d_tp_drawFrameByName(&shipAtlas, spriteName, shipScreenX, shipScreenY, 0.0f, 1.0f, 1.0f, -1.0f, -1.0f, false, false);
 
-
-    // 3) Îles et autres éléments statiques
-    // drawIslands();
-
-    // 4) Entités (navires…) — seront masquées par le fog
-    float shipScreenX = WorldToScreenX(10.0f);
-    float shipScreenY = WorldToScreenY(10.0f);
-    rc2d_tp_drawFrameByName(&shipAtlas, "1.png", shipScreenX, shipScreenY,
-                            0.0, 1.0f, 1.0f, -1.0f, -1.0f, false, false);
-
-    // 5) Brouillard de guerre (FOW)
-    /*SDL_SetGPURenderState(rc2d_engine_state.renderer, fowRenderState);
-    SDL_RenderTexture(rc2d_engine_state.renderer, this->fowNoiseTile.sdl_texture, nullptr, &this->gameScreen.rect);
-    SDL_SetGPURenderState(rc2d_engine_state.renderer, nullptr);*/
-
-    // 6) Reset clip
+    // 4) Reset clip
     SDL_SetRenderClipRect(rc2d_engine_state.renderer, nullptr);
 }
 
@@ -280,4 +277,50 @@ void Map::MousePressed(float x, float y, RC2D_MouseButton button, int clicks, SD
 {
     RC2D_log(RC2D_LOG_INFO, "Mouse pressed at (%.1f, %.1f), button=%d, clicks=%d, mouseID=%d\n",
              x, y, button, clicks, mouseID);
+
+    if (clicks == 1 && button == RC2D_MOUSE_BUTTON_LEFT) {
+        // Check in gameScreen
+        if (x >= this->gameScreen.rect.x && x <= this->gameScreen.rect.x + this->gameScreen.rect.w &&
+            y >= this->gameScreen.rect.y && y <= this->gameScreen.rect.y + this->gameScreen.rect.h) {
+        {}
+    }
+}
+
+const char* Map::GetShipSpriteName() const 
+{
+    bool lowHP = (playerShip.health < 50);
+    bool alternate = (spriteToggle % 10) < 5;  // 5 frames each
+
+    const char* spriteName = "";
+    switch (playerShip.direction) {
+        // Diagonales : fixe
+        case DIRECTION_NORTH_EAST:  // 0 : haut-droite
+            spriteName = lowHP ? "6.png" : "2.png";
+            break;
+        case DIRECTION_NORTH_WEST:  // 1 : haut-gauche
+            spriteName = lowHP ? "7.png" : "3.png";
+            break;
+        case DIRECTION_SOUTH_EAST:  // 2 : bas-droite
+            spriteName = lowHP ? "8.png" : "4.png";
+            break;
+        case DIRECTION_SOUTH_WEST:  // 3 : bas-gauche
+            spriteName = lowHP ? "5.png" : "1.png";
+            break;
+
+        // Cardinales : alternance adjacents
+        case DIRECTION_NORTH:  // 4 : haut pur → alternance haut-droite (2/6) / haut-gauche (3/7)
+            spriteName = alternate ? (lowHP ? "7.png" : "3.png") : (lowHP ? "6.png" : "2.png");
+            break;
+        case DIRECTION_SOUTH:  // 5 : bas pur → alternance bas-gauche (1/5) / bas-droite (4/8)
+            spriteName = alternate ? (lowHP ? "5.png" : "1.png") : (lowHP ? "8.png" : "4.png");
+            break;
+        case DIRECTION_EAST:  // 6 : droite pur → alternance haut-droite (2/6) / bas-droite (4/8)
+            spriteName = alternate ? (lowHP ? "8.png" : "4.png") : (lowHP ? "6.png" : "2.png");
+            break;
+        case DIRECTION_WEST:  // 7 : gauche pur → alternance bas-gauche (1/5) / haut-gauche (3/7)
+            spriteName = alternate ? (lowHP ? "7.png" : "3.png") : (lowHP ? "5.png" : "1.png");
+            break;
+    }
+
+    return spriteName;
 }
