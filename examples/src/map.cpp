@@ -281,7 +281,7 @@ void Map::MousePressed(float x, float y, RC2D_MouseButton button, int clicks, SD
     if (clicks == 1 && button == RC2D_MOUSE_BUTTON_LEFT) {
         // Check in gameScreen
         if (x >= this->gameScreen.rect.x && x <= this->gameScreen.rect.x + this->gameScreen.rect.w &&
-            y >= this->gameScreen.rect.y && y <= this->gameScreen.rect.y + this->gameScreen.rect.h) {
+            y >= this->gameScreen.rect.y && y <= this->gameScreen.rect.y + this->gameScreen.rect.h)
         {}
     }
 }

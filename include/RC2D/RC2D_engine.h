@@ -1146,9 +1146,6 @@ typedef struct RC2D_EngineConfig {
  *
  * Si vous souhaitez utiliser la configuration par défaut de RC2D, vous pouvez retourner NULL, mais
  * vous n'aurais aucune callback d'événement, donc juste un écran noir avec RC2D qui tourne en boucle.
- * 
- * \note Utiliser plutôt `rc2d_engine_getDefaultConfig()` pour obtenir une configuration par défaut, puis
- * personnaliser les champs nécessaires.
  *
  * \param {int} argc - Nombre d'arguments de la ligne de commande.
  * \param {char**} argv - Arguments de la ligne de commande.
