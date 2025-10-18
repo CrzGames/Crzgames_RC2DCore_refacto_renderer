@@ -49,6 +49,9 @@ option(RC2D_BUILD_EXAMPLES "Build examples" ON)
 # Option pour choisir entre statique et dynamique
 option(RC2D_BUILDING_SHARED "Build shared libraries" OFF)
 
+# Option pour construire les bindings C# (DLL / .so / .dylib)
+option(RC2D_BUILDING_BINDINGS_CSHARP "Build RC2D C# bindings (DLL / .so / .dylib)" OFF)
+
 # Dossier de sortie
 if(CMAKE_GENERATOR MATCHES "Visual Studio|Xcode")
   # Multi-config generators
@@ -927,6 +930,12 @@ endfunction()
 
 # Fonction pour les target_compile_definitions par target
 function(rc2d_target_compile_definitions target_name)
+  if(RC2D_BUILDING_BINDINGS_CSHARP)
+    target_compile_definitions(${target_name} PUBLIC RC2D_BUILDING_BINDINGS_CSHARP=1)
+  else()
+    target_compile_definitions(${target_name} PUBLIC RC2D_BUILDING_BINDINGS_CSHARP=0)
+  endif()
+
   if(RC2D_BUILDING_SHARED)
     target_compile_definitions(${target_name} PUBLIC RC2D_BUILDING_SHARED=1)
   else()
