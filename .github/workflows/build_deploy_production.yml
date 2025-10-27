@@ -167,7 +167,7 @@ jobs:
 
       - name: Archive librc2d artifacts - Android
         if: matrix.target == 'android'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: librc2d-${{ matrix.target }}
           retention-days: 1
@@ -179,7 +179,7 @@ jobs:
 
       - name: Archive librc2d artifacts - iOS
         if: matrix.target == 'ios'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: librc2d-${{ matrix.target }}-${{ matrix.arch }}-${{ matrix.sdk }}
           retention-days: 1
@@ -188,7 +188,7 @@ jobs:
 
       - name: Archive librc2d artifacts - macOS
         if: matrix.target == 'macos'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: librc2d-${{ matrix.target }}-${{ matrix.arch }}
           retention-days: 1
@@ -197,7 +197,7 @@ jobs:
 
       - name: Archive librc2d artifacts - Linux
         if: matrix.target == 'linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: librc2d-${{ matrix.target }}-${{ matrix.arch }}
           retention-days: 1
@@ -206,7 +206,7 @@ jobs:
 
       - name: Archive librc2d artifacts - Windows
         if: matrix.platform == 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: librc2d-${{ matrix.target }}-${{ matrix.arch }}
           retention-days: 1
@@ -215,7 +215,7 @@ jobs:
 
       - name: Archive librc2d artifacts - HTML5
         if: matrix.target == 'html5'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: librc2d-${{ matrix.target }}
           retention-days: 1
