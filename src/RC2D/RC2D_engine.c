@@ -1972,6 +1972,19 @@ static bool rc2d_engine(void)
     }
 
     /**
+     * Configurer le mode de mise à l'échelle des textures pour le rendu pixel art.
+     * Cela permet d'obtenir un rendu pixelisé sans lissage, puisque le mode 
+     * par défaut est le linear filtering (bilinear).
+     */
+    if (rc2d_engine_state.config->pixelartMode == true)
+    {
+        if (!SDL_SetDefaultTextureScaleMode(rc2d_engine_state.renderer, SDL_SCALEMODE_PIXELART))
+        {
+            RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'activer le mode pixel art (SDL_SetDefaultTextureScaleMode) : %s\n", SDL_GetError());
+        }
+    }
+
+    /**
      * Activer le VSync pour le renderer.
      * Cela permet de synchroniser le rendu avec le taux de rafraîchissement du moniteur,
      * réduisant ainsi les déchirures d'écran (screen tearing).
@@ -2334,17 +2347,6 @@ void rc2d_engine_configure(const RC2D_EngineConfig* config)
     if(config->pixelartMode == true || config->pixelartMode == false)
     {
         rc2d_engine_state.config->pixelartMode = config->pixelartMode;
-
-        // Si le mode pixel art est activé, configurer le renderer en conséquence.
-        if (rc2d_engine_state.config->pixelartMode == true)
-        {
-            // Par défault SDL3 utilise le linear filtering (bilinear) pour le scaling des textures.
-            // On force le mode pixel art pour un rendu pixelisé.
-            if (!SDL_SetDefaultTextureScaleMode(rc2d_engine_state.renderer, SDL_SCALEMODE_PIXELART))
-            {
-                RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'activer le mode pixel art (SDL_SetDefaultTextureScaleMode) : %s\n", SDL_GetError());
-            }
-        }
     }
     else
     {

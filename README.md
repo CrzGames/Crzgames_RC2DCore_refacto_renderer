@@ -21,7 +21,7 @@
 │   └── 📄 setup_dependencies.cmake   # Script CMake chargé de lire `dependencies.txt` et cloner/configurer les dépendances dans `/dependencies`
 ├── 📁 dependencies (git ignored)     # Répertoire local contenant les dépendances clonées (ignoré par Git pour ne pas polluer le repo)
 │   ├── 📁 cJSON                      # Libraire JSON
-│   ├── 📁 Crzgames_Libraries         # Librairies précompilées (OpenSSL, ONNX Runtime, Crzgames_RCENet et SDL_shadercross) propres à Crzgames
+│   ├── 📁 Crzgames_Libraries         # Librairies précompilées (OpenSSL, ONNX Runtime, Crzgames_RCENet, ffmpeg et SDL_shadercross) propres à Crzgames
 │   ├── 📁 SDL                        # SDL3 (dépendance principale du moteur)
 │   ├── 📁 SDL_image                  # Extension SDL3 pour le support des images (PNG, JPEG, etc.)
 │   ├── 📁 SDL_ttf                    # Extension SDL3 pour le rendu de polices TrueType
@@ -166,6 +166,7 @@
 | **RCENet**             | Fork de ENet (Communication UDP)                             | `Activé par défault mais optionnel`, mais le module `RC2D_net` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_NET_MODULE_ENABLED=OFF/ON |
 | **OpenSSL**            | Hashing, Chiffrement, Compression..etc                       | `Activé par défault mais optionnel`, mais le module `RC2D_data` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_DATA_MODULE_ENABLED=OFF/ON |
 | **ONNX Runtime**       | Exécution de modèles ONNX pour l'inférence                   | `Activé par défault mais optionnel`, mais le module `RC2D_onnx` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_ONNX_MODULE_ENABLED=OFF/ON |
+| **FFMPEG**             | Lecture de vidéo mp4..etc                            | `Activé par défault mais optionnel`, mais le module `RC2D_video` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_VIDEO_MODULE_ENABLED=OFF/ON |
 | **cJSON**       | Librairie JSON   | `Obligatoire` |
 
 <br /><br /><br /><br />
@@ -250,38 +251,38 @@ cmake -P cmake/setup_dependencies.cmake
 <br /><br /><br /><br />
 
 
-## 🔄 Cycle Development
+## 🔄 Cycle Development - Desktop
 1. Par défault `RC2D_BUILD_EXAMPLES` est configurer à `ON` dans le `CMakelists.txt`, il faudra le remettre à `ON` si il à été désactiver.
 2. Générer le projet du jeu d'exemple (le projet situé dans examples/)
 ```bash
 # Linux - x64
-chmod +x ./build-scripts/linux-x64.sh
-./build-scripts/linux-x64.sh
+chmod +x ./build-scripts/generate-project/linux-x64.sh
+./build-scripts/generate-project/linux-x64.sh
 
 # Linux - arm64
-chmod +x ./build-scripts/linux-arm64.sh
-./build-scripts/linux-arm64.sh
+chmod +x ./build-scripts/generate-project/linux-arm64.sh
+./build-scripts/generate-project/linux-arm64.sh
 
 # macOS - Apple Silicon arm64
-chmod +x ./build-scripts/macos-arm64.sh
-./build-scripts/macos-arm64.sh
+chmod +x ./build-scripts/generate-project/macos-arm64.sh
+./build-scripts/generate-project/macos-arm64.sh
 
 # Windows - x64
-.\build-scripts\windows-x64.bat
+.\build-scripts\generate-project\windows-x64.bat
 
 # Windows - arm64
-.\build-scripts\windows-arm64.bat
+.\build-scripts\generate-project\windows-arm64.bat
 
 # Android (Unix)
-chmod +x ./build-scripts/android.sh
-./build-scripts/android.sh
+chmod +x ./build-scripts/generate-project/android.sh
+./build-scripts/generate-project/android.sh
 
 # Android (Windows)
-.\build-scripts\android.bat
+.\build-scripts\generate-project\android.bat
 
 # iOS (run in macOS)
-chmod +x ./build-scripts/ios.sh
-./build-scripts/ios.sh
+chmod +x ./build-scripts/generate-project/ios.sh
+./build-scripts/generate-project/ios.sh
 ```
 3. Il y a un dossier `build` à la racine qui est générer.
 ```bash
@@ -321,17 +322,17 @@ chmod +x ./build-scripts/macos-arm64.sh
 ./build-scripts/macos-arm64.sh
 
 # Windows - x64
-.\build-scripts\windows-x64.bat
+.\build-scripts\generate-project\windows-x64.bat
 
 # Windows - arm64
-.\build-scripts\windows-arm64.bat
+.\build-scripts\generate-project\windows-arm64.bat
 
 # Android (Unix)
 chmod +x ./build-scripts/android.sh
 ./build-scripts/android.sh
 
 # Android (Windows)
-.\build-scripts\android.bat
+.\build-scripts\generate-project\android.bat
 
 # iOS (run in macOS)
 chmod +x ./build-scripts/ios.sh

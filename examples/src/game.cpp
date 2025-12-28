@@ -1,4 +1,5 @@
 #include <amoredtactics/game.h>
+#include <amoredtactics/game_screen.h>
 #include <amoredtactics/scenes/scene-menu.h>
 #include <amoredtactics/scenes/scene-editormap.h>
 #include <amoredtactics/scenes/scene-manager.h>

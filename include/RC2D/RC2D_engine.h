@@ -996,7 +996,6 @@ typedef enum RC2D_LogicalPresentationMode {
      * Mise à l’échelle entière (INTEGER_SCALE) avec ajout de bandes noires (letterbox/pillarbox) si nécessaire.
      * 
      * Chaque pixel logique est agrandi en un bloc de pixels physiques complet (ex. 2x, 3x, 4x).
-     * Aucun filtrage n’est appliqué, ce qui évite toute distorsion ou flou.
      * 
      * \note Idéal pour les jeux en pixel art, afin de préserver la netteté des sprites.
      */

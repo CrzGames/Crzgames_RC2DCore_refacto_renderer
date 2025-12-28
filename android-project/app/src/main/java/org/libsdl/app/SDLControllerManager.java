@@ -20,7 +20,7 @@ import android.view.View;
 public class SDLControllerManager
 {
 
-    static native int nativeSetupJNI();
+    static native void nativeSetupJNI();
 
     static native void nativeAddJoystick(int device_id, String name, String desc,
                                                 int vendor_id, int product_id,
@@ -471,6 +471,11 @@ class SDLHapticHandler_API31 extends SDLHapticHandler {
             return;
         }
 
+        if (Build.VERSION.SDK_INT < 31 /* Android 12.0 (S) */) {
+            /* Silence 'lint' warning */
+            return;
+        }
+
         VibratorManager manager = device.getVibratorManager();
         int[] vibrators = manager.getVibratorIds();
         if (vibrators.length >= 2) {
@@ -483,6 +488,12 @@ class SDLHapticHandler_API31 extends SDLHapticHandler {
     }
 
     private void vibrate(Vibrator vibrator, float intensity, int length) {
+
+        if (Build.VERSION.SDK_INT < 31 /* Android 12.0 (S) */) {
+            /* Silence 'lint' warning */
+            return;
+        }
+
         if (intensity == 0.0f) {
             vibrator.cancel();
             return;
@@ -510,6 +521,12 @@ class SDLHapticHandler_API31 extends SDLHapticHandler {
 class SDLHapticHandler_API26 extends SDLHapticHandler {
     @Override
     void run(int device_id, float intensity, int length) {
+
+        if (Build.VERSION.SDK_INT < 26 /* Android 8.0 (O) */) {
+            /* Silence 'lint' warning */
+            return;
+        }
+
         SDLHaptic haptic = getHaptic(device_id);
         if (haptic != null) {
             if (intensity == 0.0f) {
@@ -629,6 +646,10 @@ class SDLHapticHandler {
 }
 
 class SDLGenericMotionListener_API14 implements View.OnGenericMotionListener {
+    protected static final int SDL_PEN_DEVICE_TYPE_UNKNOWN = 0;
+    protected static final int SDL_PEN_DEVICE_TYPE_DIRECT = 1;
+    protected static final int SDL_PEN_DEVICE_TYPE_INDIRECT = 2;
+
     // Generic Motion (mouse hover, joystick...) events go here
     @Override
     public boolean onGenericMotion(View v, MotionEvent event) {
@@ -680,7 +701,7 @@ class SDLGenericMotionListener_API14 implements View.OnGenericMotionListener {
                         // BUTTON_STYLUS_PRIMARY is 2^5, so shift by 4, and apply SDL_PEN_INPUT_DOWN/SDL_PEN_INPUT_ERASER_TIP
                         int buttons = (event.getButtonState() >> 4) | (1 << (toolType == MotionEvent.TOOL_TYPE_STYLUS ? 0 : 30));
 
-                        SDLActivity.onNativePen(event.getPointerId(i), buttons, action, x, y, p);
+                        SDLActivity.onNativePen(event.getPointerId(i), getPenDeviceType(event.getDevice()), buttons, action, x, y, p);
                         consumed = true;
                         break;
                 }
@@ -718,6 +739,9 @@ class SDLGenericMotionListener_API14 implements View.OnGenericMotionListener {
         return event.getY(pointerIndex);
     }
 
+    int getPenDeviceType(InputDevice penDevice) {
+        return SDL_PEN_DEVICE_TYPE_UNKNOWN;
+    }
 }
 
 class SDLGenericMotionListener_API24 extends SDLGenericMotionListener_API14 {
@@ -743,6 +767,11 @@ class SDLGenericMotionListener_API24 extends SDLGenericMotionListener_API14 {
 
     @Override
     float getEventX(MotionEvent event, int pointerIndex) {
+        if (Build.VERSION.SDK_INT < 24 /* Android 7.0 (N) */) {
+            /* Silence 'lint' warning */
+            return 0;
+        }
+
         if (mRelativeModeEnabled && event.getToolType(pointerIndex) == MotionEvent.TOOL_TYPE_MOUSE) {
             return event.getAxisValue(MotionEvent.AXIS_RELATIVE_X, pointerIndex);
         } else {
@@ -752,6 +781,11 @@ class SDLGenericMotionListener_API24 extends SDLGenericMotionListener_API14 {
 
     @Override
     float getEventY(MotionEvent event, int pointerIndex) {
+        if (Build.VERSION.SDK_INT < 24 /* Android 7.0 (N) */) {
+            /* Silence 'lint' warning */
+            return 0;
+        }
+
         if (mRelativeModeEnabled && event.getToolType(pointerIndex) == MotionEvent.TOOL_TYPE_MOUSE) {
             return event.getAxisValue(MotionEvent.AXIS_RELATIVE_Y, pointerIndex);
         } else {
@@ -776,6 +810,12 @@ class SDLGenericMotionListener_API26 extends SDLGenericMotionListener_API24 {
 
     @Override
     boolean setRelativeMouseEnabled(boolean enabled) {
+
+        if (Build.VERSION.SDK_INT < 26 /* Android 8.0 (O) */) {
+            /* Silence 'lint' warning */
+            return false;
+        }
+
         if (!SDLActivity.isDeXMode() || Build.VERSION.SDK_INT >= 27 /* Android 8.1 (O_MR1) */) {
             if (enabled) {
                 SDLActivity.getContentView().requestPointerCapture();
@@ -791,6 +831,12 @@ class SDLGenericMotionListener_API26 extends SDLGenericMotionListener_API24 {
 
     @Override
     void reclaimRelativeMouseModeIfNeeded() {
+
+        if (Build.VERSION.SDK_INT < 26 /* Android 8.0 (O) */) {
+            /* Silence 'lint' warning */
+            return;
+        }
+
         if (mRelativeModeEnabled && !SDLActivity.isDeXMode()) {
             SDLActivity.getContentView().requestPointerCapture();
         }
@@ -798,6 +844,10 @@ class SDLGenericMotionListener_API26 extends SDLGenericMotionListener_API24 {
 
     @Override
     boolean checkRelativeEvent(MotionEvent event) {
+        if (Build.VERSION.SDK_INT < 26 /* Android 8.0 (O) */) {
+            /* Silence 'lint' warning */
+            return false;
+        }
         return event.getSource() == InputDevice.SOURCE_MOUSE_RELATIVE;
     }
 
@@ -811,5 +861,17 @@ class SDLGenericMotionListener_API26 extends SDLGenericMotionListener_API24 {
     float getEventY(MotionEvent event, int pointerIndex) {
         // Relative mouse in capture mode will only have relative for X/Y
         return event.getY(pointerIndex);
+    }
+}
+
+class SDLGenericMotionListener_API29 extends SDLGenericMotionListener_API26 {
+    @Override
+    int getPenDeviceType(InputDevice penDevice)
+    {
+        if (penDevice == null) {
+            return SDL_PEN_DEVICE_TYPE_UNKNOWN;
+        }
+
+        return penDevice.isExternal() ? SDL_PEN_DEVICE_TYPE_INDIRECT : SDL_PEN_DEVICE_TYPE_DIRECT;
     }
 }
