@@ -1,8 +1,6 @@
 #ifndef RC2D_LOCAL_H
 #define RC2D_LOCAL_H
 
-#include <RC2D/RC2D_export.h> // Required for : RC2D_DECLSPEC, RC2D_CALL
-
 #include <SDL3/SDL_locale.h>  // Required for : SDL_Locale, SDL_GetPreferredLocales
 #include <stddef.h>           // Required for : size_t
 
@@ -45,7 +43,7 @@ typedef struct RC2D_Locale {
  *
  * \see rc2d_local_freeLocales
  */
-extern RC2D_DECLSPEC RC2D_Locale * RC2D_CALL rc2d_local_getPreferredLocales(void);
+extern RC2D_Locale* rc2d_local_getPreferredLocales(void);
 
 /**
  * \brief Libère une liste de locales précédemment allouée avec `rc2d_local_getPreferredLocales()`.
@@ -58,7 +56,7 @@ extern RC2D_DECLSPEC RC2D_Locale * RC2D_CALL rc2d_local_getPreferredLocales(void
  *
  * \see rc2d_local_getPreferredLocales
  */
-extern RC2D_DECLSPEC void RC2D_CALL rc2d_local_freeLocales(RC2D_Locale *locales);
+extern void rc2d_local_freeLocales(RC2D_Locale *locales);
 
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */
 #ifdef __cplusplus

@@ -13,7 +13,7 @@
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
 
-#include <mygame/game.h>
+#include <amoredtactics/game.h>
 
 #include <RC2D/RC2D.h>
 
@@ -33,6 +33,7 @@
 const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[])
 {
     RC2D_EngineConfig* config = rc2d_engine_getDefaultConfig();
+
 #ifdef NDEBUG // Release mode
     rc2d_logger_set_priority(RC2D_LOG_CRITICAL);
     config->gpuOptions->debugMode = false;
@@ -56,10 +57,10 @@ const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[])
     config->callbacks->rc2d_keypressed = rc2d_keypressed;
     config->logicalPresentationMode = RC2D_LOGICAL_PRESENTATION_OVERSCAN;
     config->pixelartMode = false;
-    config->appInfo->name = "SeaTyrants";
+    config->appInfo->name = "Amored Tactics";
     config->appInfo->organization = "Crzgames";
     config->appInfo->version = "1.0.0";
-    config->appInfo->identifier = "com.crzgames.seatyrants";
+    config->appInfo->identifier = "com.crzgames.amoredtactics";
 
     RC2D_assert_release(config != NULL, RC2D_LOG_CRITICAL, "RC2D_EngineConfig config is NULL. Cannot setup the engine.");
 
