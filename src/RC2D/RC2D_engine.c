@@ -824,12 +824,8 @@ static void rc2d_engine_update_fps_based_on_monitor(void)
      * Permet définir le tickrate de la callback SDL_AppIterate qui est appelé par SDL3,
      * par rapport au taux de rafraîchissement du moniteur.
      */
-    char fps_str[16];
-    SDL_snprintf(fps_str, sizeof(fps_str), "%d", (int)rc2d_engine_state.fps);
-
-    // FIXME: En attendant que SDL3 puisse : Utilise une précision à virgule flottante pour par exemple 59.94 Hz
-    //SDL_snprintf(fps_str, sizeof(fps_str), "%.2f", rc2d_engine_state.fps);
-
+    char fps_str[32];
+    SDL_snprintf(fps_str, sizeof(fps_str), "%.6g", (double)rc2d_engine_state.fps);
     if (!SDL_SetHintWithPriority(SDL_HINT_MAIN_CALLBACK_RATE, fps_str, SDL_HINT_OVERRIDE)) 
     {
         RC2D_log(RC2D_LOG_WARN, "Failed to set SDL_HINT_MAIN_CALLBACK_RATE to %s Hz with OVERRIDE priority: %s", fps_str, SDL_GetError());
