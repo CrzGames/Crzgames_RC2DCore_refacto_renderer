@@ -173,8 +173,7 @@
 
 
 ## ⚙️ Setup Environment Development
-1. Cloner le projet, penser à clone le projet à la racine du disque dur C:/
-   sinon il y a un gros risque pendant la compilation de certaines dépendences de se retrouver avec un probleme de chemin trop long :
+1. Cloner le projet :
   ```bash
   git clone git@github.com:CrzGames/Crzgames_RC2D.git
   ```
