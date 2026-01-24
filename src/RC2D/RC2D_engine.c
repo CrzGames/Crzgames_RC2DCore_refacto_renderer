@@ -127,7 +127,7 @@ static bool rc2d_engine_gamepad_load_embedded_db(void)
     if (!io) 
     {
         // Erreur lors de la création du flux IO à partir de la mémoire
-        RC2D_log(RC2D_LOG_ERROR, "RC2D: SDL_IOFromConstMem failed: %s", SDL_GetError());
+        RC2D_log(RC2D_LOG_ERROR, "SDL_IOFromConstMem failed: %s", SDL_GetError());
         return false;
     }
 
@@ -135,13 +135,13 @@ static bool rc2d_engine_gamepad_load_embedded_db(void)
     const int added = SDL_AddGamepadMappingsFromIO(io, true);
     if (added == -1) 
     {
-        RC2D_log(RC2D_LOG_ERROR, "RC2D: SDL_AddGamepadMappingsFromIO failed: %s", SDL_GetError());
+        RC2D_log(RC2D_LOG_ERROR, "SDL_AddGamepadMappingsFromIO failed: %s", SDL_GetError());
         return false;
     }
     else
     {
         // `added` = nombre de profils de manettes disponibles qui ont été ajoutés à partir de la base embarquée (RC2D_gamecontrollerdb_embedded.c)
-        RC2D_log(RC2D_LOG_INFO, "RC2D: Gamepad database loaded — %d controller mappings available", added);
+        RC2D_log(RC2D_LOG_INFO, "Gamepad database loaded — %d controller mappings available", added);
     }
 
     // Retourne true si tout s'est bien passé
