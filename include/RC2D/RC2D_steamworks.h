@@ -15,7 +15,6 @@ bool rc2d_steam_init(void);
 void rc2d_steam_run_callbacks(void);
 void rc2d_steam_cleanup(void);
 bool rc2d_steam_unlock_achievement(const char* api_name);
-bool rc2d_steam_userstats_ready(void);
 
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */
 #ifdef __cplusplus
