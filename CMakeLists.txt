@@ -978,6 +978,12 @@ endfunction()
 
 # Fonction pour les target_compile_definitions par target
 function(rc2d_target_compile_definitions target_name)
+  if(RC2D_STEAMWORKS_SDK_ENABLED)
+    target_compile_definitions(${target_name} PUBLIC RC2D_STEAMWORKS_SDK_ENABLED=1)
+  else()
+    target_compile_definitions(${target_name} PUBLIC RC2D_STEAMWORKS_SDK_ENABLED=0)
+  endif()
+
   if(RC2D_BUILDING_BINDINGS_CSHARP)
     target_compile_definitions(${target_name} PUBLIC RC2D_BUILDING_BINDINGS_CSHARP=1)
   else()
