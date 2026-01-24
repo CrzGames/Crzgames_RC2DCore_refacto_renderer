@@ -10,6 +10,10 @@
 #include <RC2D/RC2D_gpu.h>
 #include <RC2D/RC2D_storage.h>
 
+#if RC2D_STEAMWORKS_SDK_ENABLED
+#include <RC2D/RC2D_steamworks.h>
+#endif // RC2D_STEAMWORKS_SDK_ENABLED
+
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_properties.h>
@@ -2004,6 +2008,17 @@ static bool rc2d_engine(void)
         return false;
     }
 
+#if RC2D_STEAMWORKS_SDK_ENABLED
+    /**
+     * Initialiser le SDK Steamworks pour l'intégration Steam.
+     */
+    if(!rc2d_steam_init())
+    {
+        return false;
+    }
+    rc2d_steam_run_callbacks();
+#endif // RC2D_STEAMWORKS_SDK_ENABLED
+
     /**
      * Activer le blending (alpha) dans SDL3.
      */
@@ -2155,6 +2170,11 @@ void rc2d_engine_quit(void)
 
     // Lib RCENet Deinitialize
     rc2d_engine_cleanup_rcenet();
+
+#if RC2D_STEAMWORKS_SDK_ENABLED
+    // Lib Steamworks Deinitialize
+    rc2d_steam_cleanup();
+#endif // RC2D_STEAMWORKS_SDK_ENABLED
     
     /* Libérer les shaders graphiques (vertex/fragment) */
     if (rc2d_engine_state.gpu_graphics_shader_mutex) 

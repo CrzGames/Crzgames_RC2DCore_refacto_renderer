@@ -14,6 +14,7 @@
 #include <RC2D/RC2D_memory.h>
 #include <RC2D/RC2D_graphics.h>
 #include <RC2D/RC2D_platform_defines.h>
+#include <RC2D/RC2D_steamworks.h>
 
 static bool title_storage_is_ready = false;  // SDL_OpenTitleStorage est prêt ?
 static bool user_storage_is_ready  = false;  // SDL_OpenUserStorage est prêt ?
@@ -243,6 +244,9 @@ SDL_AppResult SDL_AppIterate(void *appstate)
      * 6. Terminer le calcul du delta time pour la frame actuelle.
      */
     rc2d_engine_deltatime_start();
+#if RC2D_STEAMWORKS_SDK_ENABLED
+    rc2d_steam_run_callbacks();
+#endif // RC2D_STEAMWORKS_SDK_ENABLED
     if (rc2d_engine_state.config != NULL && 
         rc2d_engine_state.config->callbacks != NULL && 
         rc2d_engine_state.config->callbacks->rc2d_update != NULL) 

@@ -37,6 +37,9 @@ option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net (ENet-based)" ON)
 # Option pour activer le module RC2D_onnx (via ONNX Runtime)
 option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" OFF)
 
+# Option pour le SDK Steamworks
+option(RC2D_STEAMWORKS_SDK_ENABLED "Enable RC2D Steamworks SDK integration" ON)
+
 # Option pour le niveau d'assertion
 option(RC2D_ASSERT_LEVEL "Niveau des assertions (0=none, 1=release, 2=debug, 3=paranoid)" 3)
 
@@ -899,6 +902,38 @@ function(rc2d_configure_openssl target_name)
   endif()
 endfunction()
 
+# Fonction pour linker le sdk steamworks
+function(rc2d_link_steamworks target_name)
+  if(RC2D_STEAMWORKS_SDK_ENABLED)
+    # Link le dossier include du SDK Steamworks à la target
+    target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steam-sdk/include")
+
+    if(WIN32)
+      # Rajouter le répertoire de la lib Steamworks, pour le linker ensuite
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steam-sdk/lib/windows/${RC2D_ARCH}")
+
+      # Link la librairie Steamworks
+      target_link_libraries(${target_name} PUBLIC
+        steam_api64 # Pour x64
+      )
+
+      # Copier aussi les DLLs dans le répertoire de l'exécutable
+      file(GLOB_RECURSE STEAMWORKS_DLLS
+        "${CRZGAMES_LIBRARIES}/steam-sdk/lib/windows/${RC2D_ARCH}/*.dll"
+      )
+
+      foreach(FILE IN LISTS STEAMWORKS_DLLS)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                  "${FILE}"
+                  "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+        )
+      endforeach()
+    endif()
+  endif()
+endfunction()
+
 function(rc2d_force_link_linux target_name)
   if(UNIX AND NOT APPLE AND NOT ANDROID)
     target_link_libraries(${target_name} PUBLIC
@@ -999,6 +1034,11 @@ file(GLOB_RECURSE SOURCES
   "${PROJECT_SOURCE_DIR}/src/*.c"
 )
 
+# Ajouter le module Steamworks si activé dans les options de configuration
+if(RC2D_STEAMWORKS_SDK_ENABLED)
+  list(APPEND SOURCES src/RC2D/RC2D_steamworks.cpp)
+endif()
+
 # Fichiers d'en-tête (headers) du projet RC2D
 file(GLOB_RECURSE HEADERS
   "${PROJECT_SOURCE_DIR}/include/*.h"
@@ -1050,6 +1090,9 @@ rc2d_link_apple_frameworks(${PROJECT_NAME})
 
 # Linker cjson
 rc2d_configure_cjson(${PROJECT_NAME})
+
+# Linker le SDK Steamworks si activé
+rc2d_link_steamworks(${PROJECT_NAME})
 
 # Pour l'exemple RC2D
 if(RC2D_BUILD_EXAMPLES)
