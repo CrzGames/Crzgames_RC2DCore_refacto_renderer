@@ -112,6 +112,43 @@ RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void)
 }
 
 /**
+ * \brief Charge la base de données de contrôleurs de jeu intégrée : https://github.com/mdqinc/SDL_GameControllerDB
+ *
+ * Cette fonction charge une base de données de mappages de contrôleurs de jeu
+ * intégrée dans SDL3 pour assurer une compatibilité maximale avec divers contrôleurs.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+static bool rc2d_engine_gamepad_load_embedded_db(void)
+{
+    // Charger la base de données intégrée des contrôleurs de jeu en mémoire
+    SDL_IOStream *io = SDL_IOFromConstMem(rc2d_gamecontrollerdb_data,
+                                         rc2d_gamecontrollerdb_size);
+    if (!io) 
+    {
+        // Erreur lors de la création du flux IO à partir de la mémoire
+        RC2D_log(RC2D_LOG_ERROR, "RC2D: SDL_IOFromConstMem failed: %s", SDL_GetError());
+        return false;
+    }
+
+    // Ajouter les mappages de contrôleurs de jeu à partir du flux IO
+    const int added = SDL_AddGamepadMappingsFromIO(io, true);
+    if (added == -1) 
+    {
+        RC2D_log(RC2D_LOG_ERROR, "RC2D: SDL_AddGamepadMappingsFromIO failed: %s", SDL_GetError());
+        return false;
+    }
+    else
+    {
+        // Nombre de mappages ajoutés avec succès
+        RC2D_log(RC2D_LOG_INFO, "RC2D: SDL_AddGamepadMappingsFromIO succeeded: %d mappings added", added);
+    }
+
+    // Retourne true si tout s'est bien passé
+    return true;
+}
+
+/**
  * \brief Affiche la liste des pilotes GPU supportés par SDL3.
  *
  * Cette fonction vérifie si au moins un backend GPU est supporté par SDL3.
@@ -1955,6 +1992,14 @@ static bool rc2d_engine(void)
      * Initialiser la librairie SDL3_ttf
      */
     if (!rc2d_engine_init_sdlttf())
+    {
+        return false;
+    }
+
+    /**
+     * Charger la base de données des manettes de jeu (gamepads) embarquée, issue de SDL_GameControllerDB.
+     */
+    if(!rc2d_engine_gamepad_load_embedded_db())
     {
         return false;
     }
