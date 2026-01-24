@@ -36,15 +36,18 @@ void rc2d_steam_cleanup(void)
 
 bool rc2d_steam_unlock_achievement(const char* api_name)
 {
+    // Check si le nom a été fourni
     if (!api_name)
         return false;
 
+    // Vérifie que SteamUserStats est disponible
     if (!SteamUserStats())
     {
         RC2D_log(RC2D_LOG_ERROR, "SteamUserStats NULL (SteamAPI_Init ok?)");
         return false;
     }
 
+    // Vérifie si le succès est déjà débloqué
     bool alreadyUnlocked = false;
     if (SteamUserStats()->GetAchievement(api_name, &alreadyUnlocked) && alreadyUnlocked)
     {
@@ -52,14 +55,9 @@ bool rc2d_steam_unlock_achievement(const char* api_name)
         return true;
     }
 
+    // Débloque le succès
     bool okSet   = SteamUserStats()->SetAchievement(api_name);
     bool okStore = SteamUserStats()->StoreStats();
-
-    RC2D_log(RC2D_LOG_INFO,
-             "Unlock achievement %s → Set=%s Store=%s",
-             api_name,
-             okSet ? "OK" : "FAIL",
-             okStore ? "OK" : "FAIL");
 
     return okSet && okStore;
 }
