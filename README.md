@@ -176,7 +176,7 @@
 1. Cloner le projet, penser à clone le projet à la racine du disque dur C:/
    sinon il y a un gros risque pendant la compilation de certaines dépendences de se retrouver avec un probleme de chemin trop long :
   ```bash
-  git clone git@github.com:CrzGames/Crzgames_RC2DCore.git
+  git clone git@github.com:CrzGames/Crzgames_RC2D.git
   ```
 2. (Optional) Download and Install Node.js >= 18.0.0 (pour lancer la documentation, pour Vitepress).
 3. Steps by Platform :
@@ -185,9 +185,6 @@
   1. Requirements : Windows >= 10 (x64 or arm64)
   2. Download and Install Visual Studio == 2022 (MSVC >= v143 + Windows SDK >= 10) : https://visualstudio.microsoft.com/fr/downloads/
   3. Download and Install CMake >= 3.25 : https://cmake.org/download/ and add PATH ENVIRONMENT.
-  4. Ouvrir PowerShell en admin (pour eviter les erreurs de chemin long possible lors du setup des dependencies) :
-   Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1
-   git config --global core.longpaths true
   
   # Linux :
   1. Requirements : glibc >= 3.25 (Ubuntu >= 22.04 OR Debian >= 12.0)
