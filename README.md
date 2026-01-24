@@ -29,6 +29,7 @@
 ├── 📁 docs                           # Documentation du moteur (pages Markdown, auto-générées ou manuelles)
 ├── 📁 example                        # Exemples d’utilisation du moteur RC2D (projets de démo, test de fonctionnalités)
 ├── 📁 include                        # En-têtes publics exposés aux utilisateurs de la lib (API du moteur)
+│   ├── 📁 external/lz4               # Dossier "external" qui contient des librairies link statiquement depuis leur fichier source directement et intégrer à RC2D.
 ├── 📁 src                            # Code source interne de la bibliothèque RC2D (implémentations .c)
 ├── 📁 tests                          # Tests unitaires (avec Criterion) pour vérifier les modules du moteur
 ├── 📄 .gitignore                     # Fichiers/dossiers à ignorer par Git (ex: /dependencies, builds temporaires)
