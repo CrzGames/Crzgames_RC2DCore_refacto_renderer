@@ -49,9 +49,6 @@ option(RC2D_BUILD_EXAMPLES "Build examples" ON)
 # Option pour choisir entre statique et dynamique
 option(RC2D_BUILDING_SHARED "Build shared libraries" OFF)
 
-# Option pour construire les bindings C# (DLL / .so / .dylib)
-option(RC2D_BUILDING_BINDINGS_CSHARP "Build RC2D C# bindings (DLL / .so / .dylib)" OFF)
-
 # Dossier de sortie
 if(CMAKE_GENERATOR MATCHES "Visual Studio|Xcode")
   # Multi-config generators
@@ -118,15 +115,19 @@ set(SDLIMAGE_VENDORED ON CACHE BOOL "" FORCE)
 set(SDLMIXER_VENDORED ON CACHE BOOL "" FORCE)
 
 # SDL3_mixer : Désactiver explicitement tous les formats audio qui sont activé par défault.
-# Il restera ces formats activé par défault : WAV, OGG et MP3.
+# Il restera ces backend activé par défault :
+# - opus ( .opus )
+# - vorbis_vorbisfile ( .ogg / .oga )
+# - wave ( .wav )
 if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-  # Spécifiquement pour iOS, on utilise minimp3 pour le MP3 qui est en statique, par rapport à mpg123.
-  # et on build en statique pour éviter les problèmes de dépendances dynamiques sur iOS
+  # Spécifiquement pour iOS, on force la compilation en statique pour SDL3_mixer et ses sous-dépendances.
+  # Les .dylib ne sont plus autorisées sur l'App Store.
   set(SDLMIXER_DEPS_SHARED OFF CACHE BOOL "" FORCE)
-  set(SDLMIXER_MP3_MPG123 OFF CACHE BOOL "" FORCE)
-  set(SDLMIXER_MP3_MINIMP3 ON  CACHE BOOL "" FORCE)
 endif()
 
+set(SDLMIXER_MP3 OFF CACHE BOOL "" FORCE)
+set(SDLMIXER_MP3_MPG123 OFF CACHE BOOL "" FORCE)
+set(SDLMIXER_MP3_DRMP3 OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_AIFF OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_VOC OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_AU OFF CACHE BOOL "" FORCE)
@@ -137,15 +138,22 @@ set(SDLMIXER_MOD_XMP OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_MOD_XMP_LITE OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_MIDI_FLUIDSYNTH OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_MIDI_TIMIDITY OFF CACHE BOOL "" FORCE)
-set(SDLMIXER_OPUS OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_VORBIS_STB OFF CACHE BOOL "" FORCE)
-set(SDLMIXER_VORBIS_VORBISFILE OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_VORBIS_TREMOR OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_WAVPACK OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_WAVPACK_DSD OFF CACHE BOOL "" FORCE)
 
 # SDL3_image : Désactiver explicitement tous les formats d'image qui sont activé par défault.
-# Il restera ces formats activé par défault : STB, PNG et SVG
+# Il restera ces backend activé par défault : 
+# - png ( .png )
+# - svg ( .svg )
+# - apng ( .apng )
+if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+  # Spécifiquement pour iOS, on force la compilation en statique pour SDL3_image et ses sous-dépendances.
+  # Les .dylib ne sont plus autorisées sur l'App Store.
+  set(SDLIMAGE_DEPS_SHARED OFF CACHE BOOL "" FORCE)
+endif()
+
 set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_BMP OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_GIF OFF CACHE BOOL "" FORCE)
@@ -160,6 +168,10 @@ set(SDLIMAGE_WEBP OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XCF OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XPM OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_ANI OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_BACKEND_STB OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_ANI OFF CACHE BOOL "" FORCE)
 
 # SDL3 :
 # Il peut vous donner accès à beaucoup plus de contrôleurs de jeu,
@@ -170,8 +182,9 @@ set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "" FORCE)
 # Spécifiquement pour iOS, parce que les .dylib ne sont plus autorisées sur l'App Store.
 # On le fait grâce à : set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "") pour toutes les dépendances.
 if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-  set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
-  set(SDL_SHARED OFF)
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+  set(SDL_STATIC ON CACHE BOOL "" FORCE)
 endif()
 
 # cJSON :
