@@ -1,4 +1,4 @@
-# Crzgames - RC2DCore
+# Crzgames - RC2D
 
 ## 🛠 Tech Stack
 - C (Language)
