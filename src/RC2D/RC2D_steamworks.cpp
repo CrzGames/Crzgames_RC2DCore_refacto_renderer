@@ -16,11 +16,8 @@ bool rc2d_steam_init(void)
         return false;
     }
 
-    // Log l'AppID Steam pour vérification
-    uint32 appID = SteamUtils()->GetAppID();
-    RC2D_log(RC2D_LOG_INFO, "SDK Steamworks initialized for AppID=%u", appID);
-
     // Success
+    RC2D_log(RC2D_LOG_INFO, "Steamworks SDK initialized successfully");
     return true;
 }
 
