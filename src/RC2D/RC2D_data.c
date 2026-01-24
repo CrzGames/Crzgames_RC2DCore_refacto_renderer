@@ -4,16 +4,12 @@
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_memory.h>
 
-/**
- * SDL3
- */
-#include <SDL3/SDL_stdinc.h> // Required for : SDL_malloc, SDL_free
-
 /*
 Librairies pour la compression de données
 */
 #include <lz4/lz4.h>      // Required for : Algorithm LZ4
 
+// Librairies standards C
 #include <time.h>
 #include <sys/types.h>
 
