@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
+# Description:
+# Génère un fichier C embarquant la base de données des manettes SDL3
+# à partir du fichier texte gamecontrollersdl3-db.txt fourni par SDL3.
+# Utile pour embarquer la base de données dans l'exécutable final,
+# évitant ainsi de dépendre d'un fichier externe ou que l'utilisateur doit lui-même fournir.
+
 ROOT = Path(__file__).resolve().parents[1]
 
 IN_TXT = ROOT / "platforms/all/gamecontroller-db/gamecontrollersdl3-db.txt"
@@ -20,8 +26,7 @@ lines.append("// AUTO-GENERATED FILE. DO NOT EDIT MANUALLY.")
 lines.append("// Source: platforms/all/gamecontroller-db/gamecontrollersdl3-db.txt")
 lines.append("")
 lines.append("#include <stddef.h>")
-# Optionnel mais recommandé: ça force la cohérence avec tes externs
-lines.append('#include "RC2D/RC2D_internal.h"')  # adapte le chemin exact si besoin
+lines.append('#include "RC2D/RC2D_internal.h"')
 lines.append("")
 lines.append(f"const unsigned char {SYM_DATA}[{size}] = {{")
 
