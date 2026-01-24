@@ -52,8 +52,8 @@
 | **iOS/iPadOS** | arm64 (iphoneos) - not iphonesimulator | iOS/iPadOS 18.0+ | ✓ |
 | **Android** | arm64-v8a / armeabi-v7a | Android 9.0+ | ✓ |
 | **Linux** | x64 / arm64 | glibc 2.35+ | ✓ |
-| **Steam Linux** | x64 / arm64 | Steam Linux Runtime 3.0 (Sniper) | ✓ |
-| **Steam Deck** | x64 | Steam Linux Runtime 3.0 (Sniper) | ✓ |
+| **Steam Linux** | x64 / arm64 | Steam Linux Runtime 4.0 | ✓ |
+| **Steam Deck** | x64 | Steam Linux Runtime 4.0 | ✓ |
 | **Xbox** | x64 | Xbox Série X/S+ |  |
 | **Nintendo Switch** | arm64 | Nintendo Switch 1+ |  |
 | **Playstation** | x64 | Playstation 5+ |  |
@@ -96,10 +96,10 @@
 ### **Windows (10+)**
 - Windows 10 et plus récent.
 
-### Steam Deck (Steam Linux Runtime 3.0+ - Sniper)
+### Steam Deck (Steam Linux Runtime 4.0+)
 - Steam Deck 1 (LCD / OLED, sous SteamOS 3.0 ou supérieur) et plus récent.
 
-### Steam Linux (Steam Linux Runtime 3.0+ - Sniper)
+### Steam Linux (Steam Linux Runtime 4.0+)
 - Compatible avec toute distribution Linux x64 / arm64 supportant Steam et le runtime Sniper.
 
 <br /><br /><br /><br />
@@ -144,7 +144,7 @@
   - ONNX Runtime nécessite C++20 (glibc 2.31+)
 
 ### Steam Deck / Steam Linux
-- **Version minimale** : Steam Linux Runtime 3.0 (Sniper)
+- **Version minimale** : Steam Linux Runtime 4.0
 - **Raison** :
   - Steam recommande l'utilisation du runtime Sniper pour tous les nouveaux jeux compatibles Linux.
   - Le Steam Deck est livré avec SteamOS 3.0+, basé sur Arch Linux, et embarque nativement le runtime Sniper.
