@@ -77,7 +77,7 @@
 - iPad Pro (1/2/3/4/5/6ème génération, M4) et plus récent
 
 ### **macOS (15.0+)**
-- Tous les modèles macOS Apple Silicon (M1, M2, M3, M4) et plus récent.
+- Tous les modèles macOS Apple Silicon (M1, M2, M3, M4, M5) et plus récent.
 
 ### **Android (9.0+)**
 - Samsung Galaxy S9+ (2018) et plus récent.
@@ -108,24 +108,27 @@
 ## 🎯 Raisons techniques des versions minimales et autres par plateforme
 
 ### Windows
-- **Version minimale** : Windows 10+
+- **Version minimale** : Windows 10+ for x64 / arm64
 - **Raison** :
   - SDL3 API GPU repose sur Direct3D12 (Level Feature 11_1)
   - Windows ARM64 nécessite également Windows 10+
 
 ### macOS
-- **Version minimale** : macOS 15.0+
+- **Version minimale** : macOS 15.0+ for arm64
 - **Raison** :
   - Requis par ONNX Runtime pour C++20 (macOS 13.4+)
+  - Requis par ONNX Runtime pour la version >= à 1.23.1, il faudras macOS >= 14.0
   - Requis par MSL version 3.2.0 (macOS 15.0+)
+  - ONNX Runtime pour la version >= à 1.23.1 ne fournira plus de binaires x86_64 pour les systèmes d'exploitation macOS et iOS.
 
 ### iOS/iPadOS
-- **Version minimale** : iOS/iPadOS 18.0+
+- **Version minimale** : iOS/iPadOS 18.0+ for arm64
 - **Raison** :
   - SDL3 API GPU supporté depuis iOS/iPadOS 13.0
   - CoreML pour ONNX Runtime nécessite iOS/iPadOS 13.0+
   - Requis par MSL version 3.2.0 (iOS/iPadOS 18.0+)
   - Pas de librairie pour iOS/iPadOS simulator parce que SDL3 GPU ne le supporte pas.
+  - ONNX Runtime pour la version >= à 1.23.1 ne fournira plus de binaires x86_64 pour les systèmes d'exploitation macOS et iOS.
 
 ### Android
 - **Version minimale** : Android 9.0 (API 28+)
