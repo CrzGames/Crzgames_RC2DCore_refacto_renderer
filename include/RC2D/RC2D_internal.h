@@ -25,6 +25,10 @@
 extern "C" {
 #endif
 
+// Declaration des données embarquées pour les mappages de contrôleurs de jeu
+extern const unsigned char RC2D_gamecontrollerdb_data[];
+extern const size_t RC2D_gamecontrollerdb_size;
+
 /**
  * \brief Structure représentant une entrée de shader dans le moteur RC2D.
  *
