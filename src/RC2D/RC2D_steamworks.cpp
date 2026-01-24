@@ -1,3 +1,5 @@
+#if RC2D_STEAMWORKS_SDK_ENABLED
+
 #include <RC2D/RC2D_steamworks.h>
 #include <RC2D/RC2D_logger.h>
 
@@ -63,3 +65,5 @@ bool rc2d_steam_unlock_achievement(const char* api_name)
 }
 
 } // extern "C"
+
+#endif // RC2D_STEAMWORKS_SDK_ENABLED
