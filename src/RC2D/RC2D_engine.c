@@ -140,8 +140,8 @@ static bool rc2d_engine_gamepad_load_embedded_db(void)
     }
     else
     {
-        // Nombre de mappages ajoutés avec succès
-        RC2D_log(RC2D_LOG_INFO, "RC2D: SDL_AddGamepadMappingsFromIO succeeded: %d mappings added", added);
+        // `added` = nombre de profils de manettes disponibles qui ont été ajoutés à partir de la base embarquée (RC2D_gamecontrollerdb_embedded.c)
+        RC2D_log(RC2D_LOG_INFO, "RC2D: Gamepad database loaded — %d controller mappings available", added);
     }
 
     // Retourne true si tout s'est bien passé

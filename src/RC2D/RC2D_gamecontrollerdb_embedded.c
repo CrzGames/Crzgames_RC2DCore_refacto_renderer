@@ -2,9 +2,9 @@
 // Source: platforms/all/gamecontroller-db/gamecontrollersdl3-db.txt
 
 #include <stddef.h>
-#include "RC2D/RC2D_gamecontrollerdb_embedded.h"
+#include "RC2D/RC2D_internal.h"
 
-const unsigned char RC2D_gamecontrollerdb_data[590062] = {
+const unsigned char rc2d_gamecontrollerdb_data[590062] = {
   35, 32, 71, 97, 109, 101, 32, 67, 111, 110, 116, 114, 111, 108, 108, 101, 114, 32, 68, 66, 32, 102, 111, 114,
   32, 83, 68, 76, 32, 105, 110, 32, 50, 46, 48, 46, 49, 54, 32, 102, 111, 114, 109, 97, 116, 13, 10, 35,
   32, 83, 111, 117, 114, 99, 101, 58, 32, 104, 116, 116, 112, 115, 58, 47, 47, 103, 105, 116, 104, 117, 98, 46,
@@ -24592,4 +24592,4 @@ const unsigned char RC2D_gamecontrollerdb_data[590062] = {
   97, 51, 44, 114, 105, 103, 104, 116, 121, 58, 97, 52, 44, 115, 116, 97, 114, 116, 58, 98, 49, 48, 44, 120,
   58, 98, 50, 44, 121, 58, 98, 51, 44, 112, 108, 97, 116, 102, 111, 114, 109, 58, 105, 79, 83, 44,
 };
-const size_t RC2D_gamecontrollerdb_size = 590062;
+const size_t rc2d_gamecontrollerdb_size = 590062;

@@ -7,8 +7,8 @@ IN_TXT = ROOT / "platforms/all/gamecontroller-db/gamecontrollersdl3-db.txt"
 OUT_C  = ROOT / "src/RC2D/RC2D_gamecontrollerdb_embedded.c"
 
 # Ces noms DOIVENT matcher tes extern dans RC2D_internal.h
-SYM_DATA = "RC2D_gamecontrollerdb_data"
-SYM_SIZE = "RC2D_gamecontrollerdb_size"
+SYM_DATA = "rc2d_gamecontrollerdb_data"
+SYM_SIZE = "rc2d_gamecontrollerdb_size"
 
 data = IN_TXT.read_bytes()
 size = len(data)
