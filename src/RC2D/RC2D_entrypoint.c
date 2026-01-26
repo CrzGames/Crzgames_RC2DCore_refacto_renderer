@@ -245,8 +245,11 @@ SDL_AppResult SDL_AppIterate(void *appstate)
      */
     rc2d_engine_deltatime_start();
 #if RC2D_STEAMWORKS_SDK_ENABLED
-    rc2d_steam_run_callbacks();
+    rc2d_steamworks_runCallbacks();
 #endif // RC2D_STEAMWORKS_SDK_ENABLED
+#if RC2D_EOS_SDK_ENABLED
+    rc2d_eos_tick();
+#endif // RC2D_EOS_SDK_ENABLED
     if (rc2d_engine_state.config != NULL && 
         rc2d_engine_state.config->callbacks != NULL && 
         rc2d_engine_state.config->callbacks->rc2d_update != NULL) 

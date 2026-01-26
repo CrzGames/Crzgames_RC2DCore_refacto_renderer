@@ -40,6 +40,9 @@ option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" OFF)
 # Option pour le SDK Steamworks
 option(RC2D_STEAMWORKS_SDK_ENABLED "Enable RC2D Steamworks SDK integration" ON)
 
+# Option pour le SDK EOS (Epic Online Services)
+option(RC2D_EOS_SDK_ENABLED "Enable RC2D Epic Online Services (EOS) SDK integration" OFF)
+
 # Option pour le niveau d'assertion
 option(RC2D_ASSERT_LEVEL "Niveau des assertions (0=none, 1=release, 2=debug, 3=paranoid)" 3)
 
@@ -934,6 +937,38 @@ function(rc2d_link_steamworks target_name)
   endif()
 endfunction()
 
+# Fonction pour le SDK EOS (Epic Online Services)
+function(rc2d_link_eos_sdk target_name)
+  if(RC2D_EOS_SDK_ENABLED)
+    # Link le dossier include du SDK EOS à la target
+    target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/eos-sdk/include")
+
+    if(WIN32)
+      # Rajouter le répertoire de la lib EOS, pour le linker ensuite
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/eos-sdk/lib/windows/${RC2D_ARCH}")
+
+      # Link la librairie EOS
+      target_link_libraries(${target_name} PUBLIC
+
+      )
+
+      # Copier aussi les DLLs dans le répertoire de l'exécutable
+      file(GLOB_RECURSE EOS_DLLS
+        "${CRZGAMES_LIBRARIES}/eos-sdk/lib/windows/${RC2D_ARCH}/*.dll"
+      )
+
+      foreach(FILE IN LISTS EOS_DLLS)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                  "${FILE}"
+                  "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+        )
+      endforeach()
+    endif()
+  endif()
+endfunction()
+
 function(rc2d_force_link_linux target_name)
   if(UNIX AND NOT APPLE AND NOT ANDROID)
     target_link_libraries(${target_name} PUBLIC
@@ -978,6 +1013,12 @@ endfunction()
 
 # Fonction pour les target_compile_definitions par target
 function(rc2d_target_compile_definitions target_name)
+  if(RC2D_EOS_SDK_ENABLED)
+    target_compile_definitions(${target_name} PUBLIC RC2D_EOS_SDK_ENABLED=1)
+  else()
+    target_compile_definitions(${target_name} PUBLIC RC2D_EOS_SDK_ENABLED=0)
+  endif()
+
   if(RC2D_STEAMWORKS_SDK_ENABLED)
     target_compile_definitions(${target_name} PUBLIC RC2D_STEAMWORKS_SDK_ENABLED=1)
   else()

@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-bool rc2d_steam_unlock_achievement(const char* api_name);
+bool rc2d_steamworks_unlockAchievement(const char* api_name);
 
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */
 #ifdef __cplusplus

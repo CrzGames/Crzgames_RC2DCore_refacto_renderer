@@ -7,7 +7,7 @@
 
 extern "C" {
 
-bool rc2d_steam_init(void)
+bool rc2d_steamworks_init(void)
 {
     // Initialisation du SDK Steamworks
     if (!SteamAPI_Init())
@@ -21,17 +21,22 @@ bool rc2d_steam_init(void)
     return true;
 }
 
-void rc2d_steam_run_callbacks(void)
+void rc2d_steamworks_runCallbacks(void)
 {
+    // Vérifie si Steam est en cours d'exécution
+    if(!SteamAPI_IsSteamRunning())
+        return;
+
+    // Exécute les callbacks Steamworks
     SteamAPI_RunCallbacks();
 }
 
-void rc2d_steam_cleanup(void)
+void rc2d_steamworks_cleanup(void)
 {
     SteamAPI_Shutdown();
 }
 
-bool rc2d_steam_unlock_achievement(const char* api_name)
+bool rc2d_steamworks_unlockAchievement(const char* api_name)
 {
     // Check si le nom a été fourni
     if (!api_name)

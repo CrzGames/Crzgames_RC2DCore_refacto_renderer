@@ -14,6 +14,10 @@
 #include <SDL3_mixer/SDL_mixer.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
+#if RC2D_EOS_SDK_ENABLED
+#include <eos_types.h> // Pour EOS_HPlatform
+#endif
+
 /**
  * IMPORTANT: 
  * Module interne de la bibliothèque RC2D.
@@ -25,24 +29,51 @@
 extern "C" {
 #endif
 
-#if RC2D_STEAMWORKS_SDK_ENABLED
+#if RC2D_STEAMWORKS_SDK_ENABLED // Si le SDK Steamworks est activé
 /**
  * \brief Initialise le SDK Steamworks.
  * 
  * \return {bool} true si l'initialisation a réussi, false sinon.
 */
-bool rc2d_steam_init(void);
+bool rc2d_steamworks_init(void);
 
 /**
  * \brief Exécute les callbacks Steamworks à chaque frame (doit être appelé régulièrement).
  */
-void rc2d_steam_run_callbacks(void);
+void rc2d_steamworks_runCallbacks(void);
 
 /**
  * \brief Nettoie le SDK Steamworks.
  */
-void rc2d_steam_cleanup(void);
+void rc2d_steamworks_cleanup(void);
 #endif // RC2D_STEAMWORKS_SDK_ENABLED
+
+#if RC2D_EOS_SDK_ENABLED // Si le SDK Epic Online Services est activé
+/**
+ * \brief Initialise le SDK Epic Online Services.
+ * 
+ * \return {bool} true si l'initialisation a réussi, false sinon.
+*/
+bool rc2d_eos_init(void);
+
+/**
+ * \brief Notifiez l'instance de la plateforme d'effectuer des tâches. 
+ * Cette fonction doit être appelée fréquemment pour que les services fournis par le SDK fonctionnent correctement.
+ */
+void rc2d_eos_tick(void);
+
+/**
+ * \brief Récupère la plateforme actuelle du SDK Epic Online Services.
+ * 
+ * \return {RC2D_EOS_HPlatform} La plateforme actuelle.
+ */
+EOS_HPlatform rc2d_eos_getPlatform(void);
+
+/**
+ * \brief Nettoie le SDK Epic Online Services.
+ */
+void rc2d_eos_cleanup(void);
+#endif // RC2D_EOS_SDK_ENABLED
 
 // Declaration des données embarquées pour les mappages de contrôleurs de jeu
 extern const unsigned char rc2d_gamecontrollerdb_data[];

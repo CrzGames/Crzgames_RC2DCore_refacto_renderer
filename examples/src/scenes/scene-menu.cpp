@@ -9,7 +9,7 @@ void MenuScene::unload(void)
 void MenuScene::load(void) 
 {
     RC2D_log(RC2D_LOG_INFO, "Menu Scene Loaded\n");
-    rc2d_steam_unlock_achievement("TOTO");
+    rc2d_steamworks_unlockAchievement("TOTO");
 }
 
 void MenuScene::update(double dt) 

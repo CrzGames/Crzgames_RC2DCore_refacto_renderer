@@ -2012,12 +2012,23 @@ static bool rc2d_engine(void)
     /**
      * Initialiser le SDK Steamworks pour l'intégration Steam.
      */
-    if(!rc2d_steam_init())
+    if(!rc2d_steamworks_init())
     {
         return false;
     }
-    rc2d_steam_run_callbacks();
+    rc2d_steamworks_runCallbacks();
 #endif // RC2D_STEAMWORKS_SDK_ENABLED
+
+#if RC2D_EOS_SDK_ENABLED
+    /**
+     * Initialiser le SDK Epic Online Services (EOS) pour l'intégration EOS.
+     */
+    if(!rc2d_eos_init())
+    {
+        return false;
+    }
+    rc2d_eos_tick();
+#endif // RC2D_EOS_SDK_ENABLED
 
     /**
      * Activer le blending (alpha) dans SDL3.
@@ -2173,8 +2184,13 @@ void rc2d_engine_quit(void)
 
 #if RC2D_STEAMWORKS_SDK_ENABLED
     // Lib Steamworks Deinitialize
-    rc2d_steam_cleanup();
+    rc2d_steamworks_cleanup();
 #endif // RC2D_STEAMWORKS_SDK_ENABLED
+
+#if RC2D_EOS_SDK_ENABLED
+    // Lib EOS Deinitialize
+    rc2d_eos_cleanup();
+#endif // RC2D_EOS_SDK_ENABLED
     
     /* Libérer les shaders graphiques (vertex/fragment) */
     if (rc2d_engine_state.gpu_graphics_shader_mutex) 
