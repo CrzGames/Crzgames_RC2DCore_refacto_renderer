@@ -922,7 +922,7 @@ function(rc2d_link_steamworks target_name)
 
       # Copier aussi les DLLs dans le répertoire de l'exécutable
       file(GLOB_RECURSE STEAMWORKS_DLLS
-        "${CRZGAMES_LIBRARIES}/steamworks-sdk/lib/windows/${RC2D_ARCH}/*.dll"
+        "${CRZGAMES_LIBRARIES}/steamworks-sdk/bin/windows/${RC2D_ARCH}/*.dll"
       )
 
       foreach(FILE IN LISTS STEAMWORKS_DLLS)
@@ -949,12 +949,12 @@ function(rc2d_link_eos_sdk target_name)
 
       # Link la librairie EOS
       target_link_libraries(${target_name} PUBLIC
-
+        EOSSDK-Win64-Shipping # Pour x64
       )
 
       # Copier aussi les DLLs dans le répertoire de l'exécutable
       file(GLOB_RECURSE EOS_DLLS
-        "${CRZGAMES_LIBRARIES}/eos-sdk/lib/windows/${RC2D_ARCH}/*.dll"
+        "${CRZGAMES_LIBRARIES}/eos-sdk/bin/windows/${RC2D_ARCH}/*.dll"
       )
 
       foreach(FILE IN LISTS EOS_DLLS)
@@ -1140,6 +1140,9 @@ rc2d_configure_cjson(${PROJECT_NAME})
 
 # Linker le SDK Steamworks si activé
 rc2d_link_steamworks(${PROJECT_NAME})
+
+# Linker le SDK EOS (Epic Online Services) si activé
+rc2d_link_eos_sdk(${PROJECT_NAME})
 
 # Pour l'exemple RC2D
 if(RC2D_BUILD_EXAMPLES)
