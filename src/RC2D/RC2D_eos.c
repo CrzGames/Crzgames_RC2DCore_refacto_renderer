@@ -9,7 +9,7 @@
 
 // Indique si le SDK EOS a été initialisé avec succès
 static bool eos_initialized = false;
-// Stocke la plateforme EOS créée lors de l'initialisation
+// Stocke la plateforme EOS créée lors de l'initialisation du SDK
 static EOS_HPlatform eos_platform = NULL;
 
 EOS_HPlatform rc2d_eos_getPlatform(void)
