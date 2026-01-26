@@ -2027,7 +2027,7 @@ static bool rc2d_engine(void)
     {
         return false;
     }
-    rc2d_eos_tick();
+    rc2d_eos_platformTick();
 #endif // RC2D_EOS_SDK_ENABLED
 
     /**

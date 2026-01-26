@@ -60,7 +60,7 @@ bool rc2d_eos_init(void);
  * \brief Notifiez l'instance de la plateforme d'effectuer des tâches. 
  * Cette fonction doit être appelée fréquemment pour que les services fournis par le SDK fonctionnent correctement.
  */
-void rc2d_eos_tick(void);
+void rc2d_eos_platformTick(void);
 
 /**
  * \brief Récupère la plateforme actuelle du SDK Epic Online Services.

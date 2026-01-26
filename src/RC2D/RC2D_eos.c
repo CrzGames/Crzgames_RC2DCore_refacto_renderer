@@ -22,7 +22,7 @@ bool rc2d_eos_init(void)
 
 }
 
-void rc2d_eos_tick(void)
+void rc2d_eos_platformTick(void)
 {
     if (!eos_initialized || eos_platform == NULL)
         return;
