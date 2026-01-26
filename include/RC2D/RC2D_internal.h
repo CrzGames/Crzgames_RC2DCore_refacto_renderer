@@ -25,6 +25,25 @@
 extern "C" {
 #endif
 
+#if RC2D_STEAMWORKS_SDK_ENABLED
+/**
+ * \brief Initialise le SDK Steamworks.
+ * 
+ * \return {bool} true si l'initialisation a réussi, false sinon.
+*/
+bool rc2d_steam_init(void);
+
+/**
+ * \brief Exécute les callbacks Steamworks à chaque frame (doit être appelé régulièrement).
+ */
+void rc2d_steam_run_callbacks(void);
+
+/**
+ * \brief Nettoie le SDK Steamworks.
+ */
+void rc2d_steam_cleanup(void);
+#endif // RC2D_STEAMWORKS_SDK_ENABLED
+
 // Declaration des données embarquées pour les mappages de contrôleurs de jeu
 extern const unsigned char rc2d_gamecontrollerdb_data[];
 extern const size_t rc2d_gamecontrollerdb_size;
