@@ -48,8 +48,8 @@ void rc2d_eos_cleanup(void)
     }
 
     // 3) Shutdown global SDK
-    EOS_EResult r = EOS_Shutdown();
-    if (r == EOS_Success)
+    EOS_EResult result = EOS_Shutdown();
+    if (result == EOS_Success)
     {
         RC2D_log(RC2D_LOG_INFO, "EOS_Shutdown: success.");
         eos_initialized = false;
@@ -57,7 +57,7 @@ void rc2d_eos_cleanup(void)
     }
 
     // 4) Gestion des erreurs connues
-    switch (r)
+    switch (result)
     {
         case EOS_NotConfigured:
             // Typiquement: EOS_Initialize n'a jamais été appelé (ou a échoué)
