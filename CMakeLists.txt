@@ -38,10 +38,10 @@ option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net (ENet-based)" ON)
 option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" OFF)
 
 # Option pour le SDK Steamworks
-option(RC2D_STEAMWORKS_SDK_ENABLED "Enable RC2D Steamworks SDK integration" ON)
+option(RC2D_STEAMWORKS_SDK_ENABLED "Enable RC2D Steamworks SDK integration" OFF)
 
 # Option pour le SDK EOS (Epic Online Services)
-option(RC2D_EOS_SDK_ENABLED "Enable RC2D Epic Online Services (EOS) SDK integration" OFF)
+option(RC2D_EOS_SDK_ENABLED "Enable RC2D Epic Online Services (EOS) SDK integration" ON)
 
 # Option pour le niveau d'assertion
 option(RC2D_ASSERT_LEVEL "Niveau des assertions (0=none, 1=release, 2=debug, 3=paranoid)" 3)

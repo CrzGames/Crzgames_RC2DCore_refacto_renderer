@@ -136,7 +136,7 @@ int rc2d_video_openFromStorage(RC2D_Video *video,
                                RC2D_StorageKind storage_kind)
 {
     /* Init champs (état neutre) */
-    memset(video, 0, sizeof(*video));
+    SDL_memset(video, 0, sizeof(*video));
     for (int i = 0; i < RC2D_TEX_RING; ++i) video->textures[i] = NULL;
     video->loop_enabled    = 0;      /* par défaut: off */
     video->clock_time      = 0.0;
