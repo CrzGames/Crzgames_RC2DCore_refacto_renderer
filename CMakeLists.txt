@@ -46,13 +46,13 @@ option(RC2D_EOS_SDK_ENABLED "Enable RC2D Epic Online Services (EOS) SDK integrat
 # Option pour le niveau d'assertion
 option(RC2D_ASSERT_LEVEL "Niveau des assertions (0=none, 1=release, 2=debug, 3=paranoid)" 3)
 
-# Option Tests unitaires avec Criterion
-option(RC2D_BUILD_TESTS "Build unit tests with Criterion" OFF)
-
 # Option pour construire les exemples
 option(RC2D_BUILD_EXAMPLES "Build examples" ON)
 
-# Option pour choisir entre statique et dynamique
+# Option Tests unitaires avec Criterion (TODO: Pas encore implémenté)
+option(RC2D_BUILD_TESTS "Build unit tests with Criterion" OFF)
+
+# Option pour choisir entre statique et dynamique (TODO: Pas encore implémenté pour le mode shared)
 option(RC2D_BUILDING_SHARED "Build shared libraries" OFF)
 
 # Dossier de sortie
