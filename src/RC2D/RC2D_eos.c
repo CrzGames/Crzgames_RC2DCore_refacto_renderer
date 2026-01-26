@@ -5,7 +5,6 @@
 
 #include <eos_types.h>  // Pour : EOS_HPlatform
 #include <eos_sdk.h>    // Pour : EOS_Platform_Tick..etc
-#include <eos_result.h> // Pour : EOS_EResult codes (EOS_Success, EOS_NotConfigured, ...)
 
 // Indique si le SDK EOS a été initialisé avec succès
 static bool eos_initialized = false;
