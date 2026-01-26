@@ -909,11 +909,11 @@ endfunction()
 function(rc2d_link_steamworks target_name)
   if(RC2D_STEAMWORKS_SDK_ENABLED)
     # Link le dossier include du SDK Steamworks à la target
-    target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steam-sdk/include")
+    target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamworks-sdk/include")
 
     if(WIN32)
       # Rajouter le répertoire de la lib Steamworks, pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steam-sdk/lib/windows/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamworks-sdk/lib/windows/${RC2D_ARCH}")
 
       # Link la librairie Steamworks
       target_link_libraries(${target_name} PUBLIC
@@ -922,7 +922,7 @@ function(rc2d_link_steamworks target_name)
 
       # Copier aussi les DLLs dans le répertoire de l'exécutable
       file(GLOB_RECURSE STEAMWORKS_DLLS
-        "${CRZGAMES_LIBRARIES}/steam-sdk/lib/windows/${RC2D_ARCH}/*.dll"
+        "${CRZGAMES_LIBRARIES}/steamworks-sdk/lib/windows/${RC2D_ARCH}/*.dll"
       )
 
       foreach(FILE IN LISTS STEAMWORKS_DLLS)
