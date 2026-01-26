@@ -27,6 +27,7 @@ void rc2d_eos_tick(void)
     if (!eos_initialized || eos_platform == NULL)
         return;
 
+    // Appel régulier pour traiter les tâches EOS en arrière-plan
     EOS_Platform_Tick(eos_platform);
 }
 
@@ -74,7 +75,7 @@ void rc2d_eos_cleanup(void)
 
         default:
             // Autre code: on log en critique
-            RC2D_log(RC2D_LOG_CRITICAL, "EOS_Shutdown failed with EOS_EResult=%d.", (int)r);
+            RC2D_log(RC2D_LOG_CRITICAL, "EOS_Shutdown failed with EOS_EResult=%d.", (int)result);
             // On ne sait pas si l’état est propre, donc on marque non-init pour éviter double call.
             eos_initialized = false;
             break;
