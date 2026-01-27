@@ -4,15 +4,17 @@
 #include <RC2D/RC2D_assert.h>
 #include <RC2D/RC2D_audio.h>
 #include <RC2D/RC2D_camera.h>
+#include <RC2D/RC2D_cmdline.h>
 #include <RC2D/RC2D_collision.h>
 #include <RC2D/RC2D_config.h>
 #include <RC2D/RC2D_data.h>
 #include <RC2D/RC2D_engine.h>
+#include <RC2D/RC2D_eos.h>
 #include <RC2D/RC2D_event.h>
 #include <RC2D/RC2D_filedialog.h>
 #include <RC2D/RC2D_filesystem.h>
-// #include <RC2D/RC2D_gamepad.h>
 #include <RC2D/RC2D_gpu.h>
+#include <RC2D/RC2D_graphics.h>
 #include <RC2D/RC2D_guid.h>
 #include <RC2D/RC2D_keyboard.h>
 #include <RC2D/RC2D_keycode.h>
@@ -27,8 +29,8 @@
 #include <RC2D/RC2D_pixels.h>
 #include <RC2D/RC2D_platform.h>
 #include <RC2D/RC2D_power.h>
-// #include <RC2D/RC2D_rres.h>
 #include <RC2D/RC2D_scancode.h>
+#include <RC2D/RC2D_steamworks.h>
 #include <RC2D/RC2D_storage.h>
 #include <RC2D/RC2D_system.h>
 #include <RC2D/RC2D_text.h>
