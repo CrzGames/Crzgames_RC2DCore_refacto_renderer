@@ -49,7 +49,7 @@ static EOS_HConnect      eos_connect = NULL;
 static EOS_HAchievements eos_achievements = NULL;
 
 /* Stocke l'ID utilisateur local EOS après login Connect */
-static EOS_ProductUserId eos_local_user_id = NULL;
+static EOS_ProductUserId eos_product_user_id = NULL;
 
 bool rc2d_eos_init(void)
 {

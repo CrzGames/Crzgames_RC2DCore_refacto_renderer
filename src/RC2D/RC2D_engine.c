@@ -2191,6 +2191,9 @@ void rc2d_engine_quit(void)
     // Lib EOS Deinitialize
     rc2d_eos_cleanup();
 #endif // RC2D_EOS_SDK_ENABLED
+
+    // Free command line arguments
+    rc2d_cmdline_free();
     
     /* Libérer les shaders graphiques (vertex/fragment) */
     if (rc2d_engine_state.gpu_graphics_shader_mutex) 

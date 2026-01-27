@@ -28,8 +28,15 @@ static bool rc2d_load_has_been_called = false;  // rc2d_load() a déjà été ap
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) 
 {
     /**
-     * La définition de la fonction rc2d_setup doit être définie par l'utilisateur.
-     * On passe les arguments de la ligne de commande à la fonction rc2d_setup.
+     * Stocke les arguments de la ligne de commande pour une utilisation ultérieure, si nécessaire.
+     * Cela permet à l'application RC2D d'accéder aux arguments de la ligne de commande plus tard.
+    */
+    rc2d_cmdline_store(argc, argv);
+
+    /**
+     * La définition de la fonction rc2d_engine_setup doit être définie par l'utilisateur.
+     * On passe également les arguments de la ligne de commande à la fonction rc2d_engine_setup pour permettre
+     * une configuration dynamique basée sur les arguments pour l'utilisateur.
      */
     const RC2D_EngineConfig* config = rc2d_engine_setup(argc, argv);
 

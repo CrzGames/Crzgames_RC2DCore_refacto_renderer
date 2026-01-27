@@ -4,6 +4,7 @@
 #include <RC2D/RC2D_engine.h>
 #include <RC2D/RC2D_math.h>
 #include <RC2D/RC2D_gpu.h>
+#include <RC2D/RC2D_cmdline.h>
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
@@ -24,6 +25,19 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * \brief Stocke les arguments de la ligne de commande.
+ * 
+ * \param {int} argc - Nombre d'arguments.
+ * \param {char**} argv - Tableau des arguments (chaînes de caractères).
+ */
+void rc2d_cmdline_store(int argc, char* argv[]);
+
+/**
+ * \brief Libère la mémoire allouée pour les arguments de la ligne de commande.
+ */
+void rc2d_cmdline_free(void);
 
 #if RC2D_STEAMWORKS_SDK_ENABLED // Si le SDK Steamworks est activé
 /**
@@ -122,6 +136,9 @@ typedef struct RC2D_GraphicsShaderEntry {
  * \since Cette structure est disponible depuis RC2D 1.0.0.
  */
 typedef struct RC2D_EngineState {
+    // Arguments de la ligne de commande de l'application
+    RC2D_CommandLine cmdline;
+
     // Pointeur vers la configuration utilisateur
     RC2D_EngineConfig* config;
 
