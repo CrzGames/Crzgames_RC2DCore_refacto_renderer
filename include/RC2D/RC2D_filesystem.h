@@ -41,19 +41,6 @@ Linux : /tmp/.mount_mygame0q6J0j/ (une AppImage est un format d empaquetage qui,
 */
 char* rc2d_filesystem_getPathApp(void); 
 
-/*
-Les assets original doit être placer dans le dossier 'assets' du projet pour les plateformes Windows, Linux, macOS et iOS.
-Pour Android, les assets original doit être placer dans le dossier app/src/main/assets du dossier android-project.
-
-Build assets original in RRES file format (script), output example:
-- RRES: CDIR: Entry id: 0xb90bce3a | Offset: 0x00334c26 | Filename: ./assets/images/test.png (len: 28)
-
-On calculera le dossier 'assets' au préalable pour que ce sois relatif au dossier assets pour chaque plateforme.
-
-Cela ne concerne que le module rc2d_rres.
-*/
-char* rc2d_filesystem_getPathAssetsInResourceRRES(void);
-
 #ifdef __cplusplus
 }
 #endif

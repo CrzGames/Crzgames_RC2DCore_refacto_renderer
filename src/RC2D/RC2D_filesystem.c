@@ -53,19 +53,3 @@ void rc2d_filesystem_quit(void)
     RC2D_safe_free(prefPath);
     RC2D_safe_free(basePath);
 }
-
-char* rc2d_filesystem_getPathAssetsInResourceRRES(void)
-{
-    if (assetsPathRRES != NULL)
-        return assetsPathRRES;
-
-    // Si le chemin n'a pas encore été généré, le créer
-    assetsPathRRES = SDL_GetBasePath();
-    if (assetsPathRRES == NULL)
-    {
-        RC2D_log(RC2D_LOG_ERROR, "rc2d_filesystem_getPathAssetsInResourceRRES failed pointer SDL_GetBasePath : %s", SDL_GetError());
-        return NULL;
-    }
-
-    return assetsPathRRES;
-}

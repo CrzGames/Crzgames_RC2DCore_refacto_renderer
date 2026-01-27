@@ -92,14 +92,6 @@ Retrieves the path where assets are stored on the device.
 const char* rc2d_filesystem_getPathAssetsInDevice(void);
 ```
 
-### `rc2d_filesystem_getPathAssetsInResourceRRES`
-
-Retrieves the path where assets are stored in RRES resources.
-
-```c
-const char* rc2d_filesystem_getPathAssetsInResourceRRES(void);
-```
-
 ## Conclusion
 
 This documentation provides an overview of the filesystem operations available in the RC2D game engine. These functions allow for efficient management of files and paths, facilitating access to application data and resources.
