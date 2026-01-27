@@ -1,5 +1,7 @@
 #if RC2D_EOS_SDK_ENABLED
 
+// TODO: Reste pour ce module à implémenter l'auth/connect utilisateur, la gestion des achievements.
+
 #include <RC2D/RC2D_eos.h>
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_memory.h>
