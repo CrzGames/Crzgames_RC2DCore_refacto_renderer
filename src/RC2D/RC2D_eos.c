@@ -33,15 +33,23 @@
 #define RC2D_EOS_CLIENT_SECRET   "OiddLGdCVb8smJJdgUnzIaQnBV5dJwPJMwcm5g12SpU"
 #endif
 
-// Indique si le SDK EOS a été initialisé avec succès
+/* Indique si le SDK EOS a été initialisé avec succès */
 static bool eos_initialized = false;
-// Stocke la plateforme EOS créée lors de l'initialisation du SDK
+
+/* Handle vers la platform EOS */
 static EOS_HPlatform eos_platform = NULL;
 
-static EOS_ProductUserId eos_local_user = NULL; // à remplir après login Connect
+/** Handle vers l'interface Auth EOS */
 static EOS_HAuth         eos_auth = NULL;
+
+/** Handle vers l'interface Connect EOS */
 static EOS_HConnect      eos_connect = NULL;
+
+/** Handle vers l'interface Achievements EOS */
 static EOS_HAchievements eos_achievements = NULL;
+
+/* Stocke l'ID utilisateur local EOS après login Connect */
+static EOS_ProductUserId eos_local_user_id = NULL;
 
 bool rc2d_eos_init(void)
 {
@@ -55,37 +63,33 @@ bool rc2d_eos_init(void)
     EOS_InitializeOptions initOpt;
     SDL_memset(&initOpt, 0, sizeof(initOpt));
     initOpt.ApiVersion = EOS_INITIALIZE_API_LATEST;
-
-    // allocators custom = NULL (OK)
     initOpt.AllocateMemoryFunction = NULL;
     initOpt.ReallocateMemoryFunction = NULL;
     initOpt.ReleaseMemoryFunction = NULL;
-
     initOpt.ProductName = RC2D_EOS_PRODUCT_NAME;
     initOpt.ProductVersion = RC2D_EOS_PRODUCT_VERSION;
     initOpt.Reserved = NULL;
     initOpt.SystemInitializeOptions = NULL;
     initOpt.OverrideThreadAffinity = NULL;
 
-    EOS_EResult r = EOS_Initialize(&initOpt);
-    if (r == EOS_Success)
+    EOS_EResult result = EOS_Initialize(&initOpt);
+    if (result == EOS_Success)
     {
-        RC2D_log(RC2D_LOG_INFO, "EOS_Initialize: success (%s %s).",
-                 RC2D_EOS_PRODUCT_NAME, RC2D_EOS_PRODUCT_VERSION);
+        RC2D_log(RC2D_LOG_INFO, "EOS_Initialize: success (%s %s).", RC2D_EOS_PRODUCT_NAME, RC2D_EOS_PRODUCT_VERSION);
     }
-    else if (r == EOS_AlreadyConfigured)
+    else if (result == EOS_AlreadyConfigured)
     {
         // Le SDK est déjà initialisé (par un autre code). On continue quand même.
         RC2D_log(RC2D_LOG_WARN, "EOS_Initialize: EOS_AlreadyConfigured (SDK already initialized).");
     }
-    else if (r == EOS_InvalidParameters)
+    else if (result == EOS_InvalidParameters)
     {
         RC2D_log(RC2D_LOG_CRITICAL, "EOS_Initialize failed: EOS_InvalidParameters.");
         return false;
     }
     else
     {
-        RC2D_log(RC2D_LOG_CRITICAL, "EOS_Initialize failed with EOS_EResult=%d.", (int)r);
+        RC2D_log(RC2D_LOG_CRITICAL, "EOS_Initialize failed with EOS_EResult=%d.", (int)result);
         return false;
     }
 
@@ -93,14 +97,12 @@ bool rc2d_eos_init(void)
     EOS_Platform_Options platOpt;
     SDL_memset(&platOpt, 0, sizeof(platOpt));
     platOpt.ApiVersion = EOS_PLATFORM_OPTIONS_API_LATEST;
-    platOpt.Reserved = NULL; // Doit être NULL obligatoirement selon doc
-
+    platOpt.Reserved = NULL; // Doit être NULL obligatoirement selon la doc
     platOpt.ProductId = RC2D_EOS_PRODUCT_ID;
     platOpt.SandboxId = RC2D_EOS_SANDBOX_ID;
     platOpt.DeploymentId = RC2D_EOS_DEPLOYMENT_ID;
     platOpt.ClientCredentials.ClientId = RC2D_EOS_CLIENT_ID;
     platOpt.ClientCredentials.ClientSecret = RC2D_EOS_CLIENT_SECRET;
-
     platOpt.bIsServer = EOS_FALSE;
     platOpt.EncryptionKey = NULL;
     platOpt.OverrideCountryCode = NULL;
@@ -123,10 +125,10 @@ bool rc2d_eos_init(void)
         RC2D_log(RC2D_LOG_WARN, "EOS_Shutdown after platform create failure returned EOS_EResult=%d.", (int)sd);
 
         eos_initialized = false;
-        eos_local_user = NULL;
         return false;
     }
 
+    // Marquer le SDK comme initialisé
     eos_initialized = true;
 
     // Récupération des interfaces principales
