@@ -1,3 +1,4 @@
+#include <RC2D/RC2D_internal.h>
 #include <RC2D/RC2D_cmdline.h>
 #include <RC2D/RC2D_memory.h>
 
