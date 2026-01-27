@@ -124,6 +124,30 @@ extern "C" {
 #define RC2D_VIDEO_MODULE_ENABLED 0
 #endif
 
+/**
+ * \brief Si RC2D_EOS_SDK_ENABLED est défini à 1, le support du SDK Epic Online Services (EOS) est activé.
+ * 
+ * Cela utilise le SDK EOS pour intégrer des fonctionnalités en ligne telles que l'authentification,
+ * les succès, les classements, et d'autres services en ligne fournis par Epic Games.
+ * 
+ * \since Cette macro de préprocesseur est disponible depuis RC2D 1.0.0.
+ */
+#ifndef RC2D_EOS_SDK_ENABLED
+#define RC2D_EOS_SDK_ENABLED 0
+#endif
+
+/**
+ * \brief Si RC2D_STEAMWORKS_SDK_ENABLED est défini à 1, le support du SDK Steamworks est activé.
+ * 
+ * Cela utilise le SDK Steamworks pour intégrer des fonctionnalités spécifiques à la plateforme Steam,
+ * telles que les succès, les classements, les achats intégrés, et d'autres services en ligne fournis par Steam.
+ * 
+ * \since Cette macro de préprocesseur est disponible depuis RC2D 1.0.0.
+ */
+#ifndef RC2D_STEAMWORKS_SDK_ENABLED
+#define RC2D_STEAMWORKS_SDK_ENABLED 0
+#endif
+
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */
 #ifdef __cplusplus
 }

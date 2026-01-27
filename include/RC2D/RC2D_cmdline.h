@@ -8,6 +8,7 @@ extern "C" {
 
 /**
  * \brief Retourne le nombre d'arguments de la ligne de commande.
+ * \return Nombre d'arguments
  */
 int rc2d_cmdline_getArgc(void);
 
