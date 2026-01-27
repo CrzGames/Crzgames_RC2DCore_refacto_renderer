@@ -10,7 +10,6 @@
 #include <SDL3/SDL_cpuinfo.h>
 #include <SDL3/SDL_misc.h>
 
-
 /**
  * Fonction de rappel pour arrêter la vibration.
  *
