@@ -6,12 +6,6 @@
 extern "C" {
 #endif
 
-typedef struct RC2D_CommandLine
-{
-    int argc;
-    char** argv;        // copie profonde (N strings)
-} RC2D_CommandLine;
-
 /**
  * \brief Retourne le nombre d'arguments de la ligne de commande.
  */

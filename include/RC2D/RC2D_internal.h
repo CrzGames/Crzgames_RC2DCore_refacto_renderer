@@ -27,6 +27,17 @@ extern "C" {
 #endif
 
 /**
+ * \brief Structure représentant les arguments de la ligne de commande.
+ * Cette structure stocke le nombre d'arguments (argc) et un tableau de chaînes de caractères (argv)
+ * représentant les arguments eux-mêmes.
+*/
+typedef struct RC2D_CommandLine
+{
+    int argc;
+    char** argv;        // copie profonde (N strings)
+} RC2D_CommandLine;
+
+/**
  * \brief Stocke les arguments de la ligne de commande.
  * 
  * \param {int} argc - Nombre d'arguments.

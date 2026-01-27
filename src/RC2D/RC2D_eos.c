@@ -3,6 +3,7 @@
 #include <RC2D/RC2D_eos.h>
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_memory.h>
+#include <RC2D/RC2D_cmdline.h>
 
 #include <eos_sdk.h>
 #include <eos_achievements.h>
