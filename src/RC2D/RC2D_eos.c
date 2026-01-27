@@ -38,45 +38,10 @@ static bool eos_initialized = false;
 // Stocke la plateforme EOS créée lors de l'initialisation du SDK
 static EOS_HPlatform eos_platform = NULL;
 
-
 static EOS_ProductUserId eos_local_user = NULL; // à remplir après login Connect
 static EOS_HAuth         eos_auth = NULL;
 static EOS_HConnect      eos_connect = NULL;
 static EOS_HAchievements eos_achievements = NULL;
-
-/* ClientData qu'on va libérer dans le callback (ici: juste l'id) */
-typedef struct RC2D_EOS_UnlockCtx {
-    char* achievement_id;
-} RC2D_EOS_UnlockCtx;
-
-// Callback appelé quand l'unlock d'un achievement est terminé (pour libérer le ClientData)
-static void EOS_CALL rc2d_eos_on_unlock_complete_freectx(
-    const EOS_Achievements_OnUnlockAchievementsCompleteCallbackInfo* data)
-{
-    if (data && data->ClientData)
-    {
-        RC2D_EOS_UnlockCtx* ctx = (RC2D_EOS_UnlockCtx*)data->ClientData;
-
-        if (data->ResultCode == EOS_Success)
-            RC2D_log(RC2D_LOG_INFO, "EOS: Achievement '%s' unlocked.", ctx->achievement_id);
-        else
-            RC2D_log(RC2D_LOG_WARN, "EOS: Unlock '%s' failed (Result=%d).",
-                     ctx->achievement_id, (int)data->ResultCode);
-
-        free(ctx->achievement_id);
-        free(ctx);
-        return;
-    }
-
-    // fallback log si pas de ctx
-    if (data)
-        RC2D_log(RC2D_LOG_WARN, "EOS: Unlock failed (Result=%d).", (int)data->ResultCode);
-}
-
-EOS_HPlatform rc2d_eos_getPlatform(void)
-{
-    return eos_platform;
-}
 
 bool rc2d_eos_init(void)
 {
@@ -163,13 +128,13 @@ bool rc2d_eos_init(void)
     }
 
     eos_initialized = true;
-    eos_local_user = NULL;
 
+    // Récupération des interfaces principales
     eos_auth = EOS_Platform_GetAuthInterface(eos_platform);
     eos_connect = EOS_Platform_GetConnectInterface(eos_platform);
     eos_achievements = EOS_Platform_GetAchievementsInterface(eos_platform);
 
-
+    // Succès
     RC2D_log(RC2D_LOG_INFO, "EOS_Platform_Create: success.");
     return true;
 }
@@ -235,61 +200,6 @@ void rc2d_eos_cleanup(void)
             eos_initialized = false;
             break;
     }
-}
-
-bool rc2d_eos_unlockAchievement(const char* api_name)
-{
-    if (!eos_initialized || eos_platform == NULL)
-    {
-        RC2D_log(RC2D_LOG_WARN, "EOS: unlock skipped (SDK not initialized).");
-        return false;
-    }
-    if (eos_local_user == NULL)
-    {
-        RC2D_log(RC2D_LOG_WARN, "EOS: unlock skipped (no local user logged in yet).");
-        return false;
-    }
-    if (!eos_achievements)
-    {
-        RC2D_log(RC2D_LOG_CRITICAL, "EOS: Achievements interface is NULL.");
-        return false;
-    }
-    if (api_name == NULL || api_name[0] == '\0')
-    {
-        RC2D_log(RC2D_LOG_WARN, "EOS: unlock skipped (invalid api_name).");
-        return false;
-    }
-
-    RC2D_EOS_UnlockCtx* ctx = (RC2D_EOS_UnlockCtx*)RC2D_malloc(sizeof(*ctx));
-    if (!ctx) return false;
-
-    ctx->achievement_id = RC2D_strdup(api_name);
-    if (!ctx->achievement_id)
-    {
-        RC2D_safe_free(ctx);
-        return false;
-    }
-
-    // IMPORTANT: AchievementIds doit rester valide pendant l'async.
-    // Ici on utilise un tableau qui pointe vers ctx->achievement_id (heap), OK.
-    const char* ids[1];
-    ids[0] = ctx->achievement_id;
-
-    EOS_Achievements_UnlockAchievementsOptions opt;
-    SDL_memset(&opt, 0, sizeof(opt));
-    opt.ApiVersion = EOS_ACHIEVEMENTS_UNLOCKACHIEVEMENTS_API_LATEST;
-    opt.UserId = eos_local_user;
-    opt.AchievementIds = ids;
-    opt.AchievementsCount = 1;
-
-    EOS_Achievements_UnlockAchievements(
-        eos_achievements,
-        &opt,
-        ctx,
-        rc2d_eos_on_unlock_complete_freectx
-    );
-
-    return true; // requête envoyée
 }
 
 #endif // RC2D_EOS_SDK_ENABLED

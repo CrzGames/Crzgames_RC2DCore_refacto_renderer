@@ -14,10 +14,6 @@
 #include <SDL3_mixer/SDL_mixer.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-#if RC2D_EOS_SDK_ENABLED
-#include <eos_types.h> // Pour EOS_HPlatform
-#endif
-
 /**
  * IMPORTANT: 
  * Module interne de la bibliothèque RC2D.
@@ -61,13 +57,6 @@ bool rc2d_eos_init(void);
  * Cette fonction doit être appelée fréquemment pour que les services fournis par le SDK fonctionnent correctement.
  */
 void rc2d_eos_platformTick(void);
-
-/**
- * \brief Récupère la plateforme actuelle du SDK Epic Online Services.
- * 
- * \return {RC2D_EOS_HPlatform} La plateforme actuelle.
- */
-EOS_HPlatform rc2d_eos_getPlatform(void);
 
 /**
  * \brief Nettoie le SDK Epic Online Services.
