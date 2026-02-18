@@ -325,13 +325,11 @@ chmod +x ./build-scripts/generate-project/macos-arm64.sh
 # Windows - arm64
 .\build-scripts\generate-project\windows-arm64.bat
 
-# SteamRT4 x64 (Linux)
-chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
-./build-scripts/generate-project/steamrt4-x64.sh
+# SteamRT4 - x64 (Les artefacts générés (Debug / Release) sont disponibles dans le dossier : docker-build-output-steamrt4/)
+docker compose run --rm rc2d-builder-x64
 
-# SteamRT4 arm64 (Linux)
-chmod +x ./build-scripts/generate-project/steamrt4-arm64.sh
-./build-scripts/generate-project/steamrt4-arm64.sh
+# SteamRT4 - arm64 (Les artefacts générés (Debug / Release) sont disponibles dans le dossier : docker-build-output-steamrt4/)
+docker compose run --rm rc2d-builder-arm64
 
 # Android (Unix)
 chmod +x ./build-scripts/generate-project/android.sh
