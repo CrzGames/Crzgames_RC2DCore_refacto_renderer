@@ -338,11 +338,11 @@ docker compose run --rm rc2d-builder-x64
 docker compose run --rm rc2d-builder-arm64
 
 # Android (Unix)
-chmod +x ./build-scripts/generate-project/android.sh
-./build-scripts/generate-project/android.sh
+chmod +x ./build-scripts/generate-project/android-unix.sh
+./build-scripts/generate-project/android-unix.sh
 
 # Android (Windows)
-.\build-scripts\generate-project\android.bat
+.\build-scripts\generate-project\android-windows.bat
 
 # iOS (run in macOS)
 chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64.sh
