@@ -1,8 +1,20 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM Generate lib for Android (arm64-v8a + armeabi-v7a)
+REM --------------------------------------------------
+REM Vérification environnement
+REM --------------------------------------------------
 
+if "%JAVA_HOME%"=="" (
+  echo Erreur : JAVA_HOME n'est pas defini.
+  exit /b 1
+)
+if "%ANDROID_HOME%"=="" if "%ANDROID_SDK_ROOT%"=="" (
+  echo Erreur : ANDROID_HOME ou ANDROID_SDK_ROOT n'est pas defini.
+  exit /b 1
+)
+
+REM Generate lib for Android (arm64-v8a + armeabi-v7a)
 set "GRADLE=gradlew.bat"
 
 REM Define base directories
@@ -16,14 +28,6 @@ mkdir "%DIST_DIR_RELEASE%\arm64-v8a" 2>nul
 mkdir "%DIST_DIR_RELEASE%\armeabi-v7a" 2>nul
 mkdir "%DIST_DIR_DEBUG%\arm64-v8a" 2>nul
 mkdir "%DIST_DIR_DEBUG%\armeabi-v7a" 2>nul
-
-REM Vérifier si ANDROID_HOME est défini
-if "%ANDROID_HOME%"=="" (
-  echo Erreur : ANDROID_HOME n'est pas defini.
-  echo Veuillez definir ANDROID_HOME pour pointer vers votre repertoire Android SDK/NDK.
-  echo Exemple : set ANDROID_HOME=C:\Users\Corentin\AppData\Local\Android\Sdk
-  exit /b 1
-)
 
 REM Change to project directory
 cd android-project

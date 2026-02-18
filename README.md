@@ -217,7 +217,7 @@
   3. Download and Install CMake >= 3.28.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
   
   # Linux :
-  1. Requirements : glibc >= 3.28.0 (Ubuntu >= 22.04 OR Debian >= 12.0)
+  1. Requirements : glibc >= 2.35.0 (Exemple : Ubuntu >= 22.04 OR Debian >= 12.0)
   2. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   3. Après l'installation de homebrew il faut importer les variables d'environnement et installer les deux librairies : 
     echo '# Set PATH, MANPATH, etc., for Homebrew.' >> /home/debian/.bashrc && 
@@ -226,28 +226,30 @@
     sudo apt-get install -y build-essential &&
     brew install gcc
   5. Download and Install CMake >= 3.28.0 : brew install cmake
-  6. Télécharger et Installer patchelf (pour la dépendence SDL_shadercross), puis ajouté au PATH.
+  6. Télécharger et Installer patchelf, puis ajouté au PATH.
 
 
   # macOS :
   1. Requirements : MacOS X >= 15.0.0
   2. Download and Install xCode >= 16.4.0
   3. Download and Install Command Line Tools : xcode-select --install
-  4. Download and Install CMake >= 3.28.0 : brew install cmake
+  4. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  5. Download and Install CMake >= 3.28.0 : brew install cmake
 
 
-  # Android (run in Windows) :
+  # Android (Unix / Windows) :
   1. Download and Install : Android Studio 2025.3.1 or newer
-  2. Add environment variable: ANDROID_HOME for path SDK Android (SDK Manager path)
-  3. Download and Install CMake >= 3.28.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
-  4. Download and Install Java JDK LTS (Oracle) == 17.0.10
+  2. Add environment variable: ANDROID_HOME for path SDK Android (SDK Manager path), sous Windows en général : C:\Users\Corentin\AppData\Local\Android\Sdk
+  3. Download and Install CMake >= 3.28.0 and add PATH ENVIRONMENT.
+  4. Download and Install Java JDK 17 LTS (Temurin) : https://adoptium.net/fr/temurin/releases?version=17&os=any&arch=any  (Pendant l installation du SDK Java de Temurin cocher la case pour ajouté automatiquement la variable d environnement JAVA_HOME)
+  5. Si vous avez oublié de coché la case pour ajouter automatiquement la variable d environnement "JAVA_HOME", sous Windows en général : C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot\bin
 
 
   # iOS (only macOS) :
   1. Requirements : MacOS X >= 15.0.0
-  2. Download and Install Command Line Tools : xcode-select --install
-  3. Download and Install xCode >= 16.4.0
-  4. Download and Install SDK iOS >= 18.0.0
+  2. Download and Install xCode >= 16.4.0
+  3. Download and Install SDK iOS >= 18.0.0
+  4. Download and Install Command Line Tools : xcode-select --install
   5. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   6. Download and Install cmake >= 3.28.0 : brew install cmake 
   ```

@@ -1,8 +1,24 @@
 #!/bin/bash
 set -euo pipefail
 
-# Generate lib for Android (arm64-v8a + armeabi-v7a)
+# --------------------------------------------------
+# Vérification environnement
+# --------------------------------------------------
 
+# JAVA_HOME obligatoire
+if [ -z "${JAVA_HOME:-}" ]; then
+  echo "Erreur : JAVA_HOME n'est pas défini."
+  echo "Exemple : export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk"
+  exit 1
+fi
+# ANDROID_HOME ou ANDROID_SDK_ROOT obligatoire
+if [ -z "${ANDROID_HOME:-}" ] && [ -z "${ANDROID_SDK_ROOT:-}" ]; then
+  echo "Erreur : ANDROID_HOME ou ANDROID_SDK_ROOT n'est pas défini."
+  echo "Exemple : export ANDROID_HOME=~/Library/Android/sdk"
+  exit 1
+fi
+
+# Generate lib for Android (arm64-v8a + armeabi-v7a)
 GRADLE="./gradlew"
 
 # Define base directories
@@ -14,14 +30,6 @@ DIST_DIR_DEBUG="dist/lib/android/Debug"
 # Create destination directories
 mkdir -p "$DIST_DIR_RELEASE/arm64-v8a" "$DIST_DIR_RELEASE/armeabi-v7a"
 mkdir -p "$DIST_DIR_DEBUG/arm64-v8a"   "$DIST_DIR_DEBUG/armeabi-v7a"
-
-# Vérifier si ANDROID_HOME est défini
-if [ -z "${ANDROID_HOME:-}" ]; then
-  echo "Erreur : ANDROID_HOME n'est pas défini."
-  echo "Veuillez définir ANDROID_HOME pour pointer vers votre répertoire Android SDK/NDK."
-  echo "Exemple : export ANDROID_HOME=~/Library/Android/sdk"
-  exit 1
-fi
 
 # Change to project directory
 cd android-project
