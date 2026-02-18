@@ -10,6 +10,13 @@ permissions:
   contents: write
   discussions: write
 
+env:
+  ANDROID_NDK_VERSION: "29.0.14206865"
+  ANDROID_PLATFORM_VERSION: "android-36"
+  JAVA_DISTRIBUTION: "temurin"
+  JAVA_VERSION: "17"
+  XCODE_VERSION: "26.2.0"
+
 jobs:
   build_deploy_librc2d:
     strategy:
@@ -20,17 +27,17 @@ jobs:
             target: linux
             generator: Unix Makefiles
             arch: x86_64
-          - platform: macos-14
+          - platform: macos-26
             target: macos
             generator: Xcode
             sdk: macosx
             arch: x86_64-arm64
-          - platform: macos-14
+          - platform: macos-26
             target: ios
             generator: Xcode
             sdk: iphonesimulator
             arch: x86_64-arm64
-          - platform: macos-14
+          - platform: macos-26
             target: ios
             generator: Xcode
             sdk: iphoneos
@@ -51,7 +58,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: true
           token: ${{ secrets.PAT }}
@@ -91,12 +98,16 @@ jobs:
           xcode-version: '15.4.0'
 
       - name: Determine SDK Path and set SDKROOT - macOS / iOS
-        if: matrix.target == 'ios' || matrix.target == 'macos'
+        if: matrix.platform == 'macos' || matrix.platform == 'ios'
         run: |
           sdk="${{ matrix.sdk }}"
-          SDKROOT=$(xcrun --sdk $sdk --show-sdk-path)
+          SDKROOT=$(xcrun --sdk "$sdk" --show-sdk-path)
+          SDKVERSION=$(xcrun --sdk "$sdk" --show-sdk-version)
           echo "SDKROOT=$SDKROOT" >> $GITHUB_ENV
           echo "Using SDK: $sdk"
+          echo "SDK Path: $SDKROOT"
+          echo "SDK Version: $SDKVERSION"
+        shell: bash
 
       - name: Configure project with CMake - iOS (iphoneos/iphonesimulator)
         if: matrix.target == 'ios'
@@ -227,10 +238,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
 
       - name: Organize Artifacts
         run: |
@@ -289,10 +300,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Node.js latest LTS and setup cache
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
 

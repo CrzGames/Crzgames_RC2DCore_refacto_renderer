@@ -276,13 +276,15 @@ set(SDL_GAMECONTROLLER ON CACHE BOOL "Enable gamecontroller API" FORCE)
 # Active HIDAPI (accès direct USB/Bluetooth aux manettes modernes)
 # Améliore la compatibilité et évite de dépendre uniquement des drivers OS
 set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "Enable HIDAPI joystick backend" FORCE)
-# Active XInput (Windows) pour un support optimal des manettes Xbox
-# Meilleure détection, vibrations plus fiables
-set(SDL_JOYSTICK_XINPUT ON CACHE BOOL "Enable XInput controller backend on Windows" FORCE)
-# Active RawInput (Windows)
-# Permet une détection plus bas niveau des périphériques USB
-# Utile comme fallback si XInput ne voit pas certains devices
-set(SDL_JOYSTICK_RAWINPUT ON CACHE BOOL "Enable RawInput joystick backend on Windows" FORCE)
+if(WIN32) # Windows
+  # Active XInput (Windows) pour un support optimal des manettes Xbox
+  # Meilleure détection, vibrations plus fiables
+  set(SDL_JOYSTICK_XINPUT ON CACHE BOOL "Enable XInput controller backend on Windows" FORCE)
+  # Active RawInput (Windows)
+  # Permet une détection plus bas niveau des périphériques USB
+  # Utile comme fallback si XInput ne voit pas certains devices
+  set(SDL_JOYSTICK_RAWINPUT ON CACHE BOOL "Enable RawInput joystick backend on Windows" FORCE)
+endif()
 # Active le support des vibrations / retour de force
 # Fonctionne avec la plupart des manettes modernes
 set(SDL_HAPTIC ON CACHE BOOL "Enable haptic (rumble/force feedback) support" FORCE)
