@@ -19,6 +19,7 @@
 📦 Crzgames_RC2DCore
 ├── 📁 .github                        # Configuration GitHub (workflows CI/CD)
 ├── 📁 android-project                # Projet Android contenant les fichiers nécessaires pour packager RC2D sous forme de .aar
+├── 📁 build (git ignored)            # Projet générer via un script au préalable (lib RC2D static + projet exemple)
 ├── 📁 build-scripts                  # Scripts de build personnalisés (.sh / .bat), puis les scripts utilise le CMakelists.txt
 ├── 📁 cmake                          
 │   └── 📄 setup_dependencies.cmake   # Script CMake chargé de lire `dependencies.txt` et cloner/configurer les dépendances dans `/dependencies`
@@ -29,18 +30,23 @@
 │   ├── 📁 SDL_image                  # Extension SDL3 pour le support des images (PNG, JPEG, etc.)
 │   ├── 📁 SDL_ttf                    # Extension SDL3 pour le rendu de polices TrueType
 │   ├── 📁 SDL_mixer                  # Extension SDL3 pour la gestion audio avancée
+├── 📁 docker-build-output-steamrt4 (git ignored) # Projet générer via le docker-compose pour SteamRT4 SDK x64/arm64
 ├── 📁 docs                           # Documentation du moteur (pages Markdown, auto-générées ou manuelles)
 ├── 📁 example                        # Exemples d’utilisation du moteur RC2D (projets de démo, test de fonctionnalités)
+├── 📁 icons                          # Icones générer pour l'executable du projet d'exemple via au préalable via un script.
 ├── 📁 include                        # En-têtes publics exposés aux utilisateurs de la lib (API du moteur)
 │   ├── 📁 external/lz4               # Dossier "external" qui contient des librairies link statiquement depuis leur fichier source directement et intégrer à RC2D.
+├── 📁 platforms                      # Contient la base de donnée des gamecontrollersdl, des choses spécifique au plateforme pour le projet d'exemple
 ├── 📁 src                            # Code source interne de la bibliothèque RC2D (implémentations .c)
 ├── 📁 tests                          # Tests unitaires (avec Criterion) pour vérifier les modules du moteur
 ├── 📄 .gitignore                     # Fichiers/dossiers à ignorer par Git (ex: /dependencies, builds temporaires)
 ├── 📄 CHANGELOG.md                   # Historique des versions avec les modifications apportées à chaque release
 ├── 📄 CMakeLists.txt                 # Point d’entrée de la configuration CMake (build multiplateforme)
 ├── 📄 dependencies.txt               # Fichier listant les dépendances à cloner (format : nom=repo:version)
+├── 📄 docker-compose.yml             # Deux image SteamRT4 SDK x64 et arm64 pour build RC2D pour SteamRT4 spécifiquement.
 ├── 📄 README.md                      # Page d’accueil du dépôt (description, installation, exemples d’usage)
 ├── 📄 release-please-config.json     # Configuration pour `release-please` (outil Google de génération automatique de releases)
+├── 📄 TODO.md                        # TODO en cours à faire
 ├── 📄 version.txt                    # Contient la version actuelle du moteur (utilisé dans le build ou les releases)
 
 ```
