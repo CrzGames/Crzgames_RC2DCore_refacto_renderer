@@ -18,7 +18,7 @@ build
 /dependencies/
 
 # Compiled object files
-docker-build-output
+docker-build-output-steamrt4/
 
 /examples/shaders/tools/
 /examples/assets/shaders/tools/
