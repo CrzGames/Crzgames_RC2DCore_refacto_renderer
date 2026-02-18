@@ -249,14 +249,14 @@ cmake -P cmake/setup_dependencies.cmake
 1. Récupérer la valeur du fichier appeler `gamecontrollerdb.txt` depuis : `https://github.com/mdqinc/SDL_GameControllerDB`
 2. Copier/Coller la valeur du fichier dans `platforms/all/gamecontroller-db/gamecontrollersdl3-db.txt`
 3. Télécharger et Installer Python >= 3.x.x
-4. Run le script `build-scripts/generate_gamecontrollerdb_embedded.py`
+4. Run le script `generate_gamecontrollerdb_embedded.py`
 ```bash
 # Unix
 chmod +x ./build-scripts/generate_gamecontrollerdb_embedded.py
-./build-scripts/generate_gamecontrollerdb_embedded.py
+python ./build-scripts/generate_gamecontrollerdb_embedded.py
 
 # Windows
-.\build-scripts\generate_gamecontrollerdb_embedded.py
+python .\build-scripts\generate_gamecontrollerdb_embedded.py
 ```
 Cela aura générer à nouveau le fichier à jour dans : `src/RC2D/RC2D_gamecontrollerdb_embedded.c` par rapport au nouveau `gamecontrollersdl3-db.txt`.
 
