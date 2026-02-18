@@ -285,6 +285,14 @@ chmod +x ./build-scripts/generate-project/macos-arm64.sh
 # Windows - arm64
 .\build-scripts\generate-project\windows-arm64.bat
 
+# Steam Linux / Steam Deck - SteamRT4 x64 (Linux)
+chmod +x ./build-scripts/generate-project/steamlinux_steamdeck-x64.sh
+./build-scripts/generate-project/steamlinux_steamdeck-x64.sh
+
+# Steam Linux - SteamRT4 arm64 (Linux)
+chmod +x ./build-scripts/generate-project/steamlinux-arm64.sh
+./build-scripts/generate-project/steamlinux-arm64.sh
+
 # Android (Unix)
 chmod +x ./build-scripts/generate-project/android.sh
 ./build-scripts/generate-project/android.sh
@@ -293,8 +301,8 @@ chmod +x ./build-scripts/generate-project/android.sh
 .\build-scripts\generate-project\android.bat
 
 # iOS (run in macOS)
-chmod +x ./build-scripts/generate-project/ios.sh
-./build-scripts/generate-project/ios.sh
+chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64.sh
+./build-scripts/generate-project/ios-iphoneos-arm64.sh
 ```
 3. Il y a un dossier `build` à la racine qui est générer.
 ```bash

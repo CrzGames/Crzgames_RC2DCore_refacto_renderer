@@ -49,7 +49,7 @@ option(RC2D_ASSERT_LEVEL "Niveau des assertions (0=none, 1=release, 2=debug, 3=p
 # Option pour construire les exemples
 option(RC2D_BUILD_EXAMPLES "Build examples" ON)
 
-# Option Tests unitaires avec Criterion (TODO: Pas encore implémenté)
+# Option Tests unitaires avec Criterion (TODO: Pas encore implémenté pour les tests)
 option(RC2D_BUILD_TESTS "Build unit tests with Criterion" OFF)
 
 # Option pour choisir entre statique et dynamique (TODO: Pas encore implémenté pour le mode shared)
@@ -494,12 +494,12 @@ function(rc2d_configure_onnxruntime target_name)
           "-framework CoreML"
         )
       endif()
-    elseif (RC2D_PLATFORM STREQUAL "SLR3-SNIPER") # Steam Deck / Steam Linux
+    elseif (RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/include/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/onnxruntime/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}")
 
       # Link les librairies ONNX Runtime
       target_link_libraries(${target_name} PUBLIC
@@ -508,8 +508,8 @@ function(rc2d_configure_onnxruntime target_name)
 
       # Copier aussi les libraries dynamique dans le répertoire de l'exécutable
       file(GLOB_RECURSE ONNX_SO
-        "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/onnxruntime/${RC2D_ARCH}/*.so"
-        "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
+        "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so"
+        "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
       )
       add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND cp -a ${ONNX_SO} "$<TARGET_FILE_DIR:${target_name}>/"
@@ -677,9 +677,9 @@ function(rc2d_configure_shadercross target_name)
         )
       endforeach()
     endif()
-  elseif(RC2D_PLATFORM STREQUAL "SLR3-SNIPER") # Steam Deck / Steam Linux
+  elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
     # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
-    set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/slr3-sniper/bin/SDL3_shadercross/${RC2D_ARCH}")
+    set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/steamrt4/bin/SDL3_shadercross/${RC2D_ARCH}")
     
     # Repertoire cible des .so + binaire de shadercross pour "examples/shaders/tools"
     set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
@@ -704,8 +704,8 @@ function(rc2d_configure_shadercross target_name)
 
     # Copier aussi les .so dans le répertoire "examples/shaders/tools"
     file(GLOB_RECURSE SHADERCROSS_SO
-      "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
-      "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
+      "${CRZGAMES_LIBRARIES}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
+      "${CRZGAMES_LIBRARIES}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
     )
     add_custom_command(TARGET ${target_name} POST_BUILD
       COMMAND cp -a ${SHADERCROSS_SO} "${SHADER_TOOLS_DIR}/"
@@ -729,11 +729,11 @@ function(rc2d_configure_shadercross target_name)
 
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT ANDROID)
       target_include_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/slr3-sniper/include"
+        "${CRZGAMES_LIBRARIES}/steamrt4/include"
       )
 
       # Récupérer le dossier de la lib shadercross
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/SDL3_shadercross/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}")
 
       # Link la lib shadercross
       target_link_libraries(${target_name} PUBLIC
@@ -889,12 +889,12 @@ function(rc2d_configure_openssl target_name)
         ssl    # OpenSSL
         crypto # OpenSSL
       )
-    elseif(RC2D_PLATFORM STREQUAL "SLR3-SNIPER") # Steam Deck / Steam Linux
+    elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/include")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/slr3-sniper/lib/OpenSSL/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/OpenSSL/${RC2D_ARCH}")
 
       # Link les librairies OpenSSL
       target_link_libraries(${target_name} PUBLIC

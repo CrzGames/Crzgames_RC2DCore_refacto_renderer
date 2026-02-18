@@ -1,14 +1,14 @@
 services:
   rc2d-builder:
-    container_name: rc2d_slr3_sniper
-    image: registry.gitlab.steamos.cloud/steamrt/sniper/sdk:3.0.20250408.124536
+    container_name: rc2d_steamrt4
+    image: registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk:4.0.20260119.200228
     working_dir: /build
     volumes:
       - ./:/build:rw
       - ./docker-build-output:/build/build/Release:rw
     environment:
       - CMAKE_BUILD_TYPE=Release
-      - RC2D_PLATFORM=SLR3-SNIPER
+      - RC2D_PLATFORM=STEAMRT4
     command: >
       bash -c "apt update && apt install -y patchelf &&
       mkdir -p build && cd build &&
