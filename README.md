@@ -208,10 +208,10 @@
   # Windows :
   1. Requirements : Windows >= 10 (x64 or arm64)
   2. Download and Install Visual Studio == 2022 (MSVC >= v143 + Windows SDK >= 10) : https://visualstudio.microsoft.com/fr/downloads/
-  3. Download and Install CMake >= 3.5.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
+  3. Download and Install CMake >= 3.28.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
   
   # Linux :
-  1. Requirements : glibc >= 3.5.0 (Ubuntu >= 22.04 OR Debian >= 12.0)
+  1. Requirements : glibc >= 3.28.0 (Ubuntu >= 22.04 OR Debian >= 12.0)
   2. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   3. Après l'installation de homebrew il faut importer les variables d'environnement et installer les deux librairies : 
     echo '# Set PATH, MANPATH, etc., for Homebrew.' >> /home/debian/.bashrc && 
@@ -219,7 +219,7 @@
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" &&
     sudo apt-get install -y build-essential &&
     brew install gcc
-  5. Download and Install CMake >= 3.5.0 : brew install cmake
+  5. Download and Install CMake >= 3.28.0 : brew install cmake
   6. Télécharger et Installer patchelf (pour la dépendence SDL_shadercross), puis ajouté au PATH.
 
 
@@ -227,13 +227,13 @@
   1. Requirements : MacOS X >= 15.0.0
   2. Download and Install xCode >= 16.4.0
   3. Download and Install Command Line Tools : xcode-select --install
-  4. Download and Install CMake >= 3.5.0 : brew install cmake
+  4. Download and Install CMake >= 3.28.0 : brew install cmake
 
 
   # Android (run in Windows) :
   1. Download and Install : Android Studio 2025.3.1 or newer
   2. Add environment variable: ANDROID_HOME for path SDK Android (SDK Manager path)
-  3. Download and Install CMake >= 3.5.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
+  3. Download and Install CMake >= 3.28.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
   4. Download and Install Java JDK LTS (Oracle) == 17.0.10
 
 
@@ -243,7 +243,7 @@
   3. Download and Install xCode >= 16.4.0
   4. Download and Install SDK iOS >= 18.0.0
   5. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  6. Download and Install cmake >= 3.5.0 : brew install cmake 
+  6. Download and Install cmake >= 3.28.0 : brew install cmake 
   ```
   
 4. Avant toute compilation, exécute le script suivant :
