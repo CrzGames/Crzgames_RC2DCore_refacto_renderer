@@ -4,24 +4,20 @@ cmake_minimum_required(VERSION 3.25.0)
 # Projet 
 project(rc2d LANGUAGES C CXX)
 
-# Découper la version en parties
-#string(REPLACE "." ";" VERSION_LIST ${APP_VERSION})
-#list(GET VERSION_LIST 0 APP_VERSION_MAJOR)
-#list(GET VERSION_LIST 1 APP_VERSION_MINOR)
-#list(GET VERSION_LIST 2 APP_VERSION_PATCH)
-
 # Spécifier la version C standard
 set(CMAKE_C_STANDARD 99)
 # Cela signifie que le compilateur doit respecter la version C standard spécifiée
 set(CMAKE_C_STANDARD_REQUIRED True)
 
 # Option pour activer le débogage mémoire, pour savoir les fuites de mémoire si il manque des free()
+# CONSEILLE : Désactivé pour la production (RC2D_MEMORY_DEBUG_ENABLED=OFF).
 option(RC2D_MEMORY_DEBUG_ENABLED "Enable RC2D memory debug tracking (realloc/malloc/free.. wrappers)" ON)
 
 # Option pour activer la compilation des shaders en ligne (hot reload) pour SDL3_shadercross
-if(ANDROID OR CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+# CONSEILLE : Désactivé pour la production (RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=OFF).
+if(ANDROID OR CMAKE_OSX_SYSROOT MATCHES "iphoneos") # Mobile (iOS, Android), laissé à OFF pour le mobile.
   option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
-else()
+else() # Desktop (Windows, macOS, Linux, SteamRT4 etc.)
   option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
 endif()
 

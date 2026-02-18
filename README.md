@@ -7,8 +7,11 @@
 - CMake (Build script)
 - Compiler (GCC, CL, Clang, Ninja, NDK)
 
-<br /><br /><br /><br />
+<br /><br />
 
+---
+
+<br /><br />
 
 ## 📁 Project Structure
 
@@ -42,25 +45,37 @@
 
 ```
 
-<br /><br /><br /><br />
+<br /><br />
 
+---
+
+<br /><br />
 
 ## 📋 Plateformes supportées
+- 🟢 supporté
+- 🟡 en cours
+- 🔴 non supporté
+
 | Platform | Architectures | System Version | Compatible |
 |----------|---------------|----------------|------------|
-| **Windows** | x64 / arm64 | Windows 10+   | ✓          |
-| **macOS** | Apple Silicon arm64 | macOS 15.0+ | ✓ |
-| **iOS/iPadOS** | arm64 (iphoneos) - not iphonesimulator | iOS/iPadOS 18.0+ | ✓ |
-| **Android** | arm64-v8a / armeabi-v7a | Android 9.0+ | ✓ |
-| **Linux** | x64 / arm64 | glibc 2.35+ | ✓ |
-| **Steam Linux** | x64 / arm64 | Steam Linux Runtime 4.0 | ✓ |
-| **Steam Deck** | x64 | Steam Linux Runtime 4.0 | ✓ |
-| **Xbox** | x64 | Xbox Série X/S+ |  |
-| **Nintendo Switch** | arm64 | Nintendo Switch 1+ |  |
-| **Playstation** | x64 | Playstation 5+ |  |
+| **Windows** | x64 / arm64 | Windows 10+ | 🟢 |
+| **macOS** | Apple Silicon arm64 | macOS 15.0+ | 🟢 |
+| **iOS/iPadOS** | arm64 (iphoneos) | iOS/iPadOS 18.0+ | 🟢 |
+| **Android** | arm64-v8a / armeabi-v7a | Android 9.0+ | 🟢 |
+| **Linux** | x64 / arm64 | glibc 2.35+ | 🟢 |
+| **Steam Linux** | x64 / arm64 | Steam Linux Runtime 4.0 | 🟢 |
+| **Steam Deck** | x64 | Steam Linux Runtime 4.0 | 🟢 |
+| **Xbox Série X/S** | x64 | - | 🔴 |
+| **Nintendo Switch 1** | arm64 | - | 🔴 |
+| **Nintendo Switch 2** | arm64 | - | 🔴 |
+| **Playstation 5** | x64 | - | 🔴 |
 
-<br /><br /><br /><br />
 
+<br /><br />
+
+---
+
+<br /><br />
 
 ## 📱 Appareils compatibles par plateforme
 
@@ -101,10 +116,13 @@
 - Steam Deck 1 (LCD / OLED, sous SteamOS 3.0 ou supérieur) et plus récent.
 
 ### Steam Linux (Steam Linux Runtime 4.0+)
-- Compatible avec toute distribution Linux x64 / arm64 supportant Steam et le runtime Sniper.
+- Compatible avec toute distribution Linux x64 / arm64 supportant Steam.
 
-<br /><br /><br /><br />
+<br /><br />
 
+---
+
+<br /><br />
 
 ## 🎯 Raisons techniques des versions minimales et autres par plateforme
 
@@ -151,8 +169,11 @@
   - Le Steam Deck est livré avec SteamOS 3.0+, basé sur Arch Linux, et embarque nativement le runtime Sniper.
   - Toutes les dépendances système (glibc ≥ 2.35, Mesa Vulkan ≥ 22, etc.) sont fournies via le runtime, assurant un environnement stable et cohérent.
 
-<br /><br /><br /><br />
+<br /><br />
 
+---
+
+<br /><br />
 
 ## 📦 Dépendances principales
 
@@ -170,8 +191,11 @@
 | **FFMPEG**             | Lecture de vidéo mp4..etc                            | `Activé par défault mais optionnel`, mais le module `RC2D_video` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_VIDEO_MODULE_ENABLED=OFF |
 | **cJSON**       | Librairie JSON   | `Statique - Link lors de la compilation de la librairie RC2D.` |
 
-<br /><br /><br /><br />
+<br /><br />
 
+---
+
+<br /><br />
 
 ## ⚙️ Setup Environment Development
 1. Cloner le projet :
@@ -234,8 +258,11 @@ Ce script va :
 - Faire un `git reset --hard` au commit_sha/tag fourni
 - Initialiser les sous-modules si présents dans les librairies cloner
 
-<br /><br /><br /><br />
+<br /><br />
 
+---
+
+<br /><br />
 
 ## 🔄 Updating Dependencies
 Pour mettre à jour une ou des dépendance :
@@ -260,12 +287,14 @@ python .\build-scripts\generate_gamecontrollerdb_embedded.py
 ```
 Cela aura générer à nouveau le fichier à jour dans : `src/RC2D/RC2D_gamecontrollerdb_embedded.c` par rapport au nouveau `gamecontrollersdl3-db.txt`.
 
-<br /><br /><br /><br />
+<br /><br />
 
+---
 
-## 🔄 Cycle Development - Desktop
-1. Par défault `RC2D_BUILD_EXAMPLES` est configurer à `ON` dans le `CMakelists.txt`, il faudra le remettre à `ON` si il à été désactiver.
-2. Générer le projet du jeu d'exemple (le projet situé dans examples/)
+<br /><br />
+
+## 🔄 Cycle Development
+1. Par défault : Construit/Compile la librairie RC2D en static et génére le projet d'exemple (situé dans /examples).
 ```bash
 # Linux - x64
 chmod +x ./build-scripts/generate-project/linux-x64.sh
@@ -285,11 +314,11 @@ chmod +x ./build-scripts/generate-project/macos-arm64.sh
 # Windows - arm64
 .\build-scripts\generate-project\windows-arm64.bat
 
-# Steam Linux / Steam Deck - SteamRT4 x64 (Linux)
+# SteamRT4 x64 (Linux)
 chmod +x ./build-scripts/generate-project/steamlinux_steamdeck-x64.sh
 ./build-scripts/generate-project/steamlinux_steamdeck-x64.sh
 
-# Steam Linux - SteamRT4 arm64 (Linux)
+# SteamRT4 arm64 (Linux)
 chmod +x ./build-scripts/generate-project/steamlinux-arm64.sh
 ./build-scripts/generate-project/steamlinux-arm64.sh
 
@@ -308,80 +337,22 @@ chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64.sh
 ```bash
 # Pour Windows x64 par exemple, un projet Visual Studio 2022 à été générer au path suivant :
 .\build\windows\x64
+
+# La librairie RC2D static + l'exemple générer dans le même dossier :
+Release : .\build\windows\x64\Debug
+Debug : .\build\windows\x64\Release
 ```
 4. Ouvrir le projet générer dans votre IDE favoris.
 
-<br /><br /><br /><br />
+<br /><br />
 
+---
+
+<br /><br />
 
 ## Production
 ### ⚙️➡️ Automatic Distribution Process (CI / CD)
 #### Si c'est un nouveau projet suivez les instructions : 
 1. Ajoutées les SECRETS_GITHUB pour :
-   - O2SWITCH_FTP_HOST
-   - O2SWITCH_FTP_PASSWORD
-   - O2SWITCH_FTP_PORT
-   - O2SWITCH_FTP_USERNAME
+   - ... TODO
    - PAT (crée un nouveau token si besoin sur le site de github puis dans le menu du "Profil" puis -> "Settings" -> "Developper Settings' -> 'Personnal Access Tokens' -> Tokens (classic))
-
-<br /><br />
-
-### ✋ Manual Distribution Process
-1. Générer la librairie RC2D pour le mode Debug/Release.
-```bash
-# Linux - x64
-chmod +x ./build-scripts/linux-x64.sh
-./build-scripts/linux-x64.sh
-
-# Linux - arm64
-chmod +x ./build-scripts/linux-arm64.sh
-./build-scripts/linux-arm64.sh
-
-# macOS - Apple Silicon arm64
-chmod +x ./build-scripts/macos-arm64.sh
-./build-scripts/macos-arm64.sh
-
-# Windows - x64
-.\build-scripts\generate-project\windows-x64.bat
-
-# Windows - arm64
-.\build-scripts\generate-project\windows-arm64.bat
-
-# Android (Unix)
-chmod +x ./build-scripts/android.sh
-./build-scripts/android.sh
-
-# Android (Windows)
-.\build-scripts\generate-project\android.bat
-
-# iOS (run in macOS)
-chmod +x ./build-scripts/ios.sh
-./build-scripts/ios.sh
-```
-2. Récupérer la librairie RC2D compilé en static pour chaque plateformes :
-```bash
-# Windows
-1. Go directory 'dist/lib/windows/'
-2. Go in directory 'Release' OR 'Debug'
-3. Get librarie RC2D : rc2d_static.lib
-
-# Linux
-1. Go directory 'dist/lib/linux/'
-2. Go in directory 'Release' OR 'Debug'
-3. Get librarie RC2D : librc2d_static.a
-
-# macOS
-1. Go directory 'dist/lib/macos/'
-2. Go in directory 'Release' OR 'Debug'
-3. Get librarie RC2D : librc2d_static.a
-
-# Android
-1. Go directory 'dist/lib/android/'
-2. Go in directory 'Release' OR 'Debug'
-3. Get librarie RC2D : librc2d_static.so
-
-# iOS
-1. Go directory 'dist/lib/ios/'
-2. Go in directory 'Release' OR 'Debug'
-3. Get librarie RC2D : librc2d_static.a
-```
