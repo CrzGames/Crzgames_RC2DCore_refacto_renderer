@@ -13,4 +13,4 @@ for build_type in Debug Release; do
 done
 
 # Final message
-echo -e "\033[32m \n Generate lib RC2D for SteamRT4 x64 to Release/Debug generated successfully, go to the dist/lib/steamrt4/x64 directory... \n\033[0m"
+echo -e "\033[32m \n Generate lib RC2D for SteamRT4 x64 to Release/Debug generated successfully, go to the build/steamrt4/x64/Release or build/steamrt4/x64/Debug folder to find the generated library! \033[0m"
