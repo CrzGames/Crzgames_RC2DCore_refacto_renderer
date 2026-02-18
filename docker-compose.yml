@@ -1,3 +1,25 @@
+# =============================================================================
+# RC2D – SteamRT4 Docker Build Environment
+# =============================================================================
+#
+# Ce fichier permet de compiler RC2D en static + le projet d'exemple dans l’image officielle
+# Steam Linux Runtime 4.0 (SteamRT4 SDK) pour les architectures x64 et arm64.
+#
+# Objectif :
+# - Garantir un environnement identique à celui de Steam (glibc, toolchain, runtime...)
+# - Produire des builds compatibles Steam Deck / Steam Linux
+# - Vérifier automatiquement les dépendances partagées via `ldd` à la fin du build
+#
+# -----------------------------------------------------------------------------
+# Utilisation :
+# -----------------------------------------------------------------------------
+#   docker compose run --rm rc2d-builder-x64
+#   docker compose run --rm rc2d-builder-arm64
+#
+# Les artefacts sont écrits dans :
+#   docker-build-output-steamrt4/
+#
+# =============================================================================
 services:
   rc2d-builder-x64:
     container_name: rc2d_steamrt4_x64
