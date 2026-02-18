@@ -5,8 +5,8 @@ services:
     working_dir: /build
     volumes:
       - ./:/build:rw
-      - ./docker-build-output/x64/Release:/build/build/steamrt4/x64/Release:rw
-      - ./docker-build-output/x64/Debug:/build/build/steamrt4/x64/Debug:rw
+      - ./docker-build-output/steamrt4/x64/Release:/build/build/steamrt4/x64/Release:rw
+      - ./docker-build-output/steamrt4/x64/Debug:/build/build/steamrt4/x64/Debug:rw
     command: >
       bash -lc "
         set -euo pipefail
@@ -41,8 +41,8 @@ services:
     working_dir: /build
     volumes:
       - ./:/build:rw
-      - ./docker-build-output/arm64/Release:/build/build/steamrt4/arm64/Release:rw
-      - ./docker-build-output/arm64/Debug:/build/build/steamrt4/arm64/Debug:rw
+      - ./docker-build-output/steamrt4/arm64/Release:/build/build/steamrt4/arm64/Release:rw
+      - ./docker-build-output/steamrt4/arm64/Debug:/build/build/steamrt4/arm64/Debug:rw
     command: >
       bash -lc "
         set -euo pipefail
