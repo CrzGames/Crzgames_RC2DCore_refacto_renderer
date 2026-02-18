@@ -1,25 +1,68 @@
 services:
-  rc2d-builder:
-    container_name: rc2d_steamrt4
+  rc2d-builder-x64:
+    container_name: rc2d_steamrt4_x64
     image: registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk:4.0.20260119.200228
     working_dir: /build
     volumes:
       - ./:/build:rw
-      - ./docker-build-output:/build/build/Release:rw
-    environment:
-      - CMAKE_BUILD_TYPE=Release
-      - RC2D_PLATFORM=STEAMRT4
     command: >
-      bash -c "apt update && apt install -y patchelf &&
-      mkdir -p build && cd build &&
-      cmake .. -DRC2D_BUILD_EXAMPLES=ON -DRC2D_GPU_SHADER_HOT_RELOAD_ENABLED=OFF
-      -DRC2D_DATA_MODULE_ENABLED=ON -DRC2D_NET_MODULE_ENABLED=ON -DRC2D_ONNX_MODULE_ENABLED=ON
-      -DRC2D_ASSERT_LEVEL=3 -DCMAKE_BUILD_TYPE=Release &&
-      cmake --build . --config Release --parallel &&
+      bash -lc "
+        set -euo pipefail
 
-      # Patch RPATH pour que l'executable cherche les bibliothèques dans le même répertoire
-      # que lui-même, et non dans le répertoire de l'exécutable de la commande
-      patchelf --set-rpath '$ORIGIN' --force-rpath Release/rc2d_example &&
+        apt-get update
+        apt-get install -y patchelf binutils
 
-      echo 'patchelf applied, checking ldd:' &&
-      ldd Release/rc2d_example"
+        chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
+        ./build-scripts/generate-project/steamrt4-x64.sh
+
+        EXE=build/steamrt4/x64/Release/rc2d_example
+        test -f \"$$EXE\"
+
+        echo '== file (x64) =='
+        file \"$$EXE\"
+
+        echo '== ldd (x64) =='
+        LDD_OUT=$$(ldd \"$$EXE\" || true)
+        echo \"$$LDD_OUT\"
+
+        if echo \"$$LDD_OUT\" | grep -q 'not found'; then
+          echo '[ERROR] Missing shared libraries detected (ldd: not found)'
+          exit 1
+        fi
+
+        echo '[SUCCESS] steamrt4-x64 binary dependencies OK'
+      "
+
+  rc2d-builder-arm64:
+    container_name: rc2d_steamrt4_arm64
+    image: registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk/arm64:4.0.20260119.200228
+    working_dir: /build
+    volumes:
+      - ./:/build:rw
+    command: >
+      bash -lc "
+        set -euo pipefail
+
+        apt-get update
+        apt-get install -y patchelf binutils
+
+        chmod +x ./build-scripts/generate-project/steamrt4-arm64.sh
+        ./build-scripts/generate-project/steamrt4-arm64.sh
+
+        EXE=build/steamrt4/arm64/Release/rc2d_example
+        test -f \"$$EXE\"
+
+        echo '== file (arm64) =='
+        file \"$$EXE\"
+
+        echo '== ldd (arm64) =='
+        LDD_OUT=$$(ldd \"$$EXE\" || true)
+        echo \"$$LDD_OUT\"
+
+        if echo \"$$LDD_OUT\" | grep -q 'not found'; then
+          echo '[ERROR] Missing shared libraries detected (ldd: not found)'
+          exit 1
+        fi
+
+        echo '[SUCCESS] steamrt4-arm64 binary dependencies OK'
+      "

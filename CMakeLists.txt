@@ -1,13 +1,51 @@
-# CMake 3.25.0 est la version minimale requise pour ce projet
-cmake_minimum_required(VERSION 3.25.0)
+# CMake 3.28.0 est la version minimale requise pour ce projet
+cmake_minimum_required(VERSION 3.28.0)
 
-# Projet 
-project(rc2d LANGUAGES C CXX)
+# ============================================================
+# Project Configuration
+# ============================================================
+# Nom du projet : rc2d
+#
+# Langages :
+#   - C   : cœur du moteur (C99)
+#   - CXX : requis uniquement pour :
+#       • Steamworks (SDK en C++) si RC2D_STEAMWORKS_SDK_ENABLED=ON
+#         → compile src/RC2D/RC2D_steamworks.cpp
+#       • Les exemples du projet (sources en C++)
+#
+# Même si RC2D est majoritairement en C, le support C++ est
+# nécessaire pour certaines intégrations et pour les exemples.
+#
+# Version actuelle : 1.0.0
+# ============================================================
+project(rc2d
+  LANGUAGES C CXX
+  VERSION 1.0.0
+)
 
-# Spécifier la version C standard
+# ============================================================
+# Language Standards
+# ============================================================
+# C   : RC2D core est écrit en C99.
+#
+# CXX : requis uniquement pour :
+#       • Steamworks SDK si RC2D_STEAMWORKS_SDK_ENABLED=ON
+#         → compile src/RC2D/RC2D_steamworks.cpp (SDK Steam en C++)
+#       • Le projet d’exemple (sources en C++)
+#
+# Le moteur principal reste en C.
+# ============================================================
 set(CMAKE_C_STANDARD 99)
-# Cela signifie que le compilateur doit respecter la version C standard spécifiée
-set(CMAKE_C_STANDARD_REQUIRED True)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# ============================================================
+# Build Options (Feature toggles)
+# ============================================================
+# Toutes les options RC2D_* qui permettent d'activer/désactiver
+# des modules, features ou intégrations SDK.
+# ============================================================
 
 # Option pour activer le débogage mémoire, pour savoir les fuites de mémoire si il manque des free()
 # CONSEILLE : Désactivé pour la production (RC2D_MEMORY_DEBUG_ENABLED=OFF).
@@ -15,9 +53,12 @@ option(RC2D_MEMORY_DEBUG_ENABLED "Enable RC2D memory debug tracking (realloc/mal
 
 # Option pour activer la compilation des shaders en ligne (hot reload) pour SDL3_shadercross
 # CONSEILLE : Désactivé pour la production (RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=OFF).
-if(ANDROID OR CMAKE_OSX_SYSROOT MATCHES "iphoneos") # Mobile (iOS, Android), laissé à OFF pour le mobile.
+if(ANDROID OR CMAKE_OSX_SYSROOT MATCHES "iphoneos") 
+  # Mobile (iOS, Android), laissé à OFF pour le mobile.
   option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
-else() # Desktop (Windows, macOS, Linux, SteamRT4 etc.)
+else() 
+  # Le reste des plateformes (Windows, Linux, macOS, Steam Deck etc.) peuvent se permettre d'avoir 
+  #le hot reload de shadercross activé pendant le développement, pour faciliter le développement et le debug des shaders.
   option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
 endif()
 
@@ -27,10 +68,10 @@ option(RC2D_VIDEO_MODULE_ENABLED "Enable RC2D_video (FFmpeg-based)" ON)
 # Option pour activer le module RC2D_data (basé sur OpenSSL)
 option(RC2D_DATA_MODULE_ENABLED "Enable RC2D_data (OpenSSL-based)" ON)
 
-# Option pour activer le module RC2D_net (via RCEnet, fork de ENet)
+# Option pour activer le module RC2D_net (basé sur RCEnet, qui est lui même basé sur ENet)
 option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net (ENet-based)" ON)
 
-# Option pour activer le module RC2D_onnx (via ONNX Runtime)
+# Option pour activer le module RC2D_onnx (basé sur ONNX Runtime)
 option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" OFF)
 
 # Option pour le SDK Steamworks
@@ -51,7 +92,13 @@ option(RC2D_BUILD_TESTS "Build unit tests with Criterion" OFF)
 # Option pour choisir entre statique et dynamique (TODO: Pas encore implémenté pour le mode shared)
 option(RC2D_BUILDING_SHARED "Build shared libraries" OFF)
 
-# Dossier de sortie
+# ============================================================
+# Output Directories
+# ============================================================
+# Gestion du dossier de sortie selon le générateur CMake :
+# - Visual Studio / Xcode : multi-config (Debug/Release/...)
+# - Ninja / Makefiles     : single-config
+# ============================================================
 if(CMAKE_GENERATOR MATCHES "Visual Studio|Xcode")
   # Multi-config generators
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
@@ -62,7 +109,12 @@ else()
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 endif()
 
-# Configuration multi-plateforme avec versions minimales
+# ============================================================
+# Platform Minimum Versions / Architectures
+# ============================================================
+# Définit les versions minimales supportées (Windows / Apple / Android)
+# et les architectures cibles (ex: arm64 sur Apple).
+# ============================================================
 if(WIN32)
   set(CMAKE_SYSTEM_VERSION 10.0.10240 CACHE STRING "Windows 10 Minimum Version" FORCE)
 elseif(APPLE)
@@ -78,55 +130,80 @@ elseif(ANDROID)
   set(CMAKE_ANDROID_API 28 CACHE STRING "Android API Level" FORCE)
 endif()
 
-# Configuration des drapeaux du compilateur
+# ============================================================
+# Compiler Warnings & Strictness
+# ============================================================
+# Flags d'avertissements et de conformité :
+# - MSVC : /W4, /permissive- (C++ strict), désactivations ciblées
+# - GCC/Clang : -Wall -Wextra -pedantic + exceptions ciblées
+#
+# Note :
+# - Les flags C et CXX ne sont pas toujours identiques (ex: strict-prototypes)
+# ============================================================
 if(MSVC)
-  # /W3 : Niveau d'avertissement 3 (equivalent a -Wall)
   # /W4 : Niveau d'avertissement 4 (equivalent a -Wextra)
   # /permissive- : Spécifie un mode de compilation strict pour suivre les standards C++ 
   # /wd4100 : Désactive l'avertissement pour les paramètres de fonction non utilisés (C4100)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W3 /W4 /permissive- /wd4100")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4 /wd4100")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /permissive- /wd4100")
 else()
   # -Wall : Active tous les avertissements de base
   # -Wextra : Active des avertissements supplémentaires
   # -pedantic : Enforce strictement les standards C++
   # -Wno-unused-parameter : Désactive les avertissements pour les paramètres de fonction non utilisés
-  # -Wno-error=strict-prototypes : Désactive les erreurs pour les prototypes de fonction stricts
+  # -Wno-error=strict-prototypes : Désactive les erreurs pour les prototypes de fonction stricts en C.
   # -Wno-newline-eof : Désactive les avertissements pour les nouvelles lignes à la fin du fichier
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wno-error=strict-prototypes -Wno-newline-eof")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wno-newline-eof")
 endif()
 
+# ============================================================
+# Linux Tools Prerequisites
+# ============================================================
+# Linux / SteamRT4 / Raspberry Pi, etc. :
+# On vérifie que patchelf est installé pour pouvoir patcher les .so après la compilation,
+# afin que les .so soient trouvées à l'exécution (RPATH = $ORIGIN).
+# ============================================================
 if(UNIX AND NOT APPLE AND NOT ANDROID)
-  # Active les backends vidéo nécessaires pour Linux (Steam Deck, Distribution Linux, Raspberry PI 5 etc.)
-  set(SDL_WAYLAND ON CACHE BOOL "Enable Wayland backend for SDL3" FORCE)
-  set(SDL_X11 ON CACHE BOOL "Enable X11 backend for SDL3" FORCE)
-  set(SDL_KMSDRM ON CACHE BOOL "Enable KMS/DRM backend for SDL3" FORCE)
-  set(SDL_DUMMYVIDEO ON CACHE BOOL "Enable dummy video backend for SDL3" FORCE)
-
   find_program(PATCHELF_EXECUTABLE NAMES patchelf)
   if(NOT PATCHELF_EXECUTABLE)
     message(FATAL_ERROR "patchelf non trouvé dans le PATH")
   endif()
 endif()
 
-# SDL3_ttf, SDL3_image, SDL3_mixer : 
-# Permet de dire à CMake de ne pas chercher les dépendances dans le système,
-# mais de les utiliser à partir du répertoire "dependencies", dont également les submodules
-# des repositories de SDL3_ttf, SDL3_mixer, SDL3_image
+# ============================================================
+# SDL3_ttf / SDL3_image / SDL3_mixer — Mode "vendored"
+# ============================================================
+# On force CMake à utiliser les dépendances fournies dans le repo (dossier dependencies/)
+# au lieu de chercher des libs système (apt, pacman, brew, etc.).
+#
+# Objectif :
+# - Build reproductible (CI/CD) sur toutes les plateformes
+# - Éviter les différences de versions entre machines
+# ============================================================
 set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
 set(SDLIMAGE_VENDORED ON CACHE BOOL "" FORCE)
 set(SDLMIXER_VENDORED ON CACHE BOOL "" FORCE)
 
-# SDL3_mixer : Désactiver explicitement tous les formats audio qui sont activé par défault.
-# Il restera ces backend activé par défault :
-# - opus ( .opus )
-# - vorbis_vorbisfile ( .ogg / .oga )
-# - wave ( .wav )
+# ============================================================
+# SDL3_mixer — Configuration formats audio
+# ============================================================
+# SDL3_mixer active pas mal de codecs par défaut.
+# Ici on désactive explicitement ceux dont on ne veut pas, pour :
+# - Réduire le temps de compilation
+# - Réduire les dépendances (libs externes)
+# - Réduire la taille finale (binaire + libs)
+#
+# Formats conservés par défaut :
+# - opus               (.opus)
+# - vorbis/vorbisfile  (.ogg / .oga)
+# - wave               (.wav)
+# ============================================================
 if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
   # Spécifiquement pour iOS, on force la compilation en statique pour SDL3_mixer et ses sous-dépendances.
   # Les .dylib ne sont plus autorisées sur l'App Store.
   set(SDLMIXER_DEPS_SHARED OFF CACHE BOOL "" FORCE)
 endif()
-
 set(SDLMIXER_MP3 OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_MP3_MPG123 OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_MP3_DRMP3 OFF CACHE BOOL "" FORCE)
@@ -145,17 +222,25 @@ set(SDLMIXER_VORBIS_TREMOR OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_WAVPACK OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_WAVPACK_DSD OFF CACHE BOOL "" FORCE)
 
-# SDL3_image : Désactiver explicitement tous les formats d'image qui sont activé par défault.
-# Il restera ces backend activé par défault : 
-# - png ( .png )
-# - svg ( .svg )
-# - apng ( .apng )
+# ============================================================
+# SDL3_image — Configuration formats image
+# ============================================================
+# SDL3_image active pas mal de formats par défaut.
+# Ici on désactive explicitement ceux dont on ne veut pas, pour :
+# - Réduire le temps de compilation
+# - Réduire les dépendances (libs externes)
+# - Réduire la taille finale (binaire + libs)
+#
+# Formats conservés par défaut :
+# - png   (.png)
+# - svg   (.svg)
+# - apng  (.apng)
+# ============================================================
 if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
   # Spécifiquement pour iOS, on force la compilation en statique pour SDL3_image et ses sous-dépendances.
   # Les .dylib ne sont plus autorisées sur l'App Store.
   set(SDLIMAGE_DEPS_SHARED OFF CACHE BOOL "" FORCE)
 endif()
-
 set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_BMP OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_GIF OFF CACHE BOOL "" FORCE)
@@ -170,47 +255,97 @@ set(SDLIMAGE_WEBP OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XCF OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XPM OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
-set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_ANI OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_BACKEND_STB OFF CACHE BOOL "" FORCE)
-set(SDLIMAGE_ANI OFF CACHE BOOL "" FORCE)
 
-# SDL3 :
-# Il peut vous donner accès à beaucoup plus de contrôleurs de jeu,
-# Mais il nécessite l'autorisation de l'utilisateur avant que votre application puisse communiquer avec le matériel Bluetooth
-set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "" FORCE)
+# ============================================================
+# SDL3 — Input / Controllers configuration
+# ============================================================
+# Objectif : garantir une compatibilité maximale des manettes, sur toutes les plateformes.
+#
+# Remarque :
+# - SDL a plusieurs backends (HIDAPI, XInput, RawInput, etc.)
+# - Ici on active ceux qui apportent le plus en pratique
+# ============================================================
 
-# On force la compilation en statique pour iOS (iPhone/iPad), pour SDL3, SDL3_ttf, SDL3_image, SDL3_mixer et leur sous-dépendances.
-# Spécifiquement pour iOS, parce que les .dylib ne sont plus autorisées sur l'App Store.
-# On le fait grâce à : set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "") pour toutes les dépendances.
+# Active le support global des joysticks (base nécessaire pour toute manette)
+set(SDL_JOYSTICK ON CACHE BOOL "Enable joystick support" FORCE)
+# Active l’API GameController (mapping standardisé A/B/X/Y, triggers, etc.)
+# Permet d’avoir une disposition uniforme entre toutes les manettes
+set(SDL_GAMECONTROLLER ON CACHE BOOL "Enable gamecontroller API" FORCE)
+# Active HIDAPI (accès direct USB/Bluetooth aux manettes modernes)
+# Améliore la compatibilité et évite de dépendre uniquement des drivers OS
+set(SDL_JOYSTICK_HIDAPI ON CACHE BOOL "Enable HIDAPI joystick backend" FORCE)
+# Active XInput (Windows) pour un support optimal des manettes Xbox
+# Meilleure détection, vibrations plus fiables
+set(SDL_JOYSTICK_XINPUT ON CACHE BOOL "Enable XInput controller backend on Windows" FORCE)
+# Active RawInput (Windows)
+# Permet une détection plus bas niveau des périphériques USB
+# Utile comme fallback si XInput ne voit pas certains devices
+set(SDL_JOYSTICK_RAWINPUT ON CACHE BOOL "Enable RawInput joystick backend on Windows" FORCE)
+# Active le support des vibrations / retour de force
+# Fonctionne avec la plupart des manettes modernes
+set(SDL_HAPTIC ON CACHE BOOL "Enable haptic (rumble/force feedback) support" FORCE)
+
+# ============================================================
+# iOS — Forcer les libs SDL en statique
+# ============================================================
+# iOS : les .dylib sont interdites sur l'App Store.
+# On force donc SDL3 + SDL3_image + SDL3_mixer + SDL3_ttf à être statiques.
+# ============================================================
 if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
   set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
   set(SDL_SHARED OFF CACHE BOOL "" FORCE)
   set(SDL_STATIC ON CACHE BOOL "" FORCE)
 endif()
 
-# cJSON :
-# Désactiver les tests et utils de cJSON, et forcer la compilation en statique
+# ============================================================
+# cJSON — Configuration build
+# ============================================================
+# Objectif :
+# - Build en statique uniquement
+# - Pas de tests / utilitaires (inutile dans un framework)
+# ============================================================
 set(CMAKE_POLICY_VERSION_MINIMUM "3.5" CACHE STRING "Allow old subprojects" FORCE) # Autoriser les vieux subprojects de CJSON
-set(CJSON_OVERRIDE_BUILD_SHARED_LIBS ON  CACHE BOOL "" FORCE)  # ignore BUILD_SHARED_LIBS global
-set(CJSON_BUILD_SHARED_LIBS      OFF CACHE BOOL "" FORCE)      # force STATIC pour cJSON
-set(ENABLE_CJSON_TEST   OFF CACHE BOOL "" FORCE)
-set(ENABLE_CJSON_UTILS  OFF CACHE BOOL "" FORCE)
+set(CJSON_OVERRIDE_BUILD_SHARED_LIBS ON  CACHE BOOL "" FORCE) # ignore BUILD_SHARED_LIBS global
+set(CJSON_BUILD_SHARED_LIBS      OFF CACHE BOOL "" FORCE) # force STATIC pour cJSON
+set(ENABLE_CJSON_TEST   OFF CACHE BOOL "" FORCE) # Désactiver les tests
+set(ENABLE_CJSON_UTILS  OFF CACHE BOOL "" FORCE) # Désactiver les outils
 
-# SDL3, SDL3_ttf, SDL3_image, SDL3_mixer : 
-# Permet de dire à CMake de ne pas chercher les dépendances dans le système,
-# mais de les utiliser à partir du répertoire "dependencies", dont également les submodules
-# des repositories de SDL3, SDL3_ttf, SDL3_mixer, SDL3_image
+# ============================================================
+# Dépendances vendored — add_subdirectory
+# ============================================================
+# On inclut SDL + modules, et cJSON depuis dependencies/.
+# EXCLUDE_FROM_ALL : évite de builder ces targets si aucune target ne les référence.
+# ============================================================
 add_subdirectory(dependencies/SDL        EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_ttf    EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_image  EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_mixer  EXCLUDE_FROM_ALL)
-add_subdirectory(dependencies/cJSON EXCLUDE_FROM_ALL)
+add_subdirectory(dependencies/cJSON      EXCLUDE_FROM_ALL)
 
-# Chemin vers les dépendances
+# ============================================================
+# Paths — Dépendances précompilées (Crzgames_Libraries)
+# ============================================================
+# DEPENDENCIES_PATH : racine de ton dossier dependencies/
+# CRZGAMES_LIBRARIES: dossier où on ranges les libs précompilées (ffmpeg, openssl, rcenet, onnxruntime, sdl3shadercross, etc.) pour chaque plateforme.
+# ============================================================
 set(DEPENDENCIES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
 set(CRZGAMES_LIBRARIES "${DEPENDENCIES_PATH}/Crzgames_Libraries")
 
+# ============================================================
+# rc2d_configure_cjson
+#
+# Configure l’intégration de cJSON pour une target donnée.
+#
+# Objectif :
+# - Exposer les headers cJSON via include path (PUBLIC)
+# - Lier la lib statique cJSON à la target
+#
+# Pourquoi une fonction :
+# - Évite la duplication (lib rc2d + exécutable d’exemple)
+# - Centralise la manière de consommer cJSON
+# ============================================================
 function(rc2d_configure_cjson target_name)
   # Link le dossier include de cJSON à la target
   target_include_directories(${target_name} PUBLIC "${DEPENDENCIES_PATH}")
@@ -219,9 +354,22 @@ function(rc2d_configure_cjson target_name)
   target_link_libraries(${target_name} PUBLIC cjson)
 endfunction()
 
+# ============================================================
+# rc2d_configure_ffmpeg
+#
+# Configure FFmpeg pour une target donnée.
+#
+# Objectif :
+# - Ajouter include + lib dirs selon la plateforme
+# - Lier les libs FFmpeg nécessaires (avcodec, avformat, etc.)
+# - Copier les libs runtime (DLL/.so/.dylib) quand nécessaire
+#
+# Notes :
+# - FFmpeg est optionnel via RC2D_VIDEO_MODULE_ENABLED
+# ============================================================
 function(rc2d_configure_ffmpeg target_name)
   if (RC2D_VIDEO_MODULE_ENABLED)
-    if (WIN32)
+    if (WIN32) # Windows
       # Link le dossier include de FFmpeg à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/ffmpeg")
 
@@ -252,7 +400,7 @@ function(rc2d_configure_ffmpeg target_name)
         )
       endforeach()
       
-    elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx")
+    elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx") # macOS
       # Link le dossier include de FFmpeg à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/ffmpeg")
 
@@ -284,7 +432,7 @@ function(rc2d_configure_ffmpeg target_name)
           z                          # for zlib (deflate/inflate/compress)
           iconv                      # for iconv_*
       )
-    elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+    elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos") # iOS (iPhone/iPad)
       # Link le dossier include de FFmpeg à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/ffmpeg")
 
@@ -317,8 +465,42 @@ function(rc2d_configure_ffmpeg target_name)
           iconv                      # for iconv_*
       )
 
-    elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Steam Deck, Raspberry PI 5 etc.
-    
+    elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, SteamRT4, Raspberry PI 5 etc.
+      if (RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
+        # Link le dossier include de FFmpeg à la target
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/ffmpeg")
+
+        # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/ffmpeg/${RC2D_ARCH}")
+
+        # Link les librairies FFmpeg
+        target_link_libraries(${target_name} PUBLIC
+          avcodec
+          avdevice
+          avfilter
+          avformat
+          avutil
+          swresample
+          swscale
+        )
+      else() # Linux, Raspberry PI 5 etc.
+        # Link le dossier include de FFmpeg à la target
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/ffmpeg")
+
+        # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/ffmpeg/${RC2D_ARCH}")
+
+        # Link les librairies FFmpeg
+        target_link_libraries(${target_name} PUBLIC
+          avcodec
+          avdevice
+          avfilter
+          avformat
+          avutil
+          swresample
+          swscale
+        )
+      endif()
     elseif (ANDROID)
       # Link le dossier include de FFmpeg à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/ffmpeg")
@@ -340,9 +522,22 @@ function(rc2d_configure_ffmpeg target_name)
   endif()
 endfunction()
 
+# ============================================================
+# rc2d_configure_rcenet
+#
+# Configure RCEnet pour une target donnée.
+#
+# Objectif :
+# - Ajouter include + lib dirs selon la plateforme
+# - Lier rcenet
+# - Ajouter les libs système nécessaires (Windows : ws2_32, winmm)
+#
+# Notes :
+# - RCEnet est optionnel via RC2D_NET_MODULE_ENABLED
+# ============================================================
 function(rc2d_configure_rcenet target_name)
   if (RC2D_NET_MODULE_ENABLED)
-    if (WIN32)
+    if (WIN32) # Windows
       # Link le dossier include de RCEnet à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/rcenet")
 
@@ -356,7 +551,7 @@ function(rc2d_configure_rcenet target_name)
         winmm # Bibliothèque native à Windows (pour la librairie Enet)
       )
 
-    elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx")
+    elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx") # macOS
       # Link le dossier include de RCEnet à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/rcenet")
 
@@ -370,7 +565,7 @@ function(rc2d_configure_rcenet target_name)
         rcenet
       )
 
-    elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+    elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos") # iOS (iPhone/iPad)
       # Link le dossier include de RCEnet à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/rcenet")
 
@@ -384,17 +579,30 @@ function(rc2d_configure_rcenet target_name)
         rcenet
       )
 
-    elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Steam Deck, Raspberry PI 5 etc.
-      # Link le dossier include de RCEnet à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/rcenet")
+    elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, SteamRT4, Raspberry PI 5 etc.
+      if (RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
+        # Link le dossier include de RCEnet à la target
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/rcenet")
 
-      # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/rcenet/${RC2D_ARCH}")
+        # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/rcenet/${RC2D_ARCH}")
 
-      # Link les librairies RCEnet
-      target_link_libraries(${target_name} PUBLIC
-        rcenet
-      )
+        # Link les librairies RCEnet
+        target_link_libraries(${target_name} PUBLIC
+          rcenet
+        )
+      else() # Linux, Raspberry PI 5 etc.
+        # Link le dossier include de RCEnet à la target
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/rcenet")
+
+        # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/rcenet/${RC2D_ARCH}")
+
+        # Link les librairies RCEnet
+        target_link_libraries(${target_name} PUBLIC
+          rcenet
+        )
+      endif()
     elseif (ANDROID)
       # Link le dossier include de RCEnet à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/rcenet")
@@ -410,9 +618,23 @@ function(rc2d_configure_rcenet target_name)
   endif()
 endfunction()
 
+# ============================================================
+# rc2d_configure_onnxruntime
+#
+# Configure ONNX Runtime (inférence IA) pour une target donnée.
+#
+# Objectif :
+# - Ajouter les headers ONNX Runtime (include)
+# - Ajouter le dossier des libs (link directories)
+# - Lier la librairie onnxruntime
+# - Copier les libs runtime si nécessaire (Windows DLL / macOS dylib / Linux so)
+#
+# Notes :
+# - ONNX Runtime est optionnel via RC2D_ONNX_MODULE_ENABLED
+# ============================================================
 function(rc2d_configure_onnxruntime target_name)
   if(RC2D_ONNX_MODULE_ENABLED)
-    if(WIN32)
+    if(WIN32) # Windows
       # Link le dossier include de ONNX Runtime à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/onnxruntime")
 
@@ -436,7 +658,7 @@ function(rc2d_configure_onnxruntime target_name)
                   "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
         )
       endforeach()
-    elseif (ANDROID)
+    elseif (ANDROID) # Android
       # Link le dossier include de ONNX Runtime à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/onnxruntime")
 
@@ -447,8 +669,8 @@ function(rc2d_configure_onnxruntime target_name)
       target_link_libraries(${target_name} PUBLIC
         onnxruntime
       )
-    elseif (APPLE)
-      if(CMAKE_OSX_SYSROOT MATCHES "macosx")
+    elseif (APPLE) # Apple (macOS, iOS)
+      if(CMAKE_OSX_SYSROOT MATCHES "macosx") # macOS
         # Link le dossier include de ONNX Runtime à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/onnxruntime")
 
@@ -475,7 +697,7 @@ function(rc2d_configure_onnxruntime target_name)
                     "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
           )
         endforeach()
-      elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+      elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos") # iOS (iPhone/iPad)
         # Link le dossier include de ONNX Runtime à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/onnxruntime")
 
@@ -512,34 +734,72 @@ function(rc2d_configure_onnxruntime target_name)
         COMMENT "Copie des bibliothèques ONNX Runtime avec conservation des liens symboliques"
         VERBATIM
       )
-    elseif (RC2D_PLATFORM STREQUAL "Linux")
-      # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/onnxruntime")
+    elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, SteamRT4, Raspberry PI 5 etc.
+      if(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
+        # Link le dossier include de ONNX Runtime à la target
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/onnxruntime")
 
-      # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}")
+        # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}")
 
-      # Link les librairies ONNX Runtime
-      target_link_libraries(${target_name} PUBLIC
-        onnxruntime
-      )
+        # Link les librairies ONNX Runtime
+        target_link_libraries(${target_name} PUBLIC
+          onnxruntime
+        )
 
-      # Copier aussi les libraries dynamique dans le répertoire de l'exécutable
-      file(GLOB_RECURSE ONNX_SO
-        "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}/*.so"
-        "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
-      )
-      add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND cp -a ${ONNX_SO} "$<TARGET_FILE_DIR:${target_name}>/"
-        COMMENT "Copie des bibliothèques ONNX Runtime avec conservation des liens symboliques"
-        VERBATIM
-      )
+        # Copier aussi les libraries dynamique dans le répertoire de l'exécutable
+        file(GLOB_RECURSE ONNX_SO
+          "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so"
+          "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
+        )
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND cp -a ${ONNX_SO} "$<TARGET_FILE_DIR:${target_name}>/"
+          COMMENT "Copie des bibliothèques ONNX Runtime avec conservation des liens symboliques"
+          VERBATIM
+        )
+      else() # Linux, Raspberry PI 5 etc.
+        # Link le dossier include de ONNX Runtime à la target
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/onnxruntime")
+
+        # Rajouter le répertoire de la lib ONNX Runtime, pour le linker ensuite
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}")
+
+        # Link les librairies ONNX Runtime
+        target_link_libraries(${target_name} PUBLIC
+          onnxruntime
+        )
+
+        # Copier aussi les libraries dynamique dans le répertoire de l'exécutable
+        file(GLOB_RECURSE ONNX_SO
+          "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}/*.so"
+          "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
+        )
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND cp -a ${ONNX_SO} "$<TARGET_FILE_DIR:${target_name}>/"
+          COMMENT "Copie des bibliothèques ONNX Runtime avec conservation des liens symboliques"
+          VERBATIM
+        )
+      endif()
     endif()
   endif()
 endfunction()
 
+# ============================================================
+# rc2d_configure_shadercross
+#
+# Configure SDL3_shadercross pour une target donnée.
+#
+# Objectifs :
+# 1) Toujours : copier l’outil CLI "shadercross" + ses dépendances
+#    dans examples/shaders/tools (compilation offline possible)
+#
+# 2) Optionnel (RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=ON) :
+#    - inclure les headers
+#    - lier SDL3_shadercross
+#    - copier les libs runtime à côté de la target
+# ============================================================
 function(rc2d_configure_shadercross target_name)
-  if (APPLE)
+  if (APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx") # macOS
     # Repertoire cible des binaires de shadercross pour "examples/shaders/tools"
     set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/macos/bin/SDL3_shadercross")
 
@@ -592,7 +852,7 @@ function(rc2d_configure_shadercross target_name)
     )
 
     # Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est activé, on link la lib shadercross
-    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/macos/include"
@@ -619,7 +879,7 @@ function(rc2d_configure_shadercross target_name)
         )
       endforeach()
     endif()
-  elseif(WIN32)
+  elseif(WIN32) # Windows
     # Repertoire cible des dll + binaire de shadercross pour "examples/shaders/tools"
     set(SHADERCROSS_DLL_BINARY_DIR "${CRZGAMES_LIBRARIES}/windows/bin/SDL3_shadercross/${RC2D_ARCH}")
 
@@ -723,7 +983,7 @@ function(rc2d_configure_shadercross target_name)
       VERBATIM
     )
 
-    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT ANDROID)
+    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
       target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/steamrt4/include"
       )
@@ -743,8 +1003,7 @@ function(rc2d_configure_shadercross target_name)
         VERBATIM
       )
     endif()
-
-  elseif(RC2D_PLATFORM STREQUAL "Linux")
+  elseif(UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.
     # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
     set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/linux/bin/SDL3_shadercross/${RC2D_ARCH}")
 
@@ -821,8 +1080,8 @@ endfunction()
 # Configuration de OpenSSL
 function(rc2d_configure_openssl target_name)
   if(RC2D_DATA_MODULE_ENABLED)
-    if(APPLE)
-      if(CMAKE_OSX_SYSROOT MATCHES "macosx")
+    if(APPLE) # Apple (macOS, iOS)
+      if(CMAKE_OSX_SYSROOT MATCHES "macosx") # macOS
         # Link le dossier include de OpenSSL à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include")
 
@@ -834,7 +1093,7 @@ function(rc2d_configure_openssl target_name)
           ssl    # OpenSSL
           crypto # OpenSSL
         )
-      elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+      elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos") # iOS (iPhone/iPad)
         # Link le dossier include de OpenSSL à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include")
 
@@ -847,7 +1106,7 @@ function(rc2d_configure_openssl target_name)
           crypto # OpenSSL
         )
       endif()
-    elseif (ANDROID)
+    elseif (ANDROID) # Android
       # Link le dossier include de OpenSSL à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include")
 
@@ -859,7 +1118,7 @@ function(rc2d_configure_openssl target_name)
         ssl    # OpenSSL
         crypto # OpenSSL
       )
-    elseif(WIN32)
+    elseif(WIN32) # Windows
       # Link le dossier include de OpenSSL à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include")
 
@@ -873,18 +1132,6 @@ function(rc2d_configure_openssl target_name)
         Crypt32   # OpenSSL CryptoAPI (Librarie native de Windows, obligatoire)
         ws2_32    # OpenSSL Winsock2  (Librarie native de Windows, obligatoire)
       )
-    elseif (RC2D_PLATFORM STREQUAL "Linux")
-      # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include")
-
-      # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/OpenSSL/${RC2D_ARCH}")
-
-      # Link les librairies OpenSSL
-      target_link_libraries(${target_name} PUBLIC
-        ssl    # OpenSSL
-        crypto # OpenSSL
-      )
     elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
       # Link le dossier include de OpenSSL à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include")
@@ -897,17 +1144,29 @@ function(rc2d_configure_openssl target_name)
         ssl    # OpenSSL
         crypto # OpenSSL
       )
+    elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.
+      # Link le dossier include de OpenSSL à la target
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include")
+
+      # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/OpenSSL/${RC2D_ARCH}")
+
+      # Link les librairies OpenSSL
+      target_link_libraries(${target_name} PUBLIC
+        ssl    # OpenSSL
+        crypto # OpenSSL
+      )
     endif()
   endif()
 endfunction()
 
 # Fonction pour linker le sdk steamworks
-function(rc2d_link_steamworks target_name)
+function(rc2d_configure_steamworks target_name)
   if(RC2D_STEAMWORKS_SDK_ENABLED)
     # Link le dossier include du SDK Steamworks à la target
     target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamworks-sdk/include")
 
-    if(WIN32)
+    if(WIN32) # Windows
       # Rajouter le répertoire de la lib Steamworks, pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamworks-sdk/lib/windows/${RC2D_ARCH}")
 
@@ -934,12 +1193,12 @@ function(rc2d_link_steamworks target_name)
 endfunction()
 
 # Fonction pour le SDK EOS (Epic Online Services)
-function(rc2d_link_eos_sdk target_name)
+function(rc2d_configure_eos_sdk target_name)
   if(RC2D_EOS_SDK_ENABLED)
     # Link le dossier include du SDK EOS à la target
     target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/eos-sdk/include")
 
-    if(WIN32)
+    if(WIN32) # Windows
       # Rajouter le répertoire de la lib EOS, pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/eos-sdk/lib/windows/${RC2D_ARCH}")
 
@@ -965,15 +1224,51 @@ function(rc2d_link_eos_sdk target_name)
   endif()
 endfunction()
 
-function(rc2d_force_link_linux target_name)
+# ============================================================
+# rc2d_link_linux_system_libraries
+#
+# Lie les bibliothèques système nécessaires au runtime Linux.
+#
+# Objectif :
+# - Ajouter des dépendances POSIX classiques qui manquent souvent
+#   si certaines libs sont linkées "optionnellement".
+#
+# Détails :
+# - m       : libm (fonctions mathématiques)
+# - pthread : threads POSIX
+# - dl      : dlopen / dlsym (chargement dynamique)
+#
+# Pourquoi "-Wl,--no-as-needed" ?
+# - Sur certains linkers, une lib peut être ignorée si aucun symbole
+#   n'est vu comme utilisé à ce stade du link.
+# - "--no-as-needed" force le linker à garder ces libs.
+# - Puis "--as-needed" remet le comportement normal ensuite.
+# ============================================================
+function(rc2d_link_linux_system_libraries target_name)
   if(UNIX AND NOT APPLE AND NOT ANDROID)
     target_link_libraries(${target_name} PUBLIC
-      "-Wl,--no-as-needed" m pthread dl "-Wl,--as-needed"
+      "-Wl,--no-as-needed"
+      m
+      pthread
+      dl
+      "-Wl,--as-needed"
     )
   endif()
 endfunction()
 
-# Headers de RC2D + les lib qui sont dans le répertoire "external"
+# ============================================================
+# rc2d_include_headers
+#
+# Ajoute les include paths publics de RC2D.
+#
+# Objectif :
+# - Rendre accessibles les headers publics de RC2D (include/)
+# - Inclure aussi include/external si tu exposes des headers tiers
+#   (ou des wrappers) à l’utilisateur.
+#
+# PUBLIC :
+# - Toute target qui link RC2D récupère automatiquement ces includes.
+# ============================================================
 function(rc2d_include_headers target_name)
   target_include_directories(${target_name} PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
@@ -981,11 +1276,22 @@ function(rc2d_include_headers target_name)
   )
 endfunction()
 
+# ============================================================
+# rc2d_link_apple_frameworks
+#
+# Ajoute les frameworks Apple nécessaires.
+#
+# Pourquoi :
+# - Quand SDL / SDL_image / SDL_mixer / SDL_ttf sont statiques,
+#   ils tirent des symboles de frameworks Apple qui ne sont plus
+#   automatiquement résolus.
+# ============================================================
 function(rc2d_link_apple_frameworks target_name)
   # SDL_Image bug: https://github.com/libsdl-org/SDL_image/issues/506
-  # + Notammment pour iOS les lib ci-dessous sont nécessaires vu qu'ont utilise les lib static de SDL3, SDL3_image, SDL3_mixer et SDL3_ttf
+  # + Notamment pour iOS les libs ci-dessous sont nécessaires
+  # vu qu'on utilise les libs static de SDL3, SDL3_image, SDL3_mixer et SDL3_ttf
   if (APPLE AND NOT BUILD_SHARED_LIBS)
-    target_link_libraries(${PROJECT_NAME} PUBLIC 
+    target_link_libraries(${target_name} PUBLIC 
       "-framework ImageIO"
       "-framework CoreServices"
       "-framework CoreText"
@@ -1007,7 +1313,26 @@ function(rc2d_link_apple_frameworks target_name)
   endif()
 endfunction()
 
-# Fonction pour les target_compile_definitions par target
+# ============================================================
+# rc2d_target_compile_definitions
+#
+# Centralise toutes les compile definitions RC2D_* appliquées
+# à une target donnée.
+#
+# Objectif :
+# - Exposer dans le code C/C++ des flags cohérents :
+#   • RC2D_EOS_SDK_ENABLED (0/1)
+#   • RC2D_STEAMWORKS_SDK_ENABLED (0/1)
+#   • RC2D_BUILDING_BINDINGS_CSHARP (0/1)
+#   • RC2D_BUILDING_SHARED (0/1)
+#   • RC2D_VIDEO_MODULE_ENABLED (0/1)
+#   • RC2D_GPU_SHADER_HOT_RELOAD_ENABLED (0/1)
+#   • RC2D_ASSERT_LEVEL (0..3)
+#   • RC2D_DATA_MODULE_ENABLED (0/1)
+#   • RC2D_NET_MODULE_ENABLED (0/1)
+#   • RC2D_ONNX_MODULE_ENABLED (0/1)
+#   • RC2D_MEMORY_DEBUG_ENABLED (0/1)
+# ============================================================
 function(rc2d_target_compile_definitions target_name)
   if(RC2D_EOS_SDK_ENABLED)
     target_compile_definitions(${target_name} PUBLIC RC2D_EOS_SDK_ENABLED=1)
@@ -1072,37 +1397,77 @@ function(rc2d_target_compile_definitions target_name)
   endif()
 endfunction()
 
-# Sources du projet RC2D
+# ============================================================
+# Sources & Headers (RC2D)
+# ============================================================
+# Récupère automatiquement tous les fichiers sources C du moteur,
+# puis ajoute éventuellement des sources C++ si certaines intégrations
+# sont activées (notamment : Steamworks SDK).
+# ============================================================
+
+# Sources du projet RC2D (moteur core en C)
 file(GLOB_RECURSE SOURCES
   "${PROJECT_SOURCE_DIR}/src/*.c"
 )
-
-# Ajouter le module Steamworks si activé dans les options de configuration
+# Ajouter le module Steamworks si activé :
+# - Steamworks SDK est en C++ → on compile RC2D_steamworks.cpp uniquement si nécessaire
 if(RC2D_STEAMWORKS_SDK_ENABLED)
   list(APPEND SOURCES src/RC2D/RC2D_steamworks.cpp)
 endif()
 
-# Fichiers d'en-tête (headers) du projet RC2D
+# Headers publics du projet RC2D (API exposée)
 file(GLOB_RECURSE HEADERS
   "${PROJECT_SOURCE_DIR}/include/*.h"
 )
 
-# Choisir entre bibliothèque dynamique/partagées ou statique pour RC2D
+# ============================================================
+# Library Target (static / shared)
+# ============================================================
+# Crée la target principale du moteur RC2D.
+#
+# Deux modes :
+# - RC2D_BUILDING_SHARED=ON  → lib partagée (.dll/.so/.dylib)
+# - RC2D_BUILDING_SHARED=OFF → lib statique  (.lib/.a)
+#
+# Note :
+# - En mode statique, on change le nom de sortie en "*_static"
+#   pour éviter les collisions de nom avec la version partagée/dynamique.
+# ============================================================
 if(RC2D_BUILDING_SHARED)
   add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 else()
   add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
-  # Rajouter le suffixe "_static" au nom de la bibliothèque statique, pour éviter les conflits
+  # Rajouter le suffixe "*_static" au nom de la bibliothèque statique, pour éviter les conflits
   set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}_static")
 endif()
 
-# Compiler les définitions pour la target RC2D
+# ============================================================
+# Compile Definitions (RC2D_* flags)
+# ============================================================
+# Applique à la target RC2D toutes les compile definitions
+# (modules activés/désactivés, niveau d’assertion, etc.)
+# ============================================================
 rc2d_target_compile_definitions(${PROJECT_NAME})
 
-# Inclure les répertoires d'en-tête (headers) de RC2D et du répertoire "external"
+# ============================================================
+# Include Directories (Public API)
+# ============================================================
+# Expose les headers publics (include/) et les éventuels headers externes
+# (include/external) à tous les projets qui linkent RC2D.
+# ============================================================
 rc2d_include_headers(${PROJECT_NAME})
 
-# Link les dépendances communes à toutes les plateformes
+# ============================================================
+# Common Dependencies (SDL3, SDL3_image, SDL3_mixer, SDL3_ttf)
+# ============================================================
+# Dépendances communes à toutes les plateformes :
+# - SDL3
+# - SDL3_image / SDL3_ttf / SDL3_mixer
+#
+# PUBLIC :
+# - Toute target qui link RC2D récupère aussi ces dépendances,
+#   ce qui est généralement souhaité pour une lib "engine".
+# ============================================================
 target_link_libraries(${PROJECT_NAME} PUBLIC
   SDL3_mixer::SDL3_mixer
   SDL3_image::SDL3_image
@@ -1110,37 +1475,50 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   SDL3::SDL3
 )
 
-# Link la dépendance ffmpeg si le module RC2D_video est activé
+# FFmpeg (module RC2D_video, optionnel)
 rc2d_configure_ffmpeg(${PROJECT_NAME})
 
-# Link onnxruntime si le module RC2D_onnx est activé
+# ONNX Runtime (module RC2D_onnx, optionnel)
 rc2d_configure_onnxruntime(${PROJECT_NAME})
 
-# Link la dépendance OpenSSL si le module RC2D_data est activé
+# OpenSSL (module RC2D_data, optionnel)
 rc2d_configure_openssl(${PROJECT_NAME})
 
-# Linker SDL3_shadercross selon la plateforme
+# SDL3_shadercross (outil shadercross CLI + hot reload optionnel)
 rc2d_configure_shadercross(${PROJECT_NAME})
 
-# Linker les dépendances natives selon la plateforme
-rc2d_force_link_linux(${PROJECT_NAME})
+# Libs système Linux (m/pthread/dl) pour runtime POSIX
+rc2d_link_linux_system_libraries(${PROJECT_NAME})
 
-# Linker la dépendance RCEnet si le module RC2D_net est activé
+# RCEnet / ENet (module RC2D_net, optionnel)
 rc2d_configure_rcenet(${PROJECT_NAME})
 
-# Linker les frameworks Apple si nécessaire
+# Frameworks Apple nécessaires si build statique (SDL & co)
 rc2d_link_apple_frameworks(${PROJECT_NAME})
 
-# Linker cjson
+# cJSON (parsing JSON léger côté runtime)
 rc2d_configure_cjson(${PROJECT_NAME})
 
-# Linker le SDK Steamworks si activé
-rc2d_link_steamworks(${PROJECT_NAME})
+# Steamworks SDK (module RC2D_steamworks, optionnel)
+rc2d_configure_steamworks(${PROJECT_NAME})
 
-# Linker le SDK EOS (Epic Online Services) si activé
-rc2d_link_eos_sdk(${PROJECT_NAME})
+# Epic Online Services SDK (module RC2D_eos, optionnel)
+rc2d_configure_eos_sdk(${PROJECT_NAME})
 
-# Pour l'exemple RC2D
+
+
+
+
+
+
+
+
+
+# ============================================================
+#
+# Example Target (exécutable de démonstration)
+#
+# ============================================================
 if(RC2D_BUILD_EXAMPLES)
   # Pour Android, on doit obligatoirement mettre "main" comme nom de target, quand c'est un exécutable
   # Pour les autres plateformes, on peut mettre "rc2d_example" comme nom de target
@@ -1270,19 +1648,6 @@ if(RC2D_BUILD_EXAMPLES)
     "${PROJECT_SOURCE_DIR}/examples/include"
   )
 
-  # Link la dépendance ffmpeg si le module RC2D_video est activé
-  rc2d_configure_ffmpeg(${RC2D_EXAMPLE_TARGET_NAME})
-
-  # Linker la dépendance OpenSSL non commune à toutes les plateformes
-  # Cela dépend de la plateforme, donc on le fait dans la fonction rc2d_configure_openssl
-  rc2d_configure_openssl(${RC2D_EXAMPLE_TARGET_NAME})
-
-  # Linker SDL3_shadercross selon la plateforme
-  rc2d_configure_shadercross(${RC2D_EXAMPLE_TARGET_NAME})
-
-  # Link onnxruntime si le module RC2D_onnx est activé
-  rc2d_configure_onnxruntime(${RC2D_EXAMPLE_TARGET_NAME})
-
   # Link la dépendance RC2D statique ou dynamique selon le choix de l'utilisateur
   target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
     ${PROJECT_NAME} # RC2D
@@ -1359,35 +1724,90 @@ if(RC2D_BUILD_EXAMPLES)
     )
   endif()
 
+  # ============================================================
+  # Copie des ressources (dossiers : shaders, assets) dans le dossier de sortie de l'exécutable
+  # ============================================================
   if(NOT ANDROID)
     # Copier le dossier shaders dans le dossier de sortie de rc2d_example (exécutable)
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:rc2d_example>/shaders"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders"
       COMMAND ${CMAKE_COMMAND} -E copy_directory
               "${PROJECT_SOURCE_DIR}/examples/shaders"
-              "$<TARGET_FILE_DIR:rc2d_example>/shaders"
-      COMMENT "Copie du dossier shaders dans le dossier de build de rc2d_example"
+              "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders"
+      COMMENT "Copie du dossier shaders dans le dossier de build de ${RC2D_EXAMPLE_TARGET_NAME}"
     )
 
     # Copier le dossier assets dans le dossier de sortie de rc2d_example (exécutable)
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:rc2d_example>/assets"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/assets"
       COMMAND ${CMAKE_COMMAND} -E copy_directory
               "${PROJECT_SOURCE_DIR}/examples/assets"
-              "$<TARGET_FILE_DIR:rc2d_example>/assets"
-      COMMENT "Copie du dossier assets dans le dossier de build de rc2d_example"
+              "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/assets"
+      COMMENT "Copie du dossier assets dans le dossier de build de ${RC2D_EXAMPLE_TARGET_NAME}"
     )
   endif()
 
+  # ============================================================
+  # Linux / SteamRT4 — Force RPATH à $ORIGIN pour l'exécutable
+  # ============================================================
+  #
+  # Objectif :
+  # Sur Linux / SteamRT4, on veut que
+  # l'exécutable cherche ses bibliothèques partagées (.so)
+  # dans SON PROPRE RÉPERTOIRE.
+  #
+  # Pourquoi ?
+  # - Les libs dynamique/partagée (.so) de FFmpeg / ONNX / SDL3_shadercross / etc. sont copiées
+  #   à côté du binaire de l'exemple (${RC2D_EXAMPLE_TARGET_NAME}) pour Linux / SteamRT4.
+  # - Steam Runtime impose son propre environnement glibc.
+  # - On veut éviter que le loader cherche dans /usr/lib.
+  #
+  # Solution :
+  # On force le RPATH à "$ORIGIN".
+  #
+  # "$ORIGIN" signifie :
+  #   "le dossier contenant l'exécutable"
+  #
+  # Exemple :
+  #   ./rc2d_example
+  #   ./libonnxruntime.so
+  #   ./libavcodec.so
+  # ============================================================
+  if(UNIX AND NOT APPLE AND NOT ANDROID)
+    # Vérifier que patchelf est disponible pour modifier le RPATH de l'exécutable et que la target de l'exemple existe
+    if(PATCHELF_EXECUTABLE AND TARGET ${RC2D_EXAMPLE_TARGET_NAME})
+      add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
+        COMMAND "${PATCHELF_EXECUTABLE}"
+                --set-rpath "\$ORIGIN"
+                --force-rpath
+                "$<TARGET_FILE:${RC2D_EXAMPLE_TARGET_NAME}>"
+        COMMENT "Linux/SteamRT4: set RPATH to \$ORIGIN for ${RC2D_EXAMPLE_TARGET_NAME}"
+        VERBATIM
+      )
+    endif()
+  endif()
+
+  # ============================================================
+  # Linux / SteamRT4 / Apple (macOS/iOS) — Rendre l'exécutable exécutable via chmod
+  # ============================================================ 
   if (UNIX OR APPLE AND NOT ANDROID)
-    # Rendre rc2d_example exécutable (important s’il est copié depuis une archive)
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-      COMMAND chmod +x "$<TARGET_FILE_DIR:rc2d_example>/rc2d_example"
-      COMMENT "Rendre rc2d_example exécutable"
+      COMMAND chmod +x "$<TARGET_FILE:${RC2D_EXAMPLE_TARGET_NAME}>"
+      COMMENT "Rendre ${RC2D_EXAMPLE_TARGET_NAME} exécutable"
       VERBATIM
     )
   endif()
 endif()
+
+
+
+
+
+
+
+
+
+
 
 # Pour les tests unitaires RC2D
 if(RC2D_BUILD_TESTS)

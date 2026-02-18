@@ -208,10 +208,10 @@
   # Windows :
   1. Requirements : Windows >= 10 (x64 or arm64)
   2. Download and Install Visual Studio == 2022 (MSVC >= v143 + Windows SDK >= 10) : https://visualstudio.microsoft.com/fr/downloads/
-  3. Download and Install CMake >= 3.25 : https://cmake.org/download/ and add PATH ENVIRONMENT.
+  3. Download and Install CMake >= 3.5.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
   
   # Linux :
-  1. Requirements : glibc >= 3.25 (Ubuntu >= 22.04 OR Debian >= 12.0)
+  1. Requirements : glibc >= 3.5.0 (Ubuntu >= 22.04 OR Debian >= 12.0)
   2. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   3. Après l'installation de homebrew il faut importer les variables d'environnement et installer les deux librairies : 
     echo '# Set PATH, MANPATH, etc., for Homebrew.' >> /home/debian/.bashrc && 
@@ -219,7 +219,7 @@
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" &&
     sudo apt-get install -y build-essential &&
     brew install gcc
-  5. Download and Install CMake >= 3.25 : brew install cmake
+  5. Download and Install CMake >= 3.5.0 : brew install cmake
   6. Télécharger et Installer patchelf (pour la dépendence SDL_shadercross), puis ajouté au PATH.
 
 
@@ -227,13 +227,13 @@
   1. Requirements : MacOS X >= 15.0.0
   2. Download and Install xCode >= 16.4.0
   3. Download and Install Command Line Tools : xcode-select --install
-  4. Download and Install CMake >= 3.25 : brew install cmake
+  4. Download and Install CMake >= 3.5.0 : brew install cmake
 
 
   # Android (run in Windows) :
-  1. Download and Install : Android Studio 2025.1.1 or newer
+  1. Download and Install : Android Studio 2025.3.1 or newer
   2. Add environment variable: ANDROID_HOME for path SDK Android (SDK Manager path)
-  3. Download and Install CMake >= 3.25 : https://cmake.org/download/ and add PATH ENVIRONMENT.
+  3. Download and Install CMake >= 3.5.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
   4. Download and Install Java JDK LTS (Oracle) == 17.0.10
 
 
@@ -243,7 +243,7 @@
   3. Download and Install xCode >= 16.4.0
   4. Download and Install SDK iOS >= 18.0.0
   5. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  6. Download and Install cmake : brew install cmake 
+  6. Download and Install cmake >= 3.5.0 : brew install cmake 
   ```
   
 4. Avant toute compilation, exécute le script suivant :
@@ -293,8 +293,19 @@ Cela aura générer à nouveau le fichier à jour dans : `src/RC2D/RC2D_gamecont
 
 <br /><br />
 
-## 🔄 Cycle Development
-1. Par défault : Construit/Compile la librairie RC2D en static et génére le projet d'exemple (situé dans /examples).
+## 🧱 Générer RC2D (lib statique) + Projet d'exemple
+1. **Par défaut** : ces scripts **génèrent un projet CMake** dans `./build/`, puis **compilent RC2D en bibliothèque statique** et **construisent le projet d’exemple** pour la plateforme choisie.
+
+   - ✅ **Si le projet est déjà généré** (ex: solution **Visual Studio 2022**, projet Xcode, Ninja, etc.) : vous pouvez simplement **recompiler depuis votre IDE** ou via votre outil de build (Build/Run) **sans relancer les scripts**, tant que la configuration CMake ne change pas.
+
+   - 🔁 **Quand relancer les scripts (ou rerun CMake)** :
+     - Si vous modifiez des options CMake / flags / dépendances (ex: activation d’un module, ajout de libs, changement de toolchain, mise à jour `dependencies.txt`, etc.)
+     - Si vous supprimez le dossier `build/` ou changez de plateforme/architecture/générateur.
+
+   - 🧩 **Qu’est-ce qui demande une recompilation ?**
+     - Si vous modifiez `src/RC2D/**` ou `include/RC2D/**` → vous modifiez la **lib RC2D** → **recompiler RC2D** (IDE ou scripts).
+     - Si vous modifiez `examples/src/**` ou `examples/include/**` → vous modifiez **l’exemple** → **recompiler l’exemple** (IDE ou scripts).
+
 ```bash
 # Linux - x64
 chmod +x ./build-scripts/generate-project/linux-x64.sh
@@ -315,12 +326,12 @@ chmod +x ./build-scripts/generate-project/macos-arm64.sh
 .\build-scripts\generate-project\windows-arm64.bat
 
 # SteamRT4 x64 (Linux)
-chmod +x ./build-scripts/generate-project/steamlinux_steamdeck-x64.sh
-./build-scripts/generate-project/steamlinux_steamdeck-x64.sh
+chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
+./build-scripts/generate-project/steamrt4-x64.sh
 
 # SteamRT4 arm64 (Linux)
-chmod +x ./build-scripts/generate-project/steamlinux-arm64.sh
-./build-scripts/generate-project/steamlinux-arm64.sh
+chmod +x ./build-scripts/generate-project/steamrt4-arm64.sh
+./build-scripts/generate-project/steamrt4-arm64.sh
 
 # Android (Unix)
 chmod +x ./build-scripts/generate-project/android.sh

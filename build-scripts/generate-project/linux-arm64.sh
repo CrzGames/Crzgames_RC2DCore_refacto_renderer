@@ -8,7 +8,6 @@ for build_type in Debug Release; do
     -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=$build_type \
     -DRC2D_ARCH=arm64 \
-    -DRC2D_PLATFORM=Linux
   cmake --build build/linux/arm64/$build_type
 done
 
