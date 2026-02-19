@@ -7,7 +7,7 @@ for build_type in Debug Release; do
   cmake -S . -B build/linux/x64/$build_type \
     -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=$build_type \
-    -DRC2D_ARCH=x64 \
+    -DRC2D_ARCH=x64
   cmake --build build/linux/x64/$build_type
 done
 
