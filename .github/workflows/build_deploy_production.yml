@@ -79,6 +79,8 @@ jobs:
           echo "SDK Version: $SDKVERSION"
         shell: bash
 
+      # TODO: Build RC2D via les scripts dans build-scripts/ pour chaque plateforme et architecture
+
   deploy_assets_github:
     needs: build_librc2d
     runs-on: ubuntu-latest
