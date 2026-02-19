@@ -1,12 +1,12 @@
 #ifndef SCENE_MANAGER_H
 #define SCENE_MANAGER_H
 
-#include <amoredtactics/scenes/scene.h>
+#include <map>
+#include <string>
 
 #include <RC2D/RC2D.h>
 
-#include <map>
-#include <string>
+#include <amoredtactics/scenes/scene.h>
 
 class Scene; // Declaration anticipée
 

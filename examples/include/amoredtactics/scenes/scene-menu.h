@@ -1,10 +1,10 @@
 #ifndef SCENE_MENU_H
 #define SCENE_MENU_H
 
+#include <RC2D/RC2D.h>
+
 #include <amoredtactics/scenes/scene.h>
 #include <amoredtactics/scenes/scene-manager.h>
-
-#include <RC2D/RC2D.h>
 
 class MenuScene : public Scene {
     public:

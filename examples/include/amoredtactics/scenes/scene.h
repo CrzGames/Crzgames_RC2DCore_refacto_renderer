@@ -1,9 +1,9 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <amoredtactics/scenes/scene-manager.h>
-
 #include <RC2D/RC2D.h>
+
+#include <amoredtactics/scenes/scene-manager.h>
 
 class SceneManager; // Declaration anticipee
 

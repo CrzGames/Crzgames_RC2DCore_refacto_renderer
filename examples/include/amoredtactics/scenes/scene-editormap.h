@@ -1,10 +1,10 @@
 #ifndef SCENE_EDITORMAP_H
 #define SCENE_EDITORMAP_H
 
+#include <RC2D/RC2D.h>
+
 #include <amoredtactics/scenes/scene.h>
 #include <amoredtactics/scenes/scene-manager.h>
-
-#include <RC2D/RC2D.h>
 
 class EditorMapScene : public Scene {
     public:
