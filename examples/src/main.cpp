@@ -13,9 +13,9 @@
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
 
-#include <amoredtactics/game.h>
-
 #include <RC2D/RC2D.h>
+
+#include <amoredtactics/game.h>
 
 /**
  * \brief Fonction de configuration du moteur RC2D.

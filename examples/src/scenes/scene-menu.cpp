@@ -1,5 +1,3 @@
-#include <RC2D/RC2D_steamworks.h>
-#include <RC2D/RC2D_eos.h>
 #include <amoredtactics/scenes/scene-menu.h>
 
 void MenuScene::unload(void) 
@@ -10,8 +8,6 @@ void MenuScene::unload(void)
 void MenuScene::load(void) 
 {
     RC2D_log(RC2D_LOG_INFO, "Menu Scene Loaded\n");
-    //rc2d_steamworks_unlockAchievement("TOTO");
-    //rc2d_eos_unlockAchievement("TOTO");
 }
 
 void MenuScene::update(double dt) 

@@ -3,8 +3,6 @@
 
 #include <RC2D/RC2D.h>
 
-#include <amoredtactics/scenes/scene-manager.h>
-
 class SceneManager; // Declaration anticipee
 
 class Scene {
