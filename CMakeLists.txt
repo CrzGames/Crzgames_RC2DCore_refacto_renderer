@@ -1628,15 +1628,21 @@ if(RC2D_BUILD_EXAMPLES)
     )
   endif()
 
-  if (MSVC)
-    # Définir le projet de démarrage dans Visual Studio
-    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${RC2D_EXAMPLE_TARGET_NAME})
-
-    # Définir le répertoire de travail pour le débogueur dans Visual Studio
-    # Cela permet de lancer l'exécutable avec le bon répertoire de travail (working directory)
-    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-      VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>"
+  if (WIN32)
+    # Définir l'executable comme une application Windows (pour éviter l'affichage de la console quand on ouvre l'executable) en mode Release
+    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES 
+      WIN32_EXECUTABLE $<CONFIG:Release>
     )
+    if(MSVC)
+      # Définir le projet de démarrage dans Visual Studio
+      set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${RC2D_EXAMPLE_TARGET_NAME})
+
+      # Définir le répertoire de travail pour le débogueur dans Visual Studio
+      # Cela permet de lancer l'exécutable avec le bon répertoire de travail (working directory)
+      set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+        VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>"
+      )
+    endif()
   endif()
 
   # Les fichiers d'en-tête (headers) de l'exemple sont dans le répertoire "examples/include"
