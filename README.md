@@ -141,10 +141,9 @@
 ### macOS
 - **Version minimale** : macOS 15.0+ for arm64
 - **Raison** :
-  - Requis par ONNX Runtime pour C++20 (macOS 13.4+)
-  - Requis par ONNX Runtime pour la version >= à 1.23.1, il faudras macOS >= 14.0
-  - Requis par MSL version 3.2.0 (macOS 15.0+)
-  - ONNX Runtime pour la version >= à 1.23.1 ne fournira plus de binaires x86_64 pour les systèmes d'exploitation macOS et iOS.
+  - Requis par ONNX Runtime pour la version >= à v1.24.1, il faut macOS >= 14.0
+  - Requis par MSL version 3.2.0, il faut macOS >= 15.0
+  - Pourquoi pas d'architecture x86_64 ? -> ONNX Runtime pour la version >= à v1.24.1 ne fournira plus de binaires x86_64 pour les systèmes d'exploitation macOS et iOS.
 
 ### iOS/iPadOS
 - **Version minimale** : iOS/iPadOS 18.0+ for arm64
@@ -153,7 +152,7 @@
   - CoreML pour ONNX Runtime nécessite iOS/iPadOS 13.0+
   - Requis par MSL version 3.2.0 (iOS/iPadOS 18.0+)
   - Pas de librairie pour iOS/iPadOS simulator parce que SDL3 GPU ne le supporte pas.
-  - ONNX Runtime pour la version >= à 1.23.1 ne fournira plus de binaires x86_64 pour les systèmes d'exploitation macOS et iOS.
+  - Pourquoi pas d'architecture x86_64 ? -> ONNX Runtime pour la version >= à v1.24.1 ne fournira plus de binaires x86_64 pour les systèmes d'exploitation macOS et iOS.
 
 ### Android
 - **Version minimale** : Android 9.0 (API 28+)
