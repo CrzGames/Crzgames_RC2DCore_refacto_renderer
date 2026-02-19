@@ -1,4 +1,5 @@
 #include <amoredtactics/scenes/scene-menu.h>
+#include <amoredtactics/scenes/scene-manager.h>
 
 void MenuScene::unload(void) 
 {
