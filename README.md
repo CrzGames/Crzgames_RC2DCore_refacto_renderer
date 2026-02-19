@@ -237,6 +237,12 @@
 
 
 
+  # SteamRT4 (Steam Linux / Steam Deck) :
+  1. Utiliser un container via le tag de l image SteamRT4 voir : https://repo.steampowered.com/steamrt4/images/
+  2. Download and Install Patchelf : sudo apt install -y patchelf
+
+
+
   # macOS :
   1. Requirements : MacOS X >= 15.0.0
   2. Download and Install xCode >= 16.4.0
