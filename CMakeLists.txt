@@ -1003,7 +1003,7 @@ function(rc2d_configure_shadercross target_name)
         VERBATIM
       )
     endif()
-  elseif((UNIX OR ANDROID) AND NOT APPLE) # Linux, Raspberry PI 5 etc.
+  elseif(UNIX AND NOT APPLE) # Linux, Android, Raspberry PI 5 etc.
     # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
     set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/linux/bin/SDL3_shadercross/${RC2D_ARCH}")
 
@@ -1917,22 +1917,55 @@ if(RC2D_BUILD_EXAMPLES)
   # Sur Apple (macOS/iOS), les ressources sont intégrées dans le bundle .app, donc pas besoin de les copier manuellement.
   # ============================================================
   if(NOT ANDROID AND NOT APPLE)
-    # Copier le dossier shaders dans le dossier de sortie de rc2d_example (exécutable)
+    # ---------------------------------------------------------------------------
+    # Shaders runtime :
+    # On ne copie QUE :
+    #   - examples/shaders/compiled
+    #   - examples/shaders/reflection
+    #
+    # tools/ et src/ restent dans le repo :
+    #   examples/shaders/tools (utilisé par les scripts .sh/.bat)
+    # ---------------------------------------------------------------------------
+
+    # Créer le dossier shaders/ à côté de l'exe (même si compiled/reflection n'existent pas)
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders"
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-              "${PROJECT_SOURCE_DIR}/examples/shaders"
-              "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders"
-      COMMENT "Copie du dossier shaders dans le dossier de build de ${RC2D_EXAMPLE_TARGET_NAME}"
+      COMMENT "Prépare le dossier shaders/ à côté de ${RC2D_EXAMPLE_TARGET_NAME}"
+      VERBATIM
     )
 
-    # Copier le dossier assets dans le dossier de sortie de rc2d_example (exécutable)
+    # Copier compiled/ si présent
+    if(EXISTS "${PROJECT_SOURCE_DIR}/examples/shaders/compiled")
+      add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders/compiled"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${PROJECT_SOURCE_DIR}/examples/shaders/compiled"
+                "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders/compiled"
+        COMMENT "Copie shaders/compiled à côté de ${RC2D_EXAMPLE_TARGET_NAME}"
+        VERBATIM
+      )
+    endif()
+
+    # Copier reflection/ si présent
+    if(EXISTS "${PROJECT_SOURCE_DIR}/examples/shaders/reflection")
+      add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders/reflection"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${PROJECT_SOURCE_DIR}/examples/shaders/reflection"
+                "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders/reflection"
+        COMMENT "Copie shaders/reflection à côté de ${RC2D_EXAMPLE_TARGET_NAME}"
+        VERBATIM
+      )
+    endif()
+
+    # Assets génériques (images, sons, etc.) :
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/assets"
       COMMAND ${CMAKE_COMMAND} -E copy_directory
               "${PROJECT_SOURCE_DIR}/examples/assets"
               "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/assets"
       COMMENT "Copie du dossier assets dans le dossier de build de ${RC2D_EXAMPLE_TARGET_NAME}"
+      VERBATIM
     )
   endif()
 
