@@ -1325,7 +1325,6 @@ endfunction()
 # - Exposer dans le code C/C++ des flags cohérents :
 #   • RC2D_EOS_SDK_ENABLED (0/1)
 #   • RC2D_STEAMWORKS_SDK_ENABLED (0/1)
-#   • RC2D_BUILDING_BINDINGS_CSHARP (0/1)
 #   • RC2D_BUILDING_SHARED (0/1)
 #   • RC2D_VIDEO_MODULE_ENABLED (0/1)
 #   • RC2D_GPU_SHADER_HOT_RELOAD_ENABLED (0/1)
@@ -1346,12 +1345,6 @@ function(rc2d_target_compile_definitions target_name)
     target_compile_definitions(${target_name} PUBLIC RC2D_STEAMWORKS_SDK_ENABLED=1)
   else()
     target_compile_definitions(${target_name} PUBLIC RC2D_STEAMWORKS_SDK_ENABLED=0)
-  endif()
-
-  if(RC2D_BUILDING_BINDINGS_CSHARP)
-    target_compile_definitions(${target_name} PUBLIC RC2D_BUILDING_BINDINGS_CSHARP=1)
-  else()
-    target_compile_definitions(${target_name} PUBLIC RC2D_BUILDING_BINDINGS_CSHARP=0)
   endif()
 
   if(RC2D_BUILDING_SHARED)
@@ -1564,7 +1557,6 @@ if(RC2D_BUILD_EXAMPLES)
     set(APP_LEGAL_COPYRIGHT "Copyright 2025 CrzGames" CACHE STRING "Droits d'auteur")
   endif()
 
-  # Pour macOS spécifiquement (bundle .app) : Identifier de l'application et version de construction
   if(DEFINED ENV{APP_IOSMACOS_BUILD_VERSION})
     set(APP_IOSMACOS_BUILD_VERSION "$ENV{APP_IOSMACOS_BUILD_VERSION}" CACHE STRING "Build version")
   else()
