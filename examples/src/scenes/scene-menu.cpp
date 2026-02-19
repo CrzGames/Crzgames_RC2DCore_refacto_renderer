@@ -18,7 +18,17 @@ void MenuScene::update(double dt)
 
 void MenuScene::draw(void) 
 {
+    // Couleur rouge
+    rc2d_graphics_setColor({255, 0, 0, 255});
 
+    SDL_FRect rect;
+    rect.x = 400.0f;
+    rect.y = 250.0f;
+    rect.w = 200.0f;
+    rect.h = 150.0f;
+
+    // Dessin rempli
+    rc2d_graphics_rectangle("fill", &rect);
 }
 
 void MenuScene::keypressed(const char *key, SDL_Scancode scancode, SDL_Keycode keycode, SDL_Keymod mod, bool isrepeat, SDL_KeyboardID keyboardID) 
