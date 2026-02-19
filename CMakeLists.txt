@@ -2016,7 +2016,7 @@ if(RC2D_BUILD_EXAMPLES)
   # - Reproductible en CI/CD
   # - Fonctionne en x64 et arm64
   # ============================================================
-  if(UNIX AND NOT APPLE AND NOT ANDROID AND TARGET ${RC2D_EXAMPLE_TARGET_NAME})
+  if(UNIX AND NOT APPLE AND NOT ANDROID)
     set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
       BUILD_RPATH "\$ORIGIN"
       INSTALL_RPATH "\$ORIGIN"
