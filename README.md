@@ -182,19 +182,21 @@
 
 ## 📦 Dépendances principales
 
-| Librairie              | Utilisation principale                                       | Intégration                |
-|------------------------|--------------------------------------------------------------|----------------------------|
-| **LZ4**                | Compression/décompression ultra-rapide, utilisée par le module `RC2D_data` | `Statique – Fichiers intégrés directement dans le code source, pas besoin de compilation séparée` |
-| **SDL3**               | Moteur principal, gestion entrée/sortie, rendu GPU           | `Obligatoire`                |
-| **SDL3_image**         | Chargement des images                                        | `Obligatoire`                |
-| **SDL3_ttf**           | Rendu de polices TrueType                                    | `Obligatoire`                |
-| **SDL3_mixer**         | Gestion du mixage audio (WAV, MP3, OGG...)                   | `Obligatoire`                |
-| **SDL3_shadercross**   | Transpilation code HLSL → MSL/SPIR-V/DXIL/METALLIB/PSSL           | `Activé par défault mais optionnel (désactivé en Release)`. Passé à CMake: RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=OFF/ON. Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est à ON alors SDL3_shadercross sera link avec ces dépendences pour le rechargement à chaud des shaders à l'execution pour le temps du développement, sinon pour la production passé RC2D_GPU_SHADER_HOT_RELOAD_ENABLED à OFF et utilisé SDL3_shadercross en mode CLI pour la compilation hors ligne des shaders |
-| **RCENet**             | Fork de ENet (Communication UDP)                             | `Activé par défault mais optionnel`, mais le module `RC2D_net` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_NET_MODULE_ENABLED=OFF |
-| **OpenSSL**            | Hashing, Chiffrement..etc                       | `Activé par défault mais optionnel`, mais le module `RC2D_data` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_DATA_MODULE_ENABLED=OFF |
-| **ONNX Runtime**       | Exécution de modèles ONNX pour l'inférence                   | `Désactivé par défault mais optionnel`, mais le module `RC2D_onnx` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_ONNX_MODULE_ENABLED=OFF |
-| **FFMPEG**             | Lecture de vidéo mp4..etc                            | `Activé par défault mais optionnel`, mais le module `RC2D_video` ne sera pas utilisable si désactiver. Passé à CMake : RC2D_VIDEO_MODULE_ENABLED=OFF |
-| **cJSON**       | Librairie JSON   | `Statique - Link lors de la compilation de la librairie RC2D.` |
+> Les versions sont verrouillées afin de garantir des builds reproductibles sur toutes les plateformes.
+
+| Librairie | Version / Commit SHA utilisé par RC2D | Rôle dans RC2D | Statut / Intégration |
+|------------|----------------------------------------|----------------|----------------------|
+| **LZ4** | v1.10.0 | Compression ultra-rapide utilisée par `RC2D_data` | 🔒 Intégrée statiquement (sources embarquées dans RC2D) |
+| **SDL3** | commit `be82f316c4745d4cf0f8c0a5e37f5390beed9542` | Gestion fenêtre, entrées, rendu GPU | ⭐ Obligatoire |
+| **SDL3_image** | commit `8bd9f3d7f2d2bb59ce4331f13b77d65254cd8c7b` | Chargement d’images (PNG, SVG, APNG…) | ⭐ Obligatoire |
+| **SDL3_ttf** | commit `053bbc89517471427748a082583c9eada55c07b5` | Rendu de polices TrueType | ⭐ Obligatoire |
+| **SDL3_mixer** | commit `37b2f3325a0fb1e98ba265aa38826aa9e16624fb` | Gestion audio (WAV, OGG, OPUS…) | ⭐ Obligatoire |
+| **cJSON** | v1.7.19 | Parsing JSON léger | 🔒 Statique – linké à la compilation de RC2D |
+| **SDL3_shadercross** | commit `7b7365a86611b2a7b6462e521cf1c43a037d0970` | Transpilation shaders (HLSL → MSL / SPIR-V / DXIL / METALLIB…) | 🟡 Dev uniquement – `RC2D_GPU_SHADER_HOT_RELOAD_ENABLED` |
+| **RCENet** | v1.4.0 | Communication réseau UDP (fork ENet) | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) |
+| **OpenSSL** | v3.6.1 | Hashing, chiffrement, crypto | 🟡 Optionnel – `RC2D_DATA_MODULE_ENABLED` (ON par défaut) |
+| **ONNX Runtime** | v1.24.1 | Inférence IA (modèles ONNX) | 🔵 Optionnel – `RC2D_ONNX_MODULE_ENABLED` (OFF par défaut) |
+| **FFmpeg** | v8.0.0 | Lecture vidéo (MP4, etc.) | 🟡 Optionnel – `RC2D_VIDEO_MODULE_ENABLED` (ON par défaut) |
 
 <br /><br />
 
