@@ -1617,11 +1617,13 @@ if(RC2D_BUILD_EXAMPLES)
   if(ANDROID)
     # Pour Android, il faut obligatoirement mettre SHARED et "main" comme nom de target
     add_library(${RC2D_EXAMPLE_TARGET_NAME} SHARED 
-      ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS}
+      ${RC2D_EXAMPLE_SOURCES} 
+      ${RC2D_EXAMPLE_HEADERS}
     )
   else()
     add_executable(${RC2D_EXAMPLE_TARGET_NAME} 
-      ${RC2D_EXAMPLE_SOURCES} ${RC2D_EXAMPLE_HEADERS}
+      ${RC2D_EXAMPLE_SOURCES} 
+      ${RC2D_EXAMPLE_HEADERS}
       ${RESOURCE_FILES} # Fichier .rc doit être intégré dans l'executable (Windows uniquement)
     )
   endif()
