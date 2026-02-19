@@ -8,7 +8,7 @@
 
 #include <SDL3/SDL_stdinc.h>
 
-#include <cjson/cJSON.h>
+#include <cJSON.h>
 
 #include <string.h>
 
