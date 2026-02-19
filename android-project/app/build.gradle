@@ -67,6 +67,27 @@ android {
         externalNativeBuild {
             cmake {
                 path '../../CMakeLists.txt'
+
+                /**
+                * IMPORTANT :
+                * Cette version DOIT :
+                *
+                * 1) Être >= à la version définie dans le CMakeLists.txt principal :
+                *      cmake_minimum_required(VERSION 3.28.0)
+                *
+                * 2) Correspondre EXACTEMENT à la version de CMake installée via :
+                *      Android Studio → SDK Manager → SDK Tools → CMake
+                *
+                * Si la version ne correspond pas :
+                * - Gradle téléchargera une autre version (ex: 3.22.1)
+                * - Le build échouera si elle est < à cmake_minimum_required
+                *
+                * Toujours garder la cohérence entre :
+                * - android-project/app/build.gradle
+                * - CMakeLists.txt (cmake_minimum_required)
+                * - SDK Manager (version CMake installée)
+                */
+                version '3.30.3'
             }
         }
     }
