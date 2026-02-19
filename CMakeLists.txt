@@ -1908,6 +1908,84 @@ if(RC2D_BUILD_EXAMPLES)
       COMMAND /usr/libexec/PlistBuddy -c "Add :UILaunchStoryboardName string 'LaunchScreen'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
       COMMENT "Adding launch storyboard name to Info.plist"
     )
+  elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4"))
+    # ============================================================
+    # Linux classique — AppImage
+    # - Build single-config (Unix Makefiles) : Debug/Release via CMAKE_BUILD_TYPE
+    # - RC2D_ARCH : x64 | arm64
+    # ============================================================
+
+    # RPATH pour que l'exe cherche ses .so dans ./usr/lib à côté (AppDir layout)
+    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+      BUILD_RPATH "\$ORIGIN/usr/lib"
+      INSTALL_RPATH "\$ORIGIN/usr/lib"
+      BUILD_WITH_INSTALL_RPATH TRUE
+    )
+
+    # ------------------------------------------------------------
+    # Arch AppImage depuis RC2D_ARCH
+    # ------------------------------------------------------------
+    if(RC2D_ARCH STREQUAL "x64")
+      set(APPIMAGE_ARCH "x86_64")
+    elseif(RC2D_ARCH STREQUAL "arm64")
+      set(APPIMAGE_ARCH "aarch64")
+    else()
+      message(FATAL_ERROR "RC2D_ARCH invalide: '${RC2D_ARCH}' (attendu: x64 ou arm64)")
+    endif()
+
+    # ------------------------------------------------------------
+    # Build type (single-config) : Debug / Release
+    # ------------------------------------------------------------
+    if(NOT CMAKE_BUILD_TYPE)
+      message(FATAL_ERROR "CMAKE_BUILD_TYPE est requis (Debug/Release) avec Unix Makefiles.")
+    endif()
+
+    # ------------------------------------------------------------
+    # APPDIR : isolé par arch + build_type (évite collisions)
+    # On le met dans le build tree, pas dans le source tree.
+    # Exemple :
+    #   build/linux/x64/Debug/AppDir
+    #   build/linux/x64/Release/AppDir
+    #   build/linux/arm64/Debug/AppDir
+    # ------------------------------------------------------------
+    set(APPDIR "${CMAKE_BINARY_DIR}/AppDir")
+    set(APPIMAGE_OUTPUT "${CMAKE_BINARY_DIR}/${RC2D_EXAMPLE_TARGET_NAME}.AppImage")
+
+    install(CODE
+      "include(\"${CMAKE_CURRENT_SOURCE_DIR}/platforms/linux/appimage.cmake\")
+      make_appimage(
+        EXE \"\$<TARGET_FILE:${RC2D_EXAMPLE_TARGET_NAME}>\"
+        NAME \"${RC2D_EXAMPLE_TARGET_NAME}\"
+        ICON \"${PROJECT_SOURCE_DIR}/icons/linux/app-icon.png\"
+        DIR_ICON \"${PROJECT_SOURCE_DIR}/icons/linux/app-icon.png\"
+        OUTPUT_NAME \"${APPIMAGE_OUTPUT}\"
+        APP_VERSION \"${APP_VERSION}\"
+        APP_ARCH \"${APPIMAGE_ARCH}\"
+        APPDIR \"${APPDIR}\"
+      )"
+      COMPONENT Runtime
+    )
+  elseif(RC2D_PLATFORM STREQUAL "STEAMRT4")
+    # ============================================================
+    # SteamRT4 — Configure RPATH to $ORIGIN
+    # ============================================================
+    # Explication technique :
+    # - "$ORIGIN" est une variable spéciale du loader ELF.
+    #   Elle représente le dossier contenant l'exécutable.
+    #
+    #   Exemple de structure :
+    #     ./rc2d_example
+    #     ./libonnxruntime.so
+    #     ./libavcodec.so
+    #
+    #   Avec RPATH = $ORIGIN, le loader cherchera :
+    #     ./libonnxruntime.so
+    #
+    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+      BUILD_RPATH "\$ORIGIN"
+      INSTALL_RPATH "\$ORIGIN"
+      BUILD_WITH_INSTALL_RPATH TRUE
+    )
   endif()
 
   # ============================================================
@@ -1966,61 +2044,6 @@ if(RC2D_BUILD_EXAMPLES)
               "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/assets"
       COMMENT "Copie du dossier assets dans le dossier de build de ${RC2D_EXAMPLE_TARGET_NAME}"
       VERBATIM
-    )
-  endif()
-
-  # ============================================================
-  # Linux / SteamRT4 — Configure RPATH to $ORIGIN
-  # ============================================================
-  #
-  # Objectif :
-  # Sur Linux (y compris SteamRT4), on souhaite que
-  # l'exécutable recherche ses bibliothèques partagées (.so)
-  # dans le même dossier que lui.
-  #
-  # Pourquoi ?
-  # - Les dépendances dynamiques (ex: ONNX Runtime, FFmpeg, SDL3_shadercross, etc.)
-  #   sont copiées à côté de l'exécutable.
-  # - On veut éviter que le dynamic loader recherche dans /usr/lib ou
-  #   d'autres chemins système.
-  # - Cela garantit un packaging autonome et reproductible.
-  #
-  # Explication technique :
-  # - "$ORIGIN" est une variable spéciale du loader ELF.
-  #   Elle représente le dossier contenant l'exécutable.
-  #
-  #   Exemple de structure :
-  #     ./rc2d_example
-  #     ./libonnxruntime.so
-  #     ./libavcodec.so
-  #
-  #   Avec RPATH = $ORIGIN, le loader cherchera :
-  #     ./libonnxruntime.so
-  #
-  # Propriétés utilisées :
-  #
-  # BUILD_RPATH :
-  #   Définit le RPATH utilisé dans le binaire généré
-  #   directement dans le dossier build/.
-  #
-  # INSTALL_RPATH :
-  #   Définit le RPATH utilisé après installation ou packaging.
-  #
-  # BUILD_WITH_INSTALL_RPATH TRUE :
-  #   Indique à CMake d'utiliser INSTALL_RPATH dès la phase
-  #   de build, évitant toute modification ultérieure du binaire.
-  #
-  # Avantage :
-  # - Pas besoin d'utiliser patchelf
-  # - Compatible SteamRT4
-  # - Reproductible en CI/CD
-  # - Fonctionne en x64 et arm64
-  # ============================================================
-  if(UNIX AND NOT APPLE AND NOT ANDROID)
-    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-      BUILD_RPATH "\$ORIGIN"
-      INSTALL_RPATH "\$ORIGIN"
-      BUILD_WITH_INSTALL_RPATH TRUE
     )
   endif()
 
