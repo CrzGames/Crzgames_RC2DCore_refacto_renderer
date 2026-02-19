@@ -1628,7 +1628,7 @@ if(RC2D_BUILD_EXAMPLES)
     )
   endif()
 
-  if (WIN32)
+  if (MSVC)
     # Définir le projet de démarrage dans Visual Studio
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${RC2D_EXAMPLE_TARGET_NAME})
 
@@ -1685,7 +1685,7 @@ if(RC2D_BUILD_EXAMPLES)
     )
 
     # Ajoute une étape de post-build pour ajouter des clés au fichier Info.plist
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
       # Ajoute les clés pour le bluetooth
       COMMAND /usr/libexec/PlistBuddy -c "Add :UIApplicationSupportsIndirectInputEvents bool true" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
       COMMENT "Adding keys bluetooth to Info.plist"
