@@ -235,8 +235,12 @@
     libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev libthai-dev \
     ibpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
   6. Download and Install fuse (for generate .AppImage) :
-    sudo apt update
-    sudo apt install fuse3 
+     Pour Ubuntu (>= 22.04) :
+      sudo apt update
+      sudo apt install libfuse2 
+     Pour Debian (>= 13) et Ubuntu (>= 24.04) : 
+      sudo apt update
+      sudo apt install -y libfuse2t64
 
 
 
