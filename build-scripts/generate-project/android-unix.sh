@@ -51,7 +51,6 @@ chmod +x ./gradlew
 # Clean Android project (Gradle)
 # --------------------------------------------------
 echo -e "\e[32m\nClean project (Gradle)...\e[0m"
-$GRADLE --stop || true
 $GRADLE clean
 
 # --------------------------------------------------

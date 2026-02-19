@@ -42,6 +42,9 @@ if not exist "gradlew.bat" (
   exit /b 1
 )
 
+REM --------------------------------------------------
+REM Clean Gradle
+REM --------------------------------------------------
 echo.
 echo Clean project (Gradle)...
 call %GRADLE% clean
