@@ -327,10 +327,12 @@ Cela aura générer à nouveau le fichier à jour dans : `src/RC2D/RC2D_gamecont
 # Linux - x64
 chmod +x ./build-scripts/generate-project/linux-x64.sh
 ./build-scripts/generate-project/linux-x64.sh
+# Spécifiquement pour Linux sur un VPS ou sans écran, après compilation réussi, lancer l'exemple via : SDL_AUDIODRIVER=dummy ./rc2d_example
 
 # Linux - arm64
 chmod +x ./build-scripts/generate-project/linux-arm64.sh
 ./build-scripts/generate-project/linux-arm64.sh
+# Spécifiquement pour Linux sur un VPS ou sans écran, après compilation réussi, lancer l'exemple via : SDL_AUDIODRIVER=dummy ./rc2d_example
 
 # macOS - Apple Silicon arm64
 chmod +x ./build-scripts/generate-project/macos-arm64.sh
