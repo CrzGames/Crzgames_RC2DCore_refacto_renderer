@@ -53,14 +53,7 @@ option(RC2D_MEMORY_DEBUG_ENABLED "Enable RC2D memory debug tracking (realloc/mal
 
 # Option pour activer la compilation des shaders en ligne (hot reload) pour SDL3_shadercross
 # CONSEILLE : Désactivé pour la production (RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=OFF).
-if(ANDROID OR CMAKE_OSX_SYSROOT MATCHES "iphoneos") 
-  # Mobile (iOS, Android), laissé à OFF pour le mobile.
-  option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
-else() 
-  # Le reste des plateformes (Windows, Linux, macOS, Steam Deck etc.) peuvent se permettre d'avoir 
-  #le hot reload de shadercross activé pendant le développement, pour faciliter le développement et le debug des shaders.
-  option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
-endif()
+option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
 
 # Option pour activer le module RC2D_video (basé sur FFmpeg)
 option(RC2D_VIDEO_MODULE_ENABLED "Enable RC2D_video (FFmpeg-based)" ON)
@@ -806,7 +799,7 @@ endfunction()
 #    - copier les libs runtime à côté de la target
 # ============================================================
 function(rc2d_configure_shadercross target_name)
-  if (APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx") # macOS
+  if (APPLE)
     # Repertoire cible des binaires de shadercross pour "examples/shaders/tools"
     set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/macos/bin/SDL3_shadercross")
 
@@ -859,7 +852,7 @@ function(rc2d_configure_shadercross target_name)
     )
 
     # Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est activé, on link la lib shadercross
-    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
+    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND CMAKE_OSX_SYSROOT MATCHES "macosx")
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/macos/include"
@@ -1010,7 +1003,7 @@ function(rc2d_configure_shadercross target_name)
         VERBATIM
       )
     endif()
-  elseif(UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.
+  elseif((UNIX OR ANDROID) AND NOT APPLE) # Linux, Raspberry PI 5 etc.
     # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
     set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/linux/bin/SDL3_shadercross/${RC2D_ARCH}")
 
@@ -1944,43 +1937,58 @@ if(RC2D_BUILD_EXAMPLES)
   endif()
 
   # ============================================================
-  # Linux / SteamRT4 — Force RPATH à $ORIGIN pour l'exécutable
+  # Linux / SteamRT4 — Configure RPATH to $ORIGIN
   # ============================================================
   #
   # Objectif :
-  # Sur Linux / SteamRT4, on veut que
-  # l'exécutable cherche ses bibliothèques partagées (.so)
-  # dans SON PROPRE RÉPERTOIRE.
+  # Sur Linux (y compris SteamRT4), on souhaite que
+  # l'exécutable recherche ses bibliothèques partagées (.so)
+  # dans le même dossier que lui.
   #
   # Pourquoi ?
-  # - Les libs dynamique/partagée (.so) de FFmpeg / ONNX / SDL3_shadercross / etc. sont copiées
-  #   à côté du binaire de l'exemple (${RC2D_EXAMPLE_TARGET_NAME}) pour Linux / SteamRT4.
-  # - Steam Runtime impose son propre environnement glibc.
-  # - On veut éviter que le loader cherche dans /usr/lib.
+  # - Les dépendances dynamiques (ex: ONNX Runtime, FFmpeg, SDL3_shadercross, etc.)
+  #   sont copiées à côté de l'exécutable.
+  # - On veut éviter que le dynamic loader recherche dans /usr/lib ou
+  #   d'autres chemins système.
+  # - Cela garantit un packaging autonome et reproductible.
   #
-  # Solution :
-  # On force le RPATH à "$ORIGIN".
+  # Explication technique :
+  # - "$ORIGIN" est une variable spéciale du loader ELF.
+  #   Elle représente le dossier contenant l'exécutable.
   #
-  # "$ORIGIN" signifie :
-  #   "le dossier contenant l'exécutable"
+  #   Exemple de structure :
+  #     ./rc2d_example
+  #     ./libonnxruntime.so
+  #     ./libavcodec.so
   #
-  # Exemple :
-  #   ./rc2d_example
-  #   ./libonnxruntime.so
-  #   ./libavcodec.so
+  #   Avec RPATH = $ORIGIN, le loader cherchera :
+  #     ./libonnxruntime.so
+  #
+  # Propriétés utilisées :
+  #
+  # BUILD_RPATH :
+  #   Définit le RPATH utilisé dans le binaire généré
+  #   directement dans le dossier build/.
+  #
+  # INSTALL_RPATH :
+  #   Définit le RPATH utilisé après installation ou packaging.
+  #
+  # BUILD_WITH_INSTALL_RPATH TRUE :
+  #   Indique à CMake d'utiliser INSTALL_RPATH dès la phase
+  #   de build, évitant toute modification ultérieure du binaire.
+  #
+  # Avantage :
+  # - Pas besoin d'utiliser patchelf
+  # - Compatible SteamRT4
+  # - Reproductible en CI/CD
+  # - Fonctionne en x64 et arm64
   # ============================================================
-  if(UNIX AND NOT APPLE AND NOT ANDROID)
-    # Vérifier que patchelf est disponible pour modifier le RPATH de l'exécutable et que la target de l'exemple existe
-    if(PATCHELF_EXECUTABLE AND TARGET ${RC2D_EXAMPLE_TARGET_NAME})
-      add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-        COMMAND "${PATCHELF_EXECUTABLE}"
-                --set-rpath "\$ORIGIN"
-                --force-rpath
-                "$<TARGET_FILE:${RC2D_EXAMPLE_TARGET_NAME}>"
-        COMMENT "Linux/SteamRT4: set RPATH to \$ORIGIN for ${RC2D_EXAMPLE_TARGET_NAME}"
-        VERBATIM
-      )
-    endif()
+  if(UNIX AND NOT APPLE AND NOT ANDROID AND TARGET ${RC2D_EXAMPLE_TARGET_NAME})
+    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+      BUILD_RPATH "\$ORIGIN"
+      INSTALL_RPATH "\$ORIGIN"
+      BUILD_WITH_INSTALL_RPATH TRUE
+    )
   endif()
 
   # ============================================================
