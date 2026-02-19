@@ -11,6 +11,7 @@ if [ -z "${JAVA_HOME:-}" ]; then
   echo "Exemple : export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk"
   exit 1
 fi
+
 # ANDROID_HOME ou ANDROID_SDK_ROOT obligatoire
 if [ -z "${ANDROID_HOME:-}" ] && [ -z "${ANDROID_SDK_ROOT:-}" ]; then
   echo "Erreur : ANDROID_HOME ou ANDROID_SDK_ROOT n'est pas défini."
@@ -18,20 +19,25 @@ if [ -z "${ANDROID_HOME:-}" ] && [ -z "${ANDROID_SDK_ROOT:-}" ]; then
   exit 1
 fi
 
-# Generate lib for Android (arm64-v8a + armeabi-v7a)
+# --------------------------------------------------
+# Build Android via Gradle + export des libs statiques CMake (.a)
+#
+# NOTE IMPORTANTE :
+# - Android Gradle Plugin génère souvent "RelWithDebInfo" (pas un vrai "Release")
+# - Les libs statiques (.a) ne sont PAS dans intermediates/cxx/.../obj
+#   mais dans : android-project/app/.cxx/<Config>/<hash>/<abi>/librc2d_static.a
+# - Ce script copie les .a vers :
+#   build/android/<ABI>/<Config>/librc2d_static.a
+# --------------------------------------------------
+
 GRADLE="./gradlew"
 
-# Define base directories
-BASE_BUILD_DIR_RELEASE="android-project/app/build/intermediates/cmake/release/obj"
-DIST_DIR_RELEASE="dist/lib/android/Release"
-BASE_BUILD_DIR_DEBUG="android-project/app/build/intermediates/cmake/debug/obj"
-DIST_DIR_DEBUG="dist/lib/android/Debug"
+# Sortie (alignée avec les autres scripts)
+OUT_BASE="build/android"
 
-# Create destination directories
-mkdir -p "$DIST_DIR_RELEASE/arm64-v8a" "$DIST_DIR_RELEASE/armeabi-v7a"
-mkdir -p "$DIST_DIR_DEBUG/arm64-v8a"   "$DIST_DIR_DEBUG/armeabi-v7a"
-
-# Change to project directory
+# --------------------------------------------------
+# Aller dans le projet Android
+# --------------------------------------------------
 cd android-project
 
 # Ensure wrapper exists
@@ -41,23 +47,80 @@ if [ ! -f "gradlew" ]; then
 fi
 chmod +x ./gradlew
 
-# Clean and build the project
-echo -e "\e[32m\nClean project...\e[0m"
+# --------------------------------------------------
+# Clean Android project (Gradle)
+# --------------------------------------------------
+echo -e "\e[32m\nClean project (Gradle)...\e[0m"
+$GRADLE --stop || true
 $GRADLE clean
 
-echo -e "\e[32m\nBuild project for Release...\e[0m"
+# --------------------------------------------------
+# Build Gradle
+# --------------------------------------------------
+echo -e "\e[32m\nBuild project for Release (Gradle)...\e[0m"
 $GRADLE assembleRelease
 
-echo -e "\e[32m\nBuild project for Debug...\e[0m"
+echo -e "\e[32m\nBuild project for Debug (Gradle)...\e[0m"
 $GRADLE assembleDebug
 
 cd ..
 
-# Copy .so files to respective directories
-cp "$BASE_BUILD_DIR_RELEASE/arm64-v8a/librc2d.so"   "$DIST_DIR_RELEASE/arm64-v8a/"
-cp "$BASE_BUILD_DIR_RELEASE/armeabi-v7a/librc2d.so" "$DIST_DIR_RELEASE/armeabi-v7a/"
+# --------------------------------------------------
+# Trouver les libs statiques générées par CMake via AGP :
+# android-project/app/.cxx/<Config>/<hash>/<abi>/librc2d_static.a
+#
+# - Debug => android-project/app/.cxx/Debug/<hash>/<abi>/...
+# - "Release" => souvent android-project/app/.cxx/RelWithDebInfo/<hash>/<abi>/...
+# --------------------------------------------------
 
-cp "$BASE_BUILD_DIR_DEBUG/arm64-v8a/librc2d.so"     "$DIST_DIR_DEBUG/arm64-v8a/"
-cp "$BASE_BUILD_DIR_DEBUG/armeabi-v7a/librc2d.so"   "$DIST_DIR_DEBUG/armeabi-v7a/"
+find_one() {
+  local cfg="$1"
+  local abi="$2"
+  local base="android-project/app/.cxx/${cfg}"
+  local found=""
 
-echo -e "\e[32m\nLib RC2D for Android >= 9.0 generated successfully. Go to dist/lib/android/\n\e[0m"
+  if [ -d "$base" ]; then
+    # Le hash change à chaque génération => on cherche dans tous les sous-dossiers
+    found="$(find "$base" -type f -path "*/${abi}/librc2d_static.a" 2>/dev/null | head -n 1 || true)"
+  fi
+
+  if [ -z "$found" ]; then
+    echo "Erreur : librc2d_static.a introuvable pour cfg='${cfg}' abi='${abi}' dans ${base}"
+    exit 1
+  fi
+
+  echo "$found"
+}
+
+# Debug
+SRC_DEBUG_ARM64="$(find_one "Debug" "arm64-v8a")"
+SRC_DEBUG_ARM32="$(find_one "Debug" "armeabi-v7a")"
+
+# Release (souvent RelWithDebInfo)
+SRC_REL_ARM64="$(find_one "RelWithDebInfo" "arm64-v8a")"
+SRC_REL_ARM32="$(find_one "RelWithDebInfo" "armeabi-v7a")"
+
+# --------------------------------------------------
+# Dossiers de sortie
+# build/android/<ABI>/Debug/
+# build/android/<ABI>/Release/
+# --------------------------------------------------
+mkdir -p "${OUT_BASE}/arm64-v8a/Debug" "${OUT_BASE}/armeabi-v7a/Debug"
+mkdir -p "${OUT_BASE}/arm64-v8a/Release" "${OUT_BASE}/armeabi-v7a/Release"
+
+# --------------------------------------------------
+# Copie des .a
+# --------------------------------------------------
+cp -f "${SRC_DEBUG_ARM64}" "${OUT_BASE}/arm64-v8a/Debug/librc2d_static.a"
+cp -f "${SRC_DEBUG_ARM32}" "${OUT_BASE}/armeabi-v7a/Debug/librc2d_static.a"
+
+cp -f "${SRC_REL_ARM64}" "${OUT_BASE}/arm64-v8a/Release/librc2d_static.a"
+cp -f "${SRC_REL_ARM32}" "${OUT_BASE}/armeabi-v7a/Release/librc2d_static.a"
+
+echo -e "\e[32m\nLib RC2D static Android generated successfully.\e[0m"
+echo "Output:"
+echo "  ${OUT_BASE}/arm64-v8a/Debug/librc2d_static.a"
+echo "  ${OUT_BASE}/armeabi-v7a/Debug/librc2d_static.a"
+echo "  ${OUT_BASE}/arm64-v8a/Release/librc2d_static.a (built as RelWithDebInfo)"
+echo "  ${OUT_BASE}/armeabi-v7a/Release/librc2d_static.a (built as RelWithDebInfo)"
+echo

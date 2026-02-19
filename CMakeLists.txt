@@ -78,7 +78,7 @@ option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" OFF)
 option(RC2D_STEAMWORKS_SDK_ENABLED "Enable RC2D Steamworks SDK integration" OFF)
 
 # Option pour le SDK EOS (Epic Online Services)
-option(RC2D_EOS_SDK_ENABLED "Enable RC2D Epic Online Services (EOS) SDK integration" ON)
+option(RC2D_EOS_SDK_ENABLED "Enable RC2D Epic Online Services (EOS) SDK integration" OFF)
 
 # Option pour le niveau d'assertion
 option(RC2D_ASSERT_LEVEL "Niveau des assertions (0=none, 1=release, 2=debug, 3=paranoid)" 3)
@@ -505,7 +505,7 @@ function(rc2d_configure_ffmpeg target_name)
       endif()
     elseif (ANDROID)
       # Link le dossier include de FFmpeg à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/ffmpeg")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/include_ffmpeg/ffmpeg")
 
       # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/ffmpeg/${ANDROID_ABI}")
@@ -607,7 +607,7 @@ function(rc2d_configure_rcenet target_name)
       endif()
     elseif (ANDROID)
       # Link le dossier include de RCEnet à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/rcenet")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/include_rcenet")
 
       # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/rcenet/${ANDROID_ABI}")
@@ -662,7 +662,7 @@ function(rc2d_configure_onnxruntime target_name)
       endforeach()
     elseif (ANDROID) # Android
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/include_onnxruntime/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime, pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/onnxruntime/${ANDROID_ABI}")
@@ -1110,7 +1110,7 @@ function(rc2d_configure_openssl target_name)
       endif()
     elseif (ANDROID) # Android
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/include_openssl")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/openssl/${ANDROID_ABI}")
