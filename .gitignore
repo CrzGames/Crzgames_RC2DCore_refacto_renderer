@@ -29,3 +29,7 @@ docker-build-output-steamrt4/
 
 # For project Windows
 platforms/windows/resource.rc
+
+# Game Project Example
+android-project/app/src/main/assets/
+icons/outputs
