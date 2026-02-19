@@ -1,4 +1,4 @@
-# Ignore build files and IDE/project files
+# Ignore build files
 .idea
 .vs
 .vscode
@@ -6,6 +6,8 @@
 /site/
 /dist/
 nul
+
+# Build project windows/macos/linux/steamrt4/ios/android
 build
 
 # librc2d android project
@@ -20,6 +22,7 @@ build
 # Compiled object files
 docker-build-output-steamrt4/
 
+# Ignore shader tools and scripts
 /examples/shaders/tools/
 /examples/assets/shaders/tools/
 /examples/assets/shaders/scripts/

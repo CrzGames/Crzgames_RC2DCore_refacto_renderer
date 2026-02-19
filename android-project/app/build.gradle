@@ -7,6 +7,7 @@ def buildWithCMake = project.hasProperty('BUILD_WITH_CMAKE');
 android {
     namespace = "com.crzgames.testexe"
     compileSdkVersion 36
+    ndkVersion "29.0.14206865"
     defaultConfig {
         applicationId "com.crzgames.testexe"
         minSdkVersion 28
@@ -33,7 +34,32 @@ android {
     if (!project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
         sourceSets.main {
             jniLibs.srcDirs = [
-                // Ajouts des libs externes .so manquantes (chaque dossier d'une lib doit contenir un dossier par architecture)
+                /**
+                * Répertoires contenant des bibliothèques natives externes (.so)
+                * qui doivent être empaquetées dans l'APK/AAB.
+                *
+                * IMPORTANT :
+                * Chaque bibliothèque doit respecter la structure suivante :
+                *
+                *   <lib_name>/
+                *     ├── armeabi-v7a/
+                *     │     └── lib<name>.so
+                *     ├── arm64-v8a/
+                *     │     └── lib<name>.so
+                *
+                * Exemple concret :
+                *
+                *   ffmpeg/
+                *     ├── armeabi-v7a/libavcodec.so
+                *     ├── armeabi-v7a/libavformat.so
+                *     ├── arm64-v8a/libavcodec.so
+                *     └── arm64-v8a/libavformat.so
+                *
+                * Le nom des sous-dossiers DOIT correspondre exactement aux valeurs
+                * ANDROID_ABI utilisées par Gradle / CMake :
+                *   - armeabi-v7a
+                *   - arm64-v8a
+                */
                 "../../dependencies/Crzgames_Libraries/android/lib/ffmpeg",
                 "../../dependencies/Crzgames_Libraries/android/lib/onnxruntime"
             ]
@@ -41,7 +67,6 @@ android {
         externalNativeBuild {
             cmake {
                 path '../../CMakeLists.txt'
-                version '4.1.1'
             }
         }
     }
