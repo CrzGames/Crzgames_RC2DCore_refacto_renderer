@@ -1618,9 +1618,6 @@ if(RC2D_BUILD_EXAMPLES)
     "${PROJECT_SOURCE_DIR}/examples/include/*.h"
   )
 
-  # Définir des flags de compilation pour le mode Release (NDEBUG = No Debug, donc Release)
-  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
-
   # Créer un exécutable pour l'exemple
   if(ANDROID)
     # Pour Android, il faut obligatoirement mettre SHARED et "main" comme nom de target
