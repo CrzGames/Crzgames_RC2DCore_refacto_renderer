@@ -737,7 +737,7 @@ int rc2d_video_update(RC2D_Video* video, double delta_time)
 
             /* Convertir en YUV (dans frame_yuv/ buffer) */
             sws_scale(video->sws_ctx,
-                      video->frame->data,
+                      (const uint8_t * const *)video->frame->data,
                       video->frame->linesize,
                       0, video->height,
                       video->frame_yuv->data,
