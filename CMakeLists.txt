@@ -86,6 +86,9 @@ option(RC2D_ASSERT_LEVEL "Niveau des assertions (0=none, 1=release, 2=debug, 3=p
 # Option pour construire les exemples
 option(RC2D_BUILD_EXAMPLES "Build examples" ON)
 
+# Option pour activer la signature de code pour les cibles d'exemple Apple (macOS/iOS)
+option(RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING "Enable code signing for Apple example targets (macOS/iOS)" OFF)
+
 # Option Tests unitaires avec Criterion (TODO: Pas encore implémenté pour les tests)
 option(RC2D_BUILD_TESTS "Build unit tests with Criterion" OFF)
 
@@ -1515,18 +1518,24 @@ rc2d_configure_eos_sdk(${PROJECT_NAME})
 #
 # ============================================================
 if(RC2D_BUILD_EXAMPLES)
-  # Pour Android, on doit obligatoirement mettre "main" comme nom de target, quand c'est un exécutable
-  # Pour les autres plateformes, on peut mettre "rc2d_example" comme nom de target
+  # ============================================================
+  # Nom de la target de l’exécutable d’exemple
+  # ============================================================
   if(ANDROID)
     set(RC2D_EXAMPLE_TARGET_NAME main)
   else()
     set(RC2D_EXAMPLE_TARGET_NAME rc2d_example)
   endif()
 
-  # Définir des flags de compilation pour le mode Release (NDEBUG = No Debug, donc Release)
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
-
-  # Variables d'environnement pour la configuration de l'application (version, nom de l'entreprise, etc.)
+  # ============================================================
+  # Application Metadata
+  #
+  # Définit les métadonnées de l'application (version, nom de l'entreprise, description, droits d'auteur, etc.)
+  # en utilisant des variables d'environnement si elles sont définies, ou des valeurs par défaut sinon.
+  #
+  # C'est utiliser pour générer dynamiquement le fichier de ressources Windows (.rc) ou les Info.plist pour Apple, 
+  # afin d'inclure ces métadonnées dans l'exécutable final.
+  # ============================================================
   if(DEFINED ENV{APP_VERSION})
     set(APP_VERSION "$ENV{APP_VERSION}" CACHE STRING "Version de l'application")
   else()
@@ -1569,53 +1578,36 @@ if(RC2D_BUILD_EXAMPLES)
     set(APP_IOSMACOS_IDENTIFIER "com.crzgames.testexe" CACHE STRING "Identifiant de l'application")
   endif()
 
-  # Fichiers de ressources (resource files) pour l'exécutable
-  if(MSVC)
-    # Generer le fichier .rc pour l'executable par rapport au fichier resource.rc.in
-    # Pour Windows, le fichier resource.rc est utilisé pour définir les informations de version de l'application, le nom de l'entreprise, icone etc.
-    configure_file(
-      ${CMAKE_CURRENT_SOURCE_DIR}/platforms/windows/resource.rc.in 
-      ${CMAKE_CURRENT_SOURCE_DIR}/platforms/windows/resource.rc
-      @ONLY
-    )
-    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/platforms/windows/resource.rc" PROPERTIES LANGUAGE RC)
-
-    # Ressource de l'executable : resource, fichiers .json, etc.
-    set(RESOURCE_FILES
-      "${CMAKE_CURRENT_SOURCE_DIR}/platforms/windows/resource.rc"
-    )
-  elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx")
-    # Configurations spécifiques à macOS
-
-    # Ressource de l'executable : icon, fichier .json.., exemple d'un .app : Contents/Ressources/..
-    set(RESOURCE_FILES
-      "${CMAKE_CURRENT_SOURCE_DIR}/icons/macos/app-icon.icns"
-      "${CMAKE_CURRENT_SOURCE_DIR}/examples/assets"
-    )
-  elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-    # Configurations spécifiques à iOS
-
-    # Ressource de l'executable : icon, fichier .json.. (notamment ce qui as dans assets)
-    set(RESOURCE_FILES
-      "${CMAKE_CURRENT_SOURCE_DIR}/icons/ios/Assets.xcassets"
-      "${CMAKE_CURRENT_SOURCE_DIR}/examples/assets"
-    )
-  endif()
-
-  # Ajouter les fichiers source de l'exemple
-  # Cela inclut tous les fichiers .c dans le répertoire "examples/src" et ses sous-répertoires
+  # ============================================================
+  # Fichiers source de l’exemple
+  #
+  # Récupère automatiquement tous les fichiers sources .cpp de manière récursive 
+  # dans "examples/src" pour les compiler dans la target de l’exemple.
+  # ============================================================
   file(GLOB_RECURSE RC2D_EXAMPLE_SOURCES
     "${PROJECT_SOURCE_DIR}/examples/src/*.cpp"
   )
 
-  # Ajouter les fichiers inclus dans le répertoire "examples/include" et ses sous-répertoires
+  # ============================================================
+  # Fichiers d’en-tête (headers) de l’exemple
+  #
+  # Récupère automatiquement tous les fichiers d’en-tête .h de manière récursive 
+  # dans "examples/include" pour les inclure dans la target de l’exemple.
+  # ============================================================
   file(GLOB_RECURSE RC2D_EXAMPLE_HEADERS
     "${PROJECT_SOURCE_DIR}/examples/include/*.h"
   )
 
-  # Créer un exécutable pour l'exemple
+  # ============================================================
+  # Création de la target exécutable pour l’exemple
+  #
+  # Pour une application Android, il faut impérativement que la target soit une bibliothèque partagée (SHARED) 
+  # et que son nom soit "main" pour que le système Android puisse la reconnaître comme point d'entrée de l'application.
+  # 
+  # Pour les autres plateformes, on peut utiliser le nom de target "rc2d_example" et créer une target d'exécutable classique.
+  #
+  # ============================================================
   if(ANDROID)
-    # Pour Android, il faut obligatoirement mettre SHARED et "main" comme nom de target
     add_library(${RC2D_EXAMPLE_TARGET_NAME} SHARED 
       ${RC2D_EXAMPLE_SOURCES} 
       ${RC2D_EXAMPLE_HEADERS}
@@ -1624,17 +1616,94 @@ if(RC2D_BUILD_EXAMPLES)
     add_executable(${RC2D_EXAMPLE_TARGET_NAME} 
       ${RC2D_EXAMPLE_SOURCES} 
       ${RC2D_EXAMPLE_HEADERS}
-      ${RESOURCE_FILES} # Fichier .rc doit être intégré dans l'executable (Windows uniquement)
     )
   endif()
 
+  # ============================================================
+  # Include directories pour l’exemple
+  # 
+  # Ajoute le dossier "examples/include" aux include paths privés de la target de l’exemple.
+  # ============================================================
+  target_include_directories(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
+    "${PROJECT_SOURCE_DIR}/examples/include"
+  )
+
+  # ============================================================
+  # Linker l’exemple avec la bibliothèque RC2D
+  #
+  # Lie la target de l’exemple à la bibliothèque RC2D pour pouvoir utiliser le moteur dans l’exemple.
+  # ============================================================
+  target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
+    ${PROJECT_NAME} # RC2D
+  )
+
+  # ============================================================
+  # Configurations spécifiques à chaque plateforme pour l’exécutable de l’exemple
+  # ============================================================
   if (WIN32)
     # Définir l'executable comme une application Windows (pour éviter l'affichage de la console quand on ouvre l'executable) en mode Release
     set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES 
       WIN32_EXECUTABLE $<CONFIG:Release>
     )
+
+    # Pour MSVC spécifiquement :
     if(MSVC)
-      # Définir le projet de démarrage dans Visual Studio
+      # ------------------------------------------------------------
+      # Définition du chemin du fichier .rc généré
+      # ------------------------------------------------------------
+      # CMAKE_CURRENT_BINARY_DIR :
+      #   → Répertoire de build courant (dossier généré par CMake).
+      #   → On évite volontairement d’écrire dans le source tree pour :
+      #       - ne pas polluer le repo Git
+      #       - éviter les conflits
+      #       - séparer clairement sources et artefacts générés
+      #
+      # resource.rc sera généré à partir de resource.rc.in
+      #
+      set(GENERATED_RC "${CMAKE_CURRENT_BINARY_DIR}/resource.rc")
+
+      # ------------------------------------------------------------
+      # Génération du fichier resource.rc à partir du template .rc.in
+      # ------------------------------------------------------------
+      # configure_file :
+      #   → Remplace les variables CMake (@VAR@) dans le fichier .in
+      #   → Génère un fichier concret utilisé par le compilateur
+      #
+      # @ONLY :
+      #   → Remplace uniquement les variables au format @VAR@
+      #   → Évite toute substitution accidentelle du style ${VAR}
+      #
+      # Exemple :
+      #   resource.rc.in contient :
+      #     VALUE "FileVersion", "@APP_VERSION@"
+      #
+      #   CMake remplace @APP_VERSION@ par la valeur définie dans le CMakeLists
+      #
+      configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/platforms/windows/resource.rc.in"
+        "${GENERATED_RC}"
+        @ONLY
+      )
+
+      # ------------------------------------------------------------
+      # Indique explicitement à CMake que ce fichier est un fichier
+      # de ressources Windows (.rc)
+      # ------------------------------------------------------------
+      # LANGUAGE RC :
+      #   → Force CMake à utiliser le compilateur de ressources Windows (rc.exe)
+      #   → Important surtout si le fichier est généré
+      #
+      # Cela permet :
+      #   - d’intégrer les métadonnées (version, société, copyright)
+      #   - d’intégrer l’icône de l’exécutable
+      #   - d’inclure les informations visibles dans les propriétés Windows
+      #
+      set_source_files_properties("${GENERATED_RC}" PROPERTIES LANGUAGE RC)
+
+      # Et enfin, on ajoute ce fichier de ressources à la target de l’exemple pour qu’il soit compilé et lié à l’exécutable final.
+      target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE "${GENERATED_RC}")
+
+      # Définir le projet de démarrage dans Visual Studio pour que l’exécutable de l’exemple soit celui qui se lance par défaut quand on appuie sur "Play" (F5)
       set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${RC2D_EXAMPLE_TARGET_NAME})
 
       # Définir le répertoire de travail pour le débogueur dans Visual Studio
@@ -1643,30 +1712,20 @@ if(RC2D_BUILD_EXAMPLES)
         VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>"
       )
     endif()
-  endif()
-
-  # Les fichiers d'en-tête (headers) de l'exemple sont dans le répertoire "examples/include"
-  target_include_directories(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
-    "${PROJECT_SOURCE_DIR}/examples/include"
-  )
-
-  # Link la dépendance RC2D statique ou dynamique selon le choix de l'utilisateur
-  target_link_libraries(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
-    ${PROJECT_NAME} # RC2D
-  )
-
-  if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
-    # Ajouter le dossier Assets.xcassets comme ressource
-    set(ASSETS_ICONS "${CMAKE_CURRENT_SOURCE_DIR}/icons/ios/Assets.xcassets")
-    target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE ${ASSETS_ICONS})
-    set_source_files_properties(${ASSETS_ICONS} PROPERTIES
+  elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx")
+    # Ajouter le fichier d'icône de l'application dans les ressources de la target de l’exemple
+    target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
+      "${CMAKE_CURRENT_SOURCE_DIR}/icons/macos/app-icon.icns"
+    )
+    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/icons/macos/app-icon.icns" PROPERTIES 
       MACOSX_PACKAGE_LOCATION "Resources"
     )
 
-    # Ajouter le fichier storyboard comme ressource
-    set(STORYBOARD_FILE "${CMAKE_SOURCE_DIR}/platforms/ios/LaunchScreen.storyboard")
-    target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE ${STORYBOARD_FILE})
-    set_source_files_properties(${STORYBOARD_FILE} PROPERTIES
+    # Ajouter les assets génériques (images, sons, etc.) dans les ressources du bundle pour qu'ils soient accessibles à l'exécution
+    target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
+      "${PROJECT_SOURCE_DIR}/examples/assets"
+    )
+    set_source_files_properties("${PROJECT_SOURCE_DIR}/examples/assets" PROPERTIES
       MACOSX_PACKAGE_LOCATION "Resources"
     )
 
@@ -1674,31 +1733,165 @@ if(RC2D_BUILD_EXAMPLES)
     set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
       MACOSX_BUNDLE TRUE
       MACOSX_BUNDLE_BUNDLE_NAME ${RC2D_EXAMPLE_TARGET_NAME} # Nom de l'application (à modifier pour chaque application)
-      MACOSX_BUNDLE_GUI_IDENTIFIER "com.crzgames.testexe" # L'identifiant de votre application (via identifiers sur le compte apple developer) à modifier pour chaque application
-      MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0.0" # Version utilisateur lisible (à modifier pour chaque application)
-      MACOSX_BUNDLE_BUNDLE_VERSION "1.0.0" # Version de build unique (à modifier pour chaque application)
-      MACOSX_BUNDLE_COPYRIGHT "Crgames" # Droits d'auteur
-      MACOSX_BUNDLE_INFO_STRING "Description de l'application" # Description de l'application (à modifier pour chaque application)
+      MACOSX_BUNDLE_GUI_IDENTIFIER ${APP_IOSMACOS_IDENTIFIER} # L'identifiant de votre application (via identifiers sur le compte apple developer), à modifier pour chaque application
+      MACOSX_BUNDLE_SHORT_VERSION_STRING ${APP_VERSION} # Version utilisateur lisible (à modifier pour chaque application)
+      MACOSX_BUNDLE_BUNDLE_VERSION ${APP_IOSMACOS_BUILD_VERSION} # Version de build unique (à modifier pour chaque application)
+      MACOSX_BUNDLE_COPYRIGHT ${APP_LEGAL_COPYRIGHT} # Droits d'auteur (à modifier pour chaque application)
+      MACOSX_BUNDLE_ICON_FILE "app-icon.icns"
+      MACOSX_BUNDLE_INFO_STRING ${APP_GAME_DESCRIPTION} # Description de l'application (à modifier pour chaque application)
+    )
+
+    # --- Code signing (optionnel) ---
+    if(RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING)
+      # SIGNATURE ACTIVÉE
+      set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "U3D28WJ8DV" # Remplacez par votre Team ID Apple
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Developer ID Application: Corentin Recanzone (U3D28WJ8DV)" # Remplacez par votre identité de signature
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual" # Style de signature (Manual ou Automatic)
+        XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--options=runtime --strict --deep --force --timestamp --verbose" # Options supplémentaires pour la signature
+      )
+    else()
+      # SIGNATURE DÉSACTIVÉE (Xcode ne doit rien signer)
+      set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
+        XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO"
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual"
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ""
+        XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS ""
+      )
+    endif()
+
+    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+      # ---------------------------------------------------------------------------
+      # macOS — RPATH pour les dépendances embarquées dans le bundle (.app)
+      # Pour que les .dylib embarquées soient trouvées à l’exécution, il faut configurer le RPATH
+      # pour indiquer à dyld où chercher ces bibliothèques dynamiques.
+      # ---------------------------------------------------------------------------
+      #
+      # Contexte :
+      # - Sur macOS, l’exécutable d’un bundle est ici :
+      #     MyApp.app/Contents/MacOS/MyApp
+      # - Les bibliothèques dynamiques que l’on embarque (SDL3, SDL3_image, SDL3_ttf,
+      #   SDL3_mixer, onnxruntime, SDL3_shadercross, etc.) doivent être copiées dans :
+      #     MyApp.app/Contents/Frameworks/
+      #
+      # Objectif :
+      # - Faire en sorte que dyld (le loader macOS) trouve automatiquement ces .dylib
+      #   à l’exécution, sans dépendre d’un chemin absolu de la machine de build,
+      #   ni de libs installées sur le système.
+      #
+      # ---------------------------------------------------------------------------
+
+      # INSTALL_RPATH :
+      # - Ajoute un chemin de recherche "runtime" dans l’exécutable.
+      # - "@executable_path" = dossier contenant l’exécutable du bundle :
+      #     .../MyApp.app/Contents/MacOS
+      # - Donc "@executable_path/../Frameworks" pointe vers :
+      #     .../MyApp.app/Contents/Frameworks
+      # - C’est la convention standard pour résoudre les .dylib embarquées.
+      INSTALL_RPATH "@executable_path/../Frameworks"
+
+      # BUILD_WITH_INSTALL_RPATH :
+      # - Applique ce RPATH dès la phase de build, pas uniquement après un "cmake --install".
+      # - Utile car on exécute généralement l’app directement depuis le dossier de build
+      #   (et pas via une étape d’installation).
+      BUILD_WITH_INSTALL_RPATH TRUE
+
+      # MACOSX_RPATH :
+      # - Active le mécanisme RPATH sur macOS (utilisation de LC_RPATH / @rpath).
+      # - Requis/attendu pour que "@rpath" et les chemins ci-dessus soient pris en compte.
+      MACOSX_RPATH TRUE
+    )
+
+    # Ajoute une étape de post-build pour copier les fichiers nécessaires dans le bundle .app et modifier le fichier Info.plist
+    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD      
+      # Active le support des périphériques d'entrée indirects (souris, trackpad, clavier, manettes)
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UIApplicationSupportsIndirectInputEvents bool true" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/Info.plist"
+      
+      # Description obligatoire pour l'utilisation du Bluetooth (CoreBluetooth)
+      COMMAND /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 'MyApp souhaite rester connecté aux contrôleurs de jeu et aux manettes de jeu Bluetooth à proximité, même lorsque vous n'utilisez pas l'application.'" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/Info.plist"
+      
+      # Ajoute les clés pour autoriser le High DPI
+      COMMAND /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/Info.plist"
+
+      # Ajoute la clé ITSAppUsesNonExemptEncryption pour le chiffrement
+      COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/Info.plist"
+      COMMENT "Adding keys to Info.plist"
+    )
+  elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+    # Ressource : Storyboard de lancement et Asset Catalog pour les icônes (obligatoire sur iOS)
+    set(IOS_ASSETCATALOG "${CMAKE_CURRENT_SOURCE_DIR}/icons/ios/Assets.xcassets")
+    set(IOS_LAUNCH_STORYBOARD "${CMAKE_CURRENT_SOURCE_DIR}/platforms/ios/LaunchScreen.storyboard")
+
+    # Ajout à la target des ressources spécifiques à iOS (Asset Catalog et Storyboard de lancement)
+    target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
+      "${IOS_ASSETCATALOG}"
+      "${IOS_LAUNCH_STORYBOARD}"
+    )
+
+    # Configurez les propriétés des fichiers de ressources pour qu'ils soient correctement traités par Xcode
+    set_source_files_properties("${IOS_ASSETCATALOG}" PROPERTIES
+      MACOSX_PACKAGE_LOCATION "Resources"
+      XCODE_EXPLICIT_FILE_TYPE "folder.assetcatalog"
+    )
+    set_source_files_properties("${IOS_LAUNCH_STORYBOARD}" PROPERTIES
+      MACOSX_PACKAGE_LOCATION "Resources"
+      XCODE_EXPLICIT_FILE_TYPE "file.storyboard"
+    )
+
+    # Ajouter les assets génériques (images, sons, etc.) dans les ressources du bundle pour qu'ils soient accessibles à l'exécution
+    target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
+      "${PROJECT_SOURCE_DIR}/examples/assets"
+    )
+    set_source_files_properties("${PROJECT_SOURCE_DIR}/examples/assets" PROPERTIES
+      MACOSX_PACKAGE_LOCATION "Resources"
+    )
+
+    # Configurez le bundle (.app)
+    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+      MACOSX_BUNDLE TRUE
+      MACOSX_BUNDLE_BUNDLE_NAME ${RC2D_EXAMPLE_TARGET_NAME} # Nom de l'application (à modifier pour chaque application)
+      MACOSX_BUNDLE_GUI_IDENTIFIER ${APP_IOSMACOS_IDENTIFIER} # L'identifiant de votre application (via identifiers sur le compte apple developer) à modifier pour chaque application
+      MACOSX_BUNDLE_SHORT_VERSION_STRING ${APP_VERSION} # Version utilisateur lisible (à modifier pour chaque application)
+      MACOSX_BUNDLE_BUNDLE_VERSION ${APP_IOSMACOS_BUILD_VERSION} # Version de build unique (à modifier pour chaque application)
+      MACOSX_BUNDLE_COPYRIGHT ${APP_LEGAL_COPYRIGHT} # Droits d'auteur
+      MACOSX_BUNDLE_INFO_STRING ${APP_GAME_DESCRIPTION} # Description de l'application (à modifier pour chaque application)
       XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon" # Nom de l'icône de l'application
       XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2" # 1 pour iPhone, 2 pour iPad
-      XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "U3D28WJ8DV" # Remplacez par votre Team ID Apple
-      XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development: Corentin Recanzone (2X96T6AM4K)" # Remplacez par votre identité de signature
-      XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual" # Style de signature (Manual ou Automatic)
-      XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --strict --force --timestamp --verbose" # Options supplémentaires pour la signature
-      XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "TestExe" # Remplacez par le nom de votre profil de provisionnement
-      XCODE_ATTRIBUTE_PROVISIONING_PROFILE "d5115451-c438-4aa6-9c68-dee8a87a36e8" # Remplacez par l'UUID de votre profil de provisionnement
-      RESOURCE "${RESOURCE_FILES}" # Fichiers de ressources à inclure dans le bundle .app
     )
+
+    # --- Code signing (optionnel) ---
+    if(RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING)
+      set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "U3D28WJ8DV" # Remplacez par votre Team ID Apple
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development: Corentin Recanzone (2X96T6AM4K)" # Remplacez par votre identité de signature
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual" # Style de signature (Manual ou Automatic)
+        XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --strict --force --timestamp --verbose" # Options supplémentaires pour la signature
+        XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "TestExe" # Remplacez par le nom de votre profil de provisionnement
+        XCODE_ATTRIBUTE_PROVISIONING_PROFILE "d5115451-c438-4aa6-9c68-dee8a87a36e8" # Remplacez par l'UUID de votre profil de provisionnement
+      )
+    else()
+      set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
+        XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO"
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ""
+        XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER ""
+        XCODE_ATTRIBUTE_PROVISIONING_PROFILE ""
+        XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS ""
+      )
+    endif()
 
     # Ajoute une étape de post-build pour ajouter des clés au fichier Info.plist
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-      # Ajoute les clés pour le bluetooth
+      # Active le support des périphériques d'entrée indirects (souris, trackpad, clavier, manettes)
       COMMAND /usr/libexec/PlistBuddy -c "Add :UIApplicationSupportsIndirectInputEvents bool true" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
-      COMMENT "Adding keys bluetooth to Info.plist"
+      COMMENT "Adding keys mouse, trackpad, keyboard, game controllers support to Info.plist"
 
-      # Ajoute les clés pour les souris
-      COMMAND /usr/libexec/PlistBuddy -c "Add :NSBluetoothPeripheralUsageDescription string 'MyApp souhaite rester connecté aux contrôleurs de jeu et aux manettes de jeu Bluetooth à proximité, même lorsque vous n'utilisez pas l'application.'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
-      COMMENT "Adding keys mouse to Info.plist"
+      # Description obligatoire pour l'utilisation du Bluetooth (CoreBluetooth)
+      COMMAND /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 'MyApp souhaite rester connecté aux contrôleurs de jeu et aux manettes de jeu Bluetooth à proximité, même lorsque vous n'utilisez pas l'application.'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMENT "Adding keys for Bluetooth usage description to Info.plist"
 
       # Ajoute les clés pour autoriser le High DPI
       COMMAND /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
@@ -1719,17 +1912,16 @@ if(RC2D_BUILD_EXAMPLES)
       # Ajoute la clé UILaunchStoryboardName pour le storyboard de lancement
       COMMAND /usr/libexec/PlistBuddy -c "Add :UILaunchStoryboardName string 'LaunchScreen'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
       COMMENT "Adding launch storyboard name to Info.plist"
-
-      # Copie le storyboard de lancement dans le bundle .app
-      COMMAND cp -a "${PROJECT_SOURCE_DIR}/platforms/ios/LaunchScreen.storyboard" "${CMAKE_BINARY_DIR}/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/"
-      COMMENT "Copying LaunchScreen.storyboard to bundle .app directory"
     )
   endif()
 
   # ============================================================
   # Copie des ressources (dossiers : shaders, assets) dans le dossier de sortie de l'exécutable
+  # Infos :
+  # Android copie automatiquement les ressources dans le dossier assets/ de l'APK, donc pas besoin de les copier manuellement.
+  # Sur Apple (macOS/iOS), les ressources sont intégrées dans le bundle .app, donc pas besoin de les copier manuellement.
   # ============================================================
-  if(NOT ANDROID)
+  if(NOT ANDROID AND NOT APPLE)
     # Copier le dossier shaders dans le dossier de sortie de rc2d_example (exécutable)
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders"
@@ -1792,7 +1984,7 @@ if(RC2D_BUILD_EXAMPLES)
   # ============================================================
   # Linux / SteamRT4 / Apple (macOS/iOS) — Rendre l'exécutable exécutable via chmod
   # ============================================================ 
-  if (UNIX OR APPLE AND NOT ANDROID)
+  if((UNIX OR APPLE) AND NOT ANDROID)
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
       COMMAND chmod +x "$<TARGET_FILE:${RC2D_EXAMPLE_TARGET_NAME}>"
       COMMENT "Rendre ${RC2D_EXAMPLE_TARGET_NAME} exécutable"

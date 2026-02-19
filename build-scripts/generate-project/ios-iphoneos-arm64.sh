@@ -10,8 +10,7 @@ cmake -S . -B build/ios/iphoneos \
 
 for cfg in Debug Release; do
   echo -e "\e[32m\nBuilding $cfg (iphoneos/arm64)...\e[0m"
-  cmake --build build/ios/iphoneos --config $cfg -- \
-    CODE_SIGNING_ALLOWED=NO
+  cmake --build build/ios/iphoneos --config $cfg
 done
 
 echo -e "\033[32m\nLib RC2D pour iOS (iphoneos/arm64) buildée en Debug et Release.\033[0m"
