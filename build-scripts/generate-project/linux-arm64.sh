@@ -14,7 +14,7 @@ for build_type in Debug Release; do
 
   # Generate AppImage
   echo -e "\e[32m\nGenerating AppImage ($build_type)...\e[0m"
-  cmake --install "$build_dir" --component Runtime
+  cmake --install build/linux/arm64/$build_type --component Runtime
 done
 
 # Final message
