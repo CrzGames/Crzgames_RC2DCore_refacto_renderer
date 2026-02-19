@@ -1530,6 +1530,9 @@ if(RC2D_BUILD_EXAMPLES)
     set(RC2D_EXAMPLE_TARGET_NAME rc2d_example)
   endif()
 
+  # Définir des flags de compilation pour le mode Release (NDEBUG = No Debug, donc Release)
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
+
   # Variables d'environnement pour la configuration de l'application (version, nom de l'entreprise, etc.)
   if(DEFINED ENV{APP_VERSION})
     set(APP_VERSION "$ENV{APP_VERSION}" CACHE STRING "Version de l'application")
