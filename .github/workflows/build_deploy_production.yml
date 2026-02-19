@@ -13,94 +13,64 @@ permissions:
 env:
   ANDROID_NDK_VERSION: "29.0.14206865"
   ANDROID_PLATFORM_VERSION: "android-36"
+  ANDROID_BUILD_TOOLS_VERSION: "36.0.0"
+  ANDROID_CMAKE_VERSION: "3.30.3"
+  ANDROID_CMDLINE_TOOLS_VERSION: "20.0"
   JAVA_DISTRIBUTION: "temurin"
   JAVA_VERSION: "17"
-  XCODE_VERSION: "26.2.0"
+  XCODE_VERSION: "26.3.0"
 
 jobs:
-  build_deploy_librc2d:
+  build_librc2d:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: ubuntu-latest
-            target: linux
-            generator: Unix Makefiles
-            arch: x86_64
-          - platform: macos-26
-            target: macos
-            generator: Xcode
-            sdk: macosx
-            arch: x86_64-arm64
-          - platform: macos-26
-            target: ios
-            generator: Xcode
-            sdk: iphonesimulator
-            arch: x86_64-arm64
-          - platform: macos-26
-            target: ios
-            generator: Xcode
-            sdk: iphoneos
-            arch: arm64-arm64e
-          - platform: windows-latest
-            target: windows
-            generator: Visual Studio 17 2022
-            arch: x64
-          - platform: windows-latest
-            target: windows
-            generator: Visual Studio 17 2022
-            arch: Win32
-          - platform: ubuntu-latest
-            target: android
-          - platform: ubuntu-latest
-            target: html5
-            generator: Unix Makefiles
-    runs-on: ${{ matrix.platform }}
+        config:
+        - { runner: ubuntu-latest,    platform: steamrt4, arch: x64, container: "registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk:4.0.20260119.200228" }
+        - { runner: ubuntu-24.04-arm, platform: steamrt4, arch: arm64,  container: "registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk/arm64:4.0.20260119.200228" }
+        - { runner: windows-2025,     platform: windows,  arch: x64 }
+        - { runner: windows-2025,     platform: windows,  arch: arm64 }
+        - { runner: ubuntu-22.04,     platform: linux,    arch: x64 }
+        - { runner: ubuntu-22.04,     platform: linux,    arch: arm64 }
+        - { runner: ubuntu-latest,    platform: android,  arch: "armeabi-v7a,arm64-v8a" }
+        - { runner: macos-26,         platform: macos,    arch: arm64, sdk: macosx } 
+        - { runner: macos-26,         platform: ios,      arch: arm64, sdk: iphoneos }
+    name: ${{ matrix.config.platform }}-${{ matrix.config.arch }}-${{ matrix.config.sdk }}
+    runs-on: ${{ matrix.config.runner }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          submodules: true
-          token: ${{ secrets.PAT }}
-
-      - name: Setup Emscripten - HTML5
-        if: matrix.target == 'html5'
-        uses: mymindstorm/setup-emsdk@v14
-
-      - name: Configure CMake Project for HTML5 and Build with Emscripten - HTML5
-        if: matrix.target == 'html5'
-        run: |
-          mkdir build-html5
-          cd build-html5
-          emcmake cmake ../ -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-          cmake --build .
-          cd ../
 
       - name: Setup Java JDK LTS - Android
-        if: matrix.target == 'android'
+        if: matrix.config.platform == 'android'
         uses: actions/setup-java@v5
         with:
-          java-version: '17.0.10'
-          distribution: 'oracle'
-          cache: 'gradle'
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Generate APK for generate libraries shared .so - Android
-        if: matrix.target == 'android'
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease --stacktrace
-        working-directory: android-project
+      - name: Setup Android SDK (Platform + Build Tools + NDK + CMake + CLI)
+        if: matrix.config.platform == 'android'
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: >
+            platform-tools
+            platforms;${{ env.ANDROID_PLATFORM_VERSION }}
+            build-tools;${{ env.ANDROID_BUILD_TOOLS_VERSION }}
+            ndk;${{ env.ANDROID_NDK_VERSION }}
+            cmake;${{ env.ANDROID_CMAKE_VERSION }}
+            cmdline-tools;${{ env.ANDROID_CMDLINE_TOOLS_VERSION }}
 
       - name: Setup Xcode and Setup Command Line Tools - macOS / iOS
-        if: matrix.target == 'ios' || matrix.target == 'macos'
+        if: matrix.config.platform == 'ios' || matrix.config.platform == 'macos'
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '15.4.0'
+          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Determine SDK Path and set SDKROOT - macOS / iOS
-        if: matrix.platform == 'macos' || matrix.platform == 'ios'
+        if: matrix.config.platform == 'macos' || matrix.config.platform == 'ios'
         run: |
-          sdk="${{ matrix.sdk }}"
+          sdk="${{ matrix.config.sdk }}"
           SDKROOT=$(xcrun --sdk "$sdk" --show-sdk-path)
           SDKVERSION=$(xcrun --sdk "$sdk" --show-sdk-version)
           echo "SDKROOT=$SDKROOT" >> $GITHUB_ENV
@@ -109,132 +79,8 @@ jobs:
           echo "SDK Version: $SDKVERSION"
         shell: bash
 
-      - name: Configure project with CMake - iOS (iphoneos/iphonesimulator)
-        if: matrix.target == 'ios'
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          build-dir: build-${{ matrix.target }}-${{ matrix.arch }}
-          generator: ${{ matrix.generator }}
-          options: CMAKE_SYSTEM_NAME=iOS CMAKE_OSX_SYSROOT=${{ matrix.sdk }}
-
-      - name: Run build with CMake - iOS (iphoneos/iphonesimulator)
-        if: matrix.target == 'ios'
-        run: cmake --build build-${{ matrix.target }}-${{ matrix.arch }} --config Release
-
-      - name: Configure project with CMake - Windows x64
-        if: matrix.platform == 'windows-latest' && matrix.arch == 'x64'
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          build-dir: build-${{ matrix.target }}-${{ matrix.arch }}
-          generator: ${{ matrix.generator }}
-          c-compiler: cl
-          cxx-compiler: cl
-          options: CMAKE_SYSTEM_NAME=Windows
-          args: -A x64
-
-      - name: Run build with CMake - Windows x64
-        if: matrix.platform == 'windows-latest' && matrix.arch == 'x64'
-        run: cmake --build build-${{ matrix.target }}-${{ matrix.arch }} --config Release
-
-      - name: Configure project with CMake - Windows x86
-        if: matrix.platform == 'windows-latest' && matrix.arch == 'Win32'
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          build-dir: build-${{ matrix.target }}-${{ matrix.arch }}
-          generator: ${{ matrix.generator }}
-          c-compiler: cl
-          cxx-compiler: cl
-          options: CMAKE_SYSTEM_NAME=Windows
-          args: -A Win32
-
-      - name: Run build with CMake - Windows x86
-        if: matrix.platform == 'windows-latest' && matrix.arch == 'Win32'
-        run: cmake --build build-${{ matrix.target }}-${{ matrix.arch }} --config Release
-
-      - name: Configure project with CMake and Run build - Linux
-        if: matrix.target == 'linux'
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          run-build: true
-          build-dir: build-${{ matrix.target }}-${{ matrix.arch }}
-          generator: ${{ matrix.generator }}
-          c-compiler: gcc
-          cxx-compiler: g++
-          options: CMAKE_SYSTEM_NAME=Linux CMAKE_BUILD_TYPE=Release
-
-      - name: Configure project with CMake - macOS
-        if: matrix.target == 'macos'
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          build-dir: build-${{ matrix.target }}-${{ matrix.arch }}
-          generator: ${{ matrix.generator }}
-          c-compiler: clang
-          cxx-compiler: clang++
-          options: CMAKE_SYSTEM_NAME=Darwin
-
-      - name: Run build with CMake - macOS
-        if: matrix.target == 'macos'
-        run: cmake --build build-${{ matrix.target }}-${{ matrix.arch }} --config Release
-
-      - name: Archive librc2d artifacts - Android
-        if: matrix.target == 'android'
-        uses: actions/upload-artifact@v4
-        with:
-          name: librc2d-${{ matrix.target }}
-          retention-days: 1
-          path: |
-            android-project/app/build/intermediates/cmake/release/obj/arm64-v8a/librc2d.so
-            android-project/app/build/intermediates/cmake/release/obj/armeabi-v7a/librc2d.so
-            android-project/app/build/intermediates/cmake/release/obj/x86/librc2d.so
-            android-project/app/build/intermediates/cmake/release/obj/x86_64/librc2d.so
-
-      - name: Archive librc2d artifacts - iOS
-        if: matrix.target == 'ios'
-        uses: actions/upload-artifact@v4
-        with:
-          name: librc2d-${{ matrix.target }}-${{ matrix.arch }}-${{ matrix.sdk }}
-          retention-days: 1
-          path: |
-            build-${{ matrix.target }}-${{ matrix.arch }}/Release-${{ matrix.sdk }}/*.a
-
-      - name: Archive librc2d artifacts - macOS
-        if: matrix.target == 'macos'
-        uses: actions/upload-artifact@v4
-        with:
-          name: librc2d-${{ matrix.target }}-${{ matrix.arch }}
-          retention-days: 1
-          path: |
-            build-${{ matrix.target }}-${{ matrix.arch }}/Release/*.a
-
-      - name: Archive librc2d artifacts - Linux
-        if: matrix.target == 'linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: librc2d-${{ matrix.target }}-${{ matrix.arch }}
-          retention-days: 1
-          path: |
-            build-${{ matrix.target }}-${{ matrix.arch }}/*.a
-
-      - name: Archive librc2d artifacts - Windows
-        if: matrix.platform == 'windows-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: librc2d-${{ matrix.target }}-${{ matrix.arch }}
-          retention-days: 1
-          path: |
-            build-${{ matrix.target }}-${{ matrix.arch }}/Release/*.lib
-
-      - name: Archive librc2d artifacts - HTML5
-        if: matrix.target == 'html5'
-        uses: actions/upload-artifact@v4
-        with:
-          name: librc2d-${{ matrix.target }}
-          retention-days: 1
-          path: |
-            build-html5/*.a
-
   deploy_assets_github:
-    needs: build_deploy_librc2d
+    needs: build_librc2d
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -246,42 +92,37 @@ jobs:
       - name: Organize Artifacts
         run: |
           # Organize Android artifacts
-          mkdir -p android/arm64-v8a android/armeabi-v7a android/x86 android/x86_64
-          mv librc2d-android/arm64-v8a/*.so android/arm64-v8a/
-          mv librc2d-android/armeabi-v7a/*.so android/armeabi-v7a/
-          mv librc2d-android/x86/*.so android/x86/
-          mv librc2d-android/x86_64/*.so android/x86_64/
+          mkdir -p android/arm64-v8a android/armeabi-v7a
+          # TODO
           zip -r librc2d-android.zip android/
 
           # Organize Windows artifacts
-          mkdir -p windows/x64 windows/x86
-          mv librc2d-windows-x64/*.lib windows/x64/
-          mv librc2d-windows-Win32/*.lib windows/x86/
+          mkdir -p windows/x64 windows/arm64
+          # TODO
           zip -r librc2d-windows.zip windows/
 
           # Organize macOS artifacts
-          mkdir -p macos/x86_64-arm64
-          mv librc2d-macos-x86_64-arm64/*.a macos/x86_64-arm64/
+          mkdir -p macos/arm64
+          # TODO
           tar -czvf librc2d-macos.tar.gz macos/
 
           # Organize iOS artifacts
-          mkdir -p ios/arm64-arm64e-iphoneos ios/x86_64-arm64-iphonesimulator
-          mv librc2d-ios-arm64-arm64e-iphoneos/*.a ios/arm64-arm64e-iphoneos/
-          mv librc2d-ios-x86_64-arm64-iphonesimulator/*.a ios/x86_64-arm64-iphonesimulator/
+          mkdir -p ios/iphoneos-arm64
+          # TODO
           tar -czvf librc2d-ios.tar.gz ios/
 
           # Organize Linux artifacts
-          mkdir -p linux/x86_64
-          mv librc2d-linux-x86_64/*.a linux/x86_64/
+          mkdir -p linux/x64 linux/arm64
+          # TODO
           tar -czvf librc2d-linux.tar.gz linux/
 
-          # Organize HTML5 artifacts
-          mkdir html5
-          mv librc2d-html5/*.a html5/
-          zip -r librc2d-html5.zip html5/
+          # Organize SteamRT4 artifacts
+          mkdir -p steamrt4/x64 steamrt4/arm64
+          # TODO
+          zip -r librc2d-steamrt4.zip steamrt4/
 
           # Organize Include artifacts
-          tar -czvf include.tar.gz include/rc2d
+          tar -czvf include.tar.gz include/RC2D/
 
       - name: Deploy libraries assets - Release Github
         uses: softprops/action-gh-release@v2
@@ -292,7 +133,7 @@ jobs:
             librc2d-macos.tar.gz
             librc2d-ios.tar.gz
             librc2d-linux.tar.gz
-            librc2d-html5.zip
+            librc2d-steamrt4.zip
             include.tar.gz
 
   build_deploy_website:
