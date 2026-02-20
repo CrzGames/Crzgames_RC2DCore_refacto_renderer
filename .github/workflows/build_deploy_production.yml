@@ -107,7 +107,7 @@ jobs:
         run: cmake -P cmake/setup_dependencies.cmake
 
       # TODO: Build RC2D via les scripts dans build-scripts/ pour chaque plateforme et architecture
-      - name: Build RC2D (scripts) - Linux
+      - name: Build RC2D (scripts) - Linux (x64/arm64)
         if: matrix.config.platform == 'linux'
         shell: bash
         run: |
@@ -120,7 +120,7 @@ jobs:
             ./build-scripts/generate-project/linux-arm64.sh
           fi
 
-      - name: Build RC2D (scripts) - Windows
+      - name: Build RC2D (scripts) - Windows (x64/arm64)
         if: matrix.config.platform == 'windows'
         shell: pwsh
         run: |
@@ -131,7 +131,7 @@ jobs:
             .\build-scripts\generate-project\windows-arm64.bat
           }
 
-      - name: Build RC2D (scripts) - macOS
+      - name: Build RC2D (scripts) - macOS (arm64)
         if: matrix.config.platform == 'macos'
         shell: bash
         run: |
@@ -139,7 +139,7 @@ jobs:
           chmod +x ./build-scripts/generate-project/macos-arm64.sh
           ./build-scripts/generate-project/macos-arm64.sh
 
-      - name: Build RC2D (scripts) - iOS
+      - name: Build RC2D (scripts) - iOS (arm64 for iphoneos)
         if: matrix.config.platform == 'ios'
         shell: bash
         run: |
@@ -147,7 +147,7 @@ jobs:
           chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64.sh
           ./build-scripts/generate-project/ios-iphoneos-arm64.sh
 
-      - name: Build RC2D (scripts) - Android
+      - name: Build RC2D (scripts) - Android (armeabi-v7a / arm64-v8a)
         if: matrix.config.platform == 'android'
         shell: bash
         run: |
@@ -155,7 +155,7 @@ jobs:
           chmod +x ./build-scripts/generate-project/android-unix.sh
           ./build-scripts/generate-project/android-unix.sh
 
-      - name: Build RC2D (docker-compose) - SteamRT4
+      - name: Build RC2D (scripts) - SteamRT4 (x64 / arm64)
         if: matrix.config.platform == 'steamrt4'
         shell: bash
         run: |
