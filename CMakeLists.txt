@@ -386,7 +386,7 @@ function(rc2d_configure_ffmpeg target_name)
   if (RC2D_VIDEO_MODULE_ENABLED)
     if (WIN32) # Windows
       # Link le dossier include de FFmpeg à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/ffmpeg")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/include_ffmpeg/ffmpeg")
 
       # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/ffmpeg/${RC2D_ARCH}")
@@ -417,7 +417,7 @@ function(rc2d_configure_ffmpeg target_name)
       
     elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
       # Link le dossier include de FFmpeg à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/ffmpeg")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/include_ffmpeg/ffmpeg")
 
       # Ajouter explicitement la lib .dylib à linker
       target_link_directories(${target_name} PUBLIC
@@ -449,7 +449,7 @@ function(rc2d_configure_ffmpeg target_name)
       )
     elseif (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
       # Link le dossier include de FFmpeg à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/ffmpeg")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/include_ffmpeg/ffmpeg")
 
       # Ajouter explicitement la lib .a à linker
       target_link_directories(${target_name} PUBLIC
@@ -483,7 +483,7 @@ function(rc2d_configure_ffmpeg target_name)
     elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, SteamRT4, Raspberry PI 5 etc.
       if (RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
         # Link le dossier include de FFmpeg à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/ffmpeg")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_ffmpeg/ffmpeg")
 
         # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
         target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/ffmpeg/${RC2D_ARCH}")
@@ -500,7 +500,7 @@ function(rc2d_configure_ffmpeg target_name)
         )
       else() # Linux, Raspberry PI 5 etc.
         # Link le dossier include de FFmpeg à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/ffmpeg")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_ffmpeg/ffmpeg")
 
         # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
         target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/ffmpeg/${RC2D_ARCH}")
@@ -554,7 +554,7 @@ function(rc2d_configure_rcenet target_name)
   if (RC2D_NET_MODULE_ENABLED)
     if (WIN32) # Windows
       # Link le dossier include de RCEnet à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/rcenet")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/include_rcenet")
 
       # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/rcenet/${RC2D_ARCH}")
@@ -568,7 +568,7 @@ function(rc2d_configure_rcenet target_name)
 
     elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
       # Link le dossier include de RCEnet à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/rcenet")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/include_rcenet")
 
       # Ajouter explicitement la lib .dylib à linker
       target_link_directories(${target_name} PUBLIC
@@ -582,7 +582,7 @@ function(rc2d_configure_rcenet target_name)
 
     elseif (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
       # Link le dossier include de RCEnet à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/rcenet")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/include_rcenet")
 
       # Ajouter explicitement la lib .a à linker
       target_link_directories(${target_name} PUBLIC
@@ -597,7 +597,7 @@ function(rc2d_configure_rcenet target_name)
     elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, SteamRT4, Raspberry PI 5 etc.
       if (RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
         # Link le dossier include de RCEnet à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/rcenet")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_rcenet")
 
         # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
         target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/rcenet/${RC2D_ARCH}")
@@ -608,7 +608,7 @@ function(rc2d_configure_rcenet target_name)
         )
       else() # Linux, Raspberry PI 5 etc.
         # Link le dossier include de RCEnet à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/rcenet")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_rcenet")
 
         # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
         target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/rcenet/${RC2D_ARCH}")
@@ -651,7 +651,7 @@ function(rc2d_configure_onnxruntime target_name)
   if(RC2D_ONNX_MODULE_ENABLED)
     if(WIN32) # Windows
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/include_onnxruntime/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/onnxruntime/${RC2D_ARCH}")
@@ -687,7 +687,7 @@ function(rc2d_configure_onnxruntime target_name)
     elseif (APPLE) # Apple (macOS, iOS)
       if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
         # Link le dossier include de ONNX Runtime à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/onnxruntime")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/include_onnxruntime/onnxruntime")
 
         # Ajouter explicitement la lib .dylib à linker
         target_link_directories(${target_name} PUBLIC
@@ -714,7 +714,7 @@ function(rc2d_configure_onnxruntime target_name)
         endforeach()
       elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
         # Link le dossier include de ONNX Runtime à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/onnxruntime")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/include_onnxruntime/onnxruntime")
 
         # Ajouter explicitement la lib .a à linker
         target_link_directories(${target_name} PUBLIC
@@ -729,7 +729,7 @@ function(rc2d_configure_onnxruntime target_name)
       endif()
     elseif (RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_onnxruntime/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}")
@@ -752,7 +752,7 @@ function(rc2d_configure_onnxruntime target_name)
     elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, SteamRT4, Raspberry PI 5 etc.
       if(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
         # Link le dossier include de ONNX Runtime à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/onnxruntime")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_onnxruntime/onnxruntime")
 
         # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
         target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}")
@@ -774,7 +774,7 @@ function(rc2d_configure_onnxruntime target_name)
         )
       else() # Linux, Raspberry PI 5 etc.
         # Link le dossier include de ONNX Runtime à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/onnxruntime")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_onnxruntime/onnxruntime")
 
         # Rajouter le répertoire de la lib ONNX Runtime, pour le linker ensuite
         target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}")
@@ -870,7 +870,7 @@ function(rc2d_configure_shadercross target_name)
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND CMAKE_SYSTEM_NAME STREQUAL "Darwin")
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/macos/include"
+        "${CRZGAMES_LIBRARIES}/macos/include/include_sdl3shadercross"
       )
 
       # Récupérer le dossier de la lib shadercross
@@ -924,7 +924,7 @@ function(rc2d_configure_shadercross target_name)
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/windows/include"
+        "${CRZGAMES_LIBRARIES}/windows/include/include_sdl3shadercross"
       )
 
       # Récupérer le dossier de la lib shadercross
@@ -1000,7 +1000,7 @@ function(rc2d_configure_shadercross target_name)
 
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
       target_include_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/steamrt4/include"
+        "${CRZGAMES_LIBRARIES}/steamrt4/include/include_sdl3shadercross"
       )
 
       # Récupérer le dossier de la lib shadercross
@@ -1079,7 +1079,7 @@ function(rc2d_configure_shadercross target_name)
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT ANDROID)
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/linux/include"
+        "${CRZGAMES_LIBRARIES}/linux/include/include_sdl3shadercross"
       )
 
       # Récupérer le dossier de la lib shadercross
@@ -1106,7 +1106,7 @@ function(rc2d_configure_openssl target_name)
     if(APPLE) # Apple (macOS, iOS)
       if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
         # Link le dossier include de OpenSSL à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/include_openssl")
 
         # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
         target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/lib/OpenSSL")
@@ -1118,7 +1118,7 @@ function(rc2d_configure_openssl target_name)
         )
       elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
         # Link le dossier include de OpenSSL à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/include_openssl")
 
         # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
         target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/lib/OpenSSL/arm64-iphoneos")
@@ -1143,7 +1143,7 @@ function(rc2d_configure_openssl target_name)
       )
     elseif(WIN32) # Windows
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/include_openssl")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/OpenSSL/${RC2D_ARCH}")
@@ -1157,7 +1157,7 @@ function(rc2d_configure_openssl target_name)
       )
     elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_openssl")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/OpenSSL/${RC2D_ARCH}")
@@ -1169,7 +1169,7 @@ function(rc2d_configure_openssl target_name)
       )
     elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_openssl")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
       target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/OpenSSL/${RC2D_ARCH}")
