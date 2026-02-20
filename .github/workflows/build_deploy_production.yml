@@ -31,7 +31,7 @@ jobs:
         - { runner: windows-2025,     platform: windows,  arch: x64 }
         - { runner: windows-2025,     platform: windows,  arch: arm64 }
         - { runner: ubuntu-22.04,     platform: linux,    arch: x64 }
-        - { runner: ubuntu-22.04,     platform: linux,    arch: arm64 }
+        - { runner: ubuntu-22.04-arm, platform: linux,    arch: arm64 }
         - { runner: ubuntu-latest,    platform: android,  arch: "armeabi-v7a,arm64-v8a" }
         - { runner: macos-26,         platform: macos,    arch: arm64, sdk: macosx } 
         - { runner: macos-26,         platform: ios,      arch: arm64, sdk: iphoneos }
@@ -172,9 +172,8 @@ jobs:
         with:
           name: librc2d-${{ matrix.config.platform }}-${{ matrix.config.arch }}
           path: |
-            build/${{ matrix.config.platform }}/**/librc2d_static.*
-            !build/**/Debug/**
-            !build/**/Release/**
+            build/**/librc2d_static.*
+          if-no-files-found: error
 
   deploy_assets_github:
     needs: build_librc2d
