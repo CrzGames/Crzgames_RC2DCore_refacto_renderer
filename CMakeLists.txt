@@ -148,9 +148,15 @@ else()
   # -pedantic : Enforce strictement les standards C++
   # -Wno-unused-parameter : Désactive les avertissements pour les paramètres de fonction non utilisés
   # -Wno-error=strict-prototypes : Désactive les erreurs pour les prototypes de fonction stricts en C.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wno-error=strict-prototypes")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter")
+
+  # Clang a un warning spécifique pour les fichiers qui ne se terminent pas par une nouvelle ligne (newline at end of file).
   # -Wno-newline-eof : Désactive les avertissements pour les nouvelles lignes à la fin du fichier
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wno-error=strict-prototypes -Wno-newline-eof")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wno-newline-eof")
+  if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-newline-eof")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-newline-eof")
+  endif()
 endif()
 
 # ============================================================
@@ -1274,26 +1280,24 @@ function(rc2d_link_linux_system_libraries target_name)
 endfunction()
 
 # ============================================================
-# rc2d_enable_linux_feature_macros
+# rc2d_enable_posix_feature_macros
 #
-# Active les feature test macros sur Linux (glibc).
-#
-# Pourquoi :
-# - Certaines déclarations/types (ex: clockid_t) dans les headers POSIX
-#   peuvent dépendre de feature macros.
-# - _GNU_SOURCE est très courant sur Linux et règle des cas CI/distros
-#   où pthread.h expose moins de choses par défaut.
-#
-# Important :
-# - On l'applique AUX TARGETS RC2D uniquement (rc2d + rc2d_example),
-#   pour ne pas impacter les subprojects vendored (SDL, cJSON, etc.).
+# Active les feature test macros POSIX nécessaires sur macOS et Linux.
 # ============================================================
-function(rc2d_enable_linux_feature_macros target_name)
-  if(UNIX AND NOT APPLE AND NOT ANDROID)
+function(rc2d_enable_posix_feature_macros target_name)
+  if(UNIX OR APPLE)
     target_compile_definitions(${target_name} PRIVATE
       _GNU_SOURCE
-      _POSIX_C_SOURCE=200809L
     )
+    if(NOT APPLE)
+      target_compile_definitions(${target_name} PRIVATE
+        _POSIX_C_SOURCE=200809L
+      )
+    else()
+      target_compile_definitions(${target_name} PRIVATE
+        _XOPEN_SOURCE=600
+      )
+    endif()
   endif()
 endfunction()
 
@@ -1484,12 +1488,9 @@ endif()
 rc2d_target_compile_definitions(${PROJECT_NAME})
 
 # ============================================================
-# Linux Feature Macros
+# Linux & macOS : Activer les feature test macros POSIX
 # ============================================================
-# Active les feature test macros sur Linux pour éviter des problèmes de types manquants 
-# (ex: clockid_t) dans les headers POSIX.
-# ============================================================
-rc2d_enable_linux_feature_macros(${PROJECT_NAME}) 
+rc2d_enable_posix_feature_macros(${PROJECT_NAME}) 
 
 # ============================================================
 # Include Directories (Public API)
@@ -1664,12 +1665,9 @@ if(RC2D_BUILD_EXAMPLES)
   endif()
 
   # ============================================================
-  # Linux Feature Macros
+  # Linux & macOS : Activer les feature test macros POSIX
   # ============================================================
-  # Active les feature test macros sur Linux pour éviter des problèmes de types manquants 
-  # (ex: clockid_t) dans les headers POSIX.
-  # ============================================================
-  rc2d_enable_linux_feature_macros(${RC2D_EXAMPLE_TARGET_NAME}) 
+  rc2d_enable_posix_feature_macros(${RC2D_EXAMPLE_TARGET_NAME})
 
   # ============================================================
   # Include directories pour l’exemple
@@ -2125,10 +2123,13 @@ if(RC2D_BUILD_TESTS)
   )
   
   # Linker Criterion selon la plateforme
-  if(APPLE)
-  elseif(WIN32)
+  if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
+
+  elseif(WIN32) # Windows
   
-  elseif(LINUX)
+  elseif(UNIX AND NOT APPLE AND NOT ANDROID) # Linux
+
+  elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # SteamRT4
 
   endif()
 

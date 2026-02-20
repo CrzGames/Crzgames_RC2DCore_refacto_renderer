@@ -106,7 +106,6 @@ jobs:
       - name: Get dependencies with CMake - All platforms
         run: cmake -P cmake/setup_dependencies.cmake
 
-      # TODO: Build RC2D via les scripts dans build-scripts/ pour chaque plateforme et architecture
       - name: Build RC2D (scripts) - Linux (x64/arm64)
         if: matrix.config.platform == 'linux'
         shell: bash
@@ -168,7 +167,14 @@ jobs:
             ./build-scripts/generate-project/steamrt4-arm64.sh
           fi
 
-      # TODO: Upload les fichiers binaires générés ("librc2d_static" de tout les dossier de chaque plateforme/arch) en tant qu'artifacts pour chaque plateforme et architecture
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: librc2d-${{ matrix.config.platform }}-${{ matrix.config.arch }}
+          path: |
+            build/${{ matrix.config.platform }}/**/librc2d_static.*
+            !build/**/Debug/**
+            !build/**/Release/**
 
   deploy_assets_github:
     needs: build_librc2d
@@ -179,42 +185,51 @@ jobs:
 
       - name: Download Artifacts
         uses: actions/download-artifact@v7
+        with:
+          pattern: librc2d-*
+          path: artifacts
 
-        # TODO: Finir ici pour Organiser les fichiers binaires et headers téléchargés en les regroupant par plateforme et architecture, puis les compresser (zip ou tar.gz) pour les préparer à la publication sur GitHub Releases
       - name: Organize Artifacts
         run: |
-          # Organize Android artifacts
-          mkdir -p android/arm64-v8a android/armeabi-v7a
-          # TODO
-          zip -r librc2d-android.zip android/
-
-          # Organize Windows artifacts
+          mkdir -p android/armeabi-v7a android/arm64-v8a
           mkdir -p windows/x64 windows/arm64
-          # TODO
-          zip -r librc2d-windows.zip windows/
-
-          # Organize macOS artifacts
           mkdir -p macos/arm64
-          # TODO
-          tar -czvf librc2d-macos.tar.gz macos/
-
-          # Organize iOS artifacts
-          mkdir -p ios/iphoneos-arm64
-          # TODO
-          tar -czvf librc2d-ios.tar.gz ios/
-
-          # Organize Linux artifacts
+          mkdir -p ios/arm64
           mkdir -p linux/x64 linux/arm64
-          # TODO
-          tar -czvf librc2d-linux.tar.gz linux/
-
-          # Organize SteamRT4 artifacts
           mkdir -p steamrt4/x64 steamrt4/arm64
-          # TODO
+          
+          # Android
+          mv artifacts/librc2d-android-*/build/android/armeabi-v7a/librc2d_static.a android/armeabi-v7a/ || true
+          mv artifacts/librc2d-android-*/build/android/arm64-v8a/librc2d_static.a android/arm64-v8a/ || true
+          zip -r librc2d-android.zip android/
+          
+          # Windows
+          mv artifacts/librc2d-windows-x64/build/windows/x64/librc2d_static.lib windows/x64/ || true
+          mv artifacts/librc2d-windows-arm64/build/windows/arm64/librc2d_static.lib windows/arm64/ || true
+          zip -r librc2d-windows.zip windows/
+          
+          # macOS
+          mv artifacts/librc2d-macos-arm64/build/macos/arm64/librc2d_static.a macos/arm64/ || true
+          tar -czvf librc2d-macos.tar.gz macos/
+          
+          # iOS
+          mv artifacts/librc2d-ios-arm64/build/ios/arm64/librc2d_static.a ios/arm64/ || true
+          tar -czvf librc2d-ios.tar.gz ios/
+          
+          # Linux
+          mv artifacts/librc2d-linux-x64/build/linux/x64/librc2d_static.a linux/x64/ || true
+          mv artifacts/librc2d-linux-arm64/build/linux/arm64/librc2d_static.a linux/arm64/ || true
+          tar -czvf librc2d-linux.tar.gz linux/
+          
+          # SteamRT4
+          mv artifacts/librc2d-steamrt4-x64/build/steamrt4/x64/librc2d_static.a steamrt4/x64/ || true
+          mv artifacts/librc2d-steamrt4-arm64/build/steamrt4/arm64/librc2d_static.a steamrt4/arm64/ || true
           zip -r librc2d-steamrt4.zip steamrt4/
-
-          # Organize Include artifacts
-          tar -czvf include.tar.gz include/RC2D/
+          
+          # Include headers (common to all)
+          mkdir -p include
+          cp -r include/RC2D include/
+          tar -czvf include.tar.gz include/
 
       - name: Deploy libraries assets - Release Github
         uses: softprops/action-gh-release@v2
