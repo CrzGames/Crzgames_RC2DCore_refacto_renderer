@@ -1280,28 +1280,6 @@ function(rc2d_link_linux_system_libraries target_name)
 endfunction()
 
 # ============================================================
-# rc2d_enable_posix_feature_macros
-#
-# Active les feature test macros POSIX nécessaires sur macOS et Linux.
-# ============================================================
-function(rc2d_enable_posix_feature_macros target_name)
-  if(UNIX OR APPLE)
-    target_compile_definitions(${target_name} PRIVATE
-      _GNU_SOURCE
-    )
-    if(NOT APPLE)
-      target_compile_definitions(${target_name} PRIVATE
-        _POSIX_C_SOURCE=200809L
-      )
-    else()
-      target_compile_definitions(${target_name} PRIVATE
-        _XOPEN_SOURCE=600
-      )
-    endif()
-  endif()
-endfunction()
-
-# ============================================================
 # rc2d_include_headers
 #
 # Ajoute les include paths publics de RC2D.
@@ -1488,11 +1466,6 @@ endif()
 rc2d_target_compile_definitions(${PROJECT_NAME})
 
 # ============================================================
-# Linux & macOS : Activer les feature test macros POSIX
-# ============================================================
-rc2d_enable_posix_feature_macros(${PROJECT_NAME}) 
-
-# ============================================================
 # Include Directories (Public API)
 # ============================================================
 # Expose les headers publics (include/) et les éventuels headers externes
@@ -1663,12 +1636,7 @@ if(RC2D_BUILD_EXAMPLES)
       ${RC2D_EXAMPLE_HEADERS}
     )
   endif()
-
-  # ============================================================
-  # Linux & macOS : Activer les feature test macros POSIX
-  # ============================================================
-  rc2d_enable_posix_feature_macros(${RC2D_EXAMPLE_TARGET_NAME})
-
+  
   # ============================================================
   # Include directories pour l’exemple
   # 
