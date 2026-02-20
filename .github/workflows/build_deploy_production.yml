@@ -167,12 +167,22 @@ jobs:
             ./build-scripts/generate-project/steamrt4-arm64.sh
           fi
 
-      - name: Upload Artifact
+      - name: Upload Artifact - All platforms except Windows (x64/arm64)
         uses: actions/upload-artifact@v6
+        if: matrix.config.platform != 'windows'
         with:
           name: librc2d-${{ matrix.config.platform }}-${{ matrix.config.arch }}
           path: |
             build/**/librc2d_static.*
+          if-no-files-found: error
+
+      - name: Upload Artifact - Windows (x64/arm64)
+        uses: actions/upload-artifact@v6
+        if: matrix.config.platform == 'windows'
+        with:
+          name: librc2d-${{ matrix.config.platform }}-${{ matrix.config.arch }}
+          path: |
+            build/**/rc2d_static.*
           if-no-files-found: error
 
   deploy_assets_github:
