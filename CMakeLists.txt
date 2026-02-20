@@ -486,7 +486,13 @@ function(rc2d_configure_ffmpeg target_name)
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_ffmpeg/ffmpeg")
 
         # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
-        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/ffmpeg/${RC2D_ARCH}")
+        
+        # ==================================
+        # TODO:
+        # Dès qu'ont auras la librairie pour SteamRT4, il faudra juste changer 
+        # ce path pour "${CRZGAMES_LIBRARIES}/steamrt4/lib/ffmpeg/${RC2D_ARCH}"
+        # ==================================
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/ffmpeg/${RC2D_ARCH}")
 
         # Link les librairies FFmpeg
         target_link_libraries(${target_name} PUBLIC

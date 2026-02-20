@@ -103,10 +103,8 @@ android {
             */
             assets {
                 srcDir '../../examples/assets'
-                srcDir '../../examples/shaders/'
-                exclude 'tools/**' // Exclure les shaders de l'outil de compilation (s'ils sont présents dans le dossier shaders)
-                exclude 'src/**'   // Exclure les shaders sources (s'ils sont présents dans le dossier shaders)
-                exclude 'scripts/**' // Exclure les scripts de l'outil de compilation (s'ils sont présents dans le dossier shaders)
+                srcDir '../../examples/shaders/compiled'
+                srcDir '../../examples/shaders/reflection'
             }
         }
     }
