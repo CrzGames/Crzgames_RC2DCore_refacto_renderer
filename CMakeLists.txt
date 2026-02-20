@@ -114,10 +114,10 @@ endif()
 if(WIN32)
   set(CMAKE_SYSTEM_VERSION 10.0.10240 CACHE STRING "Windows 10 Minimum Version" FORCE)
 elseif(APPLE)
-  if(CMAKE_OSX_SYSROOT MATCHES "macosx")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "macOS Architectures" FORCE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "15.0" CACHE STRING "macOS Deployment Target" FORCE)
-  elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+  elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     set(CMAKE_SYSTEM_NAME iOS)
     set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "iOS Architectures" FORCE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "18.0" CACHE STRING "iOS Deployment Target" FORCE)
@@ -195,7 +195,7 @@ set(SDLMIXER_VENDORED ON CACHE BOOL "" FORCE)
 # - vorbis/vorbisfile  (.ogg / .oga)
 # - wave               (.wav)
 # ============================================================
-if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
   # Spécifiquement pour iOS, on force la compilation en statique pour SDL3_mixer et ses sous-dépendances.
   # Les .dylib ne sont plus autorisées sur l'App Store.
   set(SDLMIXER_DEPS_SHARED OFF CACHE BOOL "" FORCE)
@@ -232,7 +232,7 @@ set(SDLMIXER_WAVPACK_DSD OFF CACHE BOOL "" FORCE)
 # - svg   (.svg)
 # - apng  (.apng)
 # ============================================================
-if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
   # Spécifiquement pour iOS, on force la compilation en statique pour SDL3_image et ses sous-dépendances.
   # Les .dylib ne sont plus autorisées sur l'App Store.
   set(SDLIMAGE_DEPS_SHARED OFF CACHE BOOL "" FORCE)
@@ -291,7 +291,7 @@ set(SDL_HAPTIC ON CACHE BOOL "Enable haptic (rumble/force feedback) support" FOR
 # iOS : les .dylib sont interdites sur l'App Store.
 # On force donc SDL3 + SDL3_image + SDL3_mixer + SDL3_ttf à être statiques.
 # ============================================================
-if(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
   set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
   set(SDL_SHARED OFF CACHE BOOL "" FORCE)
   set(SDL_STATIC ON CACHE BOOL "" FORCE)
@@ -400,7 +400,7 @@ function(rc2d_configure_ffmpeg target_name)
         )
       endforeach()
       
-    elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx") # macOS
+    elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
       # Link le dossier include de FFmpeg à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/ffmpeg")
 
@@ -432,7 +432,7 @@ function(rc2d_configure_ffmpeg target_name)
           z                          # for zlib (deflate/inflate/compress)
           iconv                      # for iconv_*
       )
-    elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos") # iOS (iPhone/iPad)
+    elseif (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
       # Link le dossier include de FFmpeg à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/ffmpeg")
 
@@ -551,7 +551,7 @@ function(rc2d_configure_rcenet target_name)
         winmm # Bibliothèque native à Windows (pour la librairie Enet)
       )
 
-    elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx") # macOS
+    elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
       # Link le dossier include de RCEnet à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/rcenet")
 
@@ -565,7 +565,7 @@ function(rc2d_configure_rcenet target_name)
         rcenet
       )
 
-    elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos") # iOS (iPhone/iPad)
+    elseif (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
       # Link le dossier include de RCEnet à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/rcenet")
 
@@ -670,7 +670,7 @@ function(rc2d_configure_onnxruntime target_name)
         onnxruntime
       )
     elseif (APPLE) # Apple (macOS, iOS)
-      if(CMAKE_OSX_SYSROOT MATCHES "macosx") # macOS
+      if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
         # Link le dossier include de ONNX Runtime à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/onnxruntime")
 
@@ -697,7 +697,7 @@ function(rc2d_configure_onnxruntime target_name)
                     "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
           )
         endforeach()
-      elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos") # iOS (iPhone/iPad)
+      elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
         # Link le dossier include de ONNX Runtime à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/onnxruntime")
 
@@ -852,7 +852,7 @@ function(rc2d_configure_shadercross target_name)
     )
 
     # Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est activé, on link la lib shadercross
-    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND CMAKE_OSX_SYSROOT MATCHES "macosx")
+    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND CMAKE_SYSTEM_NAME STREQUAL "Darwin")
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/macos/include"
@@ -1089,7 +1089,7 @@ endfunction()
 function(rc2d_configure_openssl target_name)
   if(RC2D_DATA_MODULE_ENABLED)
     if(APPLE) # Apple (macOS, iOS)
-      if(CMAKE_OSX_SYSROOT MATCHES "macosx") # macOS
+      if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
         # Link le dossier include de OpenSSL à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include")
 
@@ -1101,7 +1101,7 @@ function(rc2d_configure_openssl target_name)
           ssl    # OpenSSL
           crypto # OpenSSL
         )
-      elseif(CMAKE_OSX_SYSROOT MATCHES "iphoneos") # iOS (iPhone/iPad)
+      elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
         # Link le dossier include de OpenSSL à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include")
 
@@ -1755,7 +1755,7 @@ if(RC2D_BUILD_EXAMPLES)
         VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>"
       )
     endif()
-  elseif (APPLE AND CMAKE_OSX_SYSROOT MATCHES "macosx")
+  elseif (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     # Ajouter le fichier d'icône de l'application dans les ressources de la target de l’exemple
     target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
       "${CMAKE_CURRENT_SOURCE_DIR}/icons/macos/app-icon.icns"
@@ -1852,7 +1852,7 @@ if(RC2D_BUILD_EXAMPLES)
       COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/Info.plist"
       COMMENT "Adding keys to Info.plist"
     )
-  elseif(APPLE AND CMAKE_OSX_SYSROOT MATCHES "iphoneos")
+  elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
     # Ressource : Storyboard de lancement et Asset Catalog pour les icônes (obligatoire sur iOS)
     set(IOS_ASSETCATALOG "${CMAKE_CURRENT_SOURCE_DIR}/icons/ios/Assets.xcassets")
     set(IOS_LAUNCH_STORYBOARD "${CMAKE_CURRENT_SOURCE_DIR}/platforms/ios/LaunchScreen.storyboard")

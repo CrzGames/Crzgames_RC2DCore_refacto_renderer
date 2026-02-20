@@ -3,6 +3,7 @@
 echo -e "\e[32m\nGenerating Xcode project for macOS Apple Silicon arm64...\e[0m"
 
 cmake -S . -B build/macos/arm64 -G Xcode \
+  -DCMAKE_SYSTEM_NAME=Darwin \
   -DRC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING=ON
 
 for build_type in Debug Release; do
