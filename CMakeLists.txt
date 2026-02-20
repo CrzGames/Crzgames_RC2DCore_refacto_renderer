@@ -1281,7 +1281,10 @@ endfunction()
 # ============================================================
 function(rc2d_enable_linux_feature_macros target_name)
   if(UNIX AND NOT APPLE AND NOT ANDROID)
-    target_compile_definitions(${target_name} PRIVATE _GNU_SOURCE)
+    target_compile_definitions(${target_name} PRIVATE
+      _GNU_SOURCE
+      _POSIX_C_SOURCE=200809L
+    )
   endif()
 endfunction()
 
