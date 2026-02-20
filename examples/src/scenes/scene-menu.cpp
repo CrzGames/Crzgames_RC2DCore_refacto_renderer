@@ -1,3 +1,5 @@
+#include <cstring>  // strcmp
+
 #include <amoredtactics/scenes/scene-menu.h>
 #include <amoredtactics/scenes/scene-manager.h>
 
