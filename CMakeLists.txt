@@ -156,11 +156,11 @@ endif()
 # ============================================================
 # Linux Tools Prerequisites
 # ============================================================
-# Linux / SteamRT4 / Raspberry Pi, etc. :
+# Linux / Android / SteamRT4 / Raspberry Pi, etc. :
 # On vérifie que patchelf est installé pour pouvoir patcher les .so après la compilation,
 # afin que les .so soient trouvées à l'exécution (RPATH = $ORIGIN).
 # ============================================================
-if(UNIX AND NOT APPLE AND NOT ANDROID)
+if(UNIX AND NOT APPLE)
   find_program(PATCHELF_EXECUTABLE NAMES patchelf)
   if(NOT PATCHELF_EXECUTABLE)
     message(FATAL_ERROR "patchelf non trouvé dans le PATH")
