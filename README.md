@@ -406,7 +406,7 @@ chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
 ./build-scripts/generate-project/steamrt4-x64.sh
 
 
-# Android (run in Linux)
+# Android (run in Linux x64)
 chmod +x ./build-scripts/generate-project/android-linux.sh
 ./build-scripts/generate-project/android-linux.sh
 
