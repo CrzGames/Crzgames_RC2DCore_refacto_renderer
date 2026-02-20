@@ -1909,19 +1909,13 @@ if(RC2D_BUILD_EXAMPLES)
       COMMENT "Adding launch storyboard name to Info.plist"
     )
   elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4"))
-    # ============================================================
-    # Linux classique — AppImage
-    # - Build single-config (Unix Makefiles) : Debug/Release via CMAKE_BUILD_TYPE
-    # - RC2D_ARCH : x64 | arm64
-    # ============================================================
-
-    # RPATH pour que l'exe cherche ses .so dans ./usr/lib à côté (AppDir layout)
+    # Pour l'executable "classique" sur Linux (on ne parle pas de l'AppImage ici, mais rc2d_example)
     set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-      BUILD_RPATH "\$ORIGIN/usr/lib"
-      INSTALL_RPATH "\$ORIGIN/usr/lib"
+      BUILD_RPATH "\$ORIGIN;\$ORIGIN/usr/lib"
+      INSTALL_RPATH "\$ORIGIN;\$ORIGIN/usr/lib"
       BUILD_WITH_INSTALL_RPATH TRUE
     )
-
+    
     # ------------------------------------------------------------
     # Arch AppImage depuis RC2D_ARCH
     # ------------------------------------------------------------
