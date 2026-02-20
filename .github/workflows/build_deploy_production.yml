@@ -152,8 +152,8 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          chmod +x ./build-scripts/generate-project/android-unix.sh
-          ./build-scripts/generate-project/android-unix.sh
+          chmod +x ./build-scripts/generate-project/android-linux.sh
+          ./build-scripts/generate-project/android-linux.sh
 
       - name: Build RC2D (scripts) - SteamRT4 (x64 / arm64)
         if: matrix.config.platform == 'steamrt4'
