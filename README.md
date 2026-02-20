@@ -225,7 +225,7 @@
      sudo apt install -y build-essential
   3. Download and Install CMake >= 3.28.0 : sudo apt install -y cmake
   4. Download and Install Patchelf : sudo apt install -y patchelf
-  5. Download and Install dependencies dev for build :
+  5. Download and Install dev dependencies for SDL3 :
     sudo apt-get update
     sudo apt-get -y install build-essential git make \
     pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev \
@@ -251,7 +251,7 @@
      sudo apt install -y build-essential
   3. Download and Install CMake >= 3.28.0 : sudo apt install -y cmake
   4. Download and Install Patchelf : sudo apt install -y patchelf
-  5. Download and Install dependencies dev for build :
+  5. Download and Install dev dependencies for SDL3 :
     sudo apt-get update
     sudo apt-get -y install build-essential git make \
     pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev \
