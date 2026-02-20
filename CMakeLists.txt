@@ -1004,6 +1004,14 @@ function(rc2d_configure_shadercross target_name)
       )
     endif()
   elseif(UNIX AND NOT APPLE) # Linux, Android, Raspberry PI 5 etc.
+    if(ANDROID)
+      # Set RC2D_ARCH à x64, puisque de manière générale, on compile un projet Android sur 
+      # une machine de développement x64, et que les outils de shadercross sont compilés pour la plateforme de développement (et pas pour Android).
+      # Mais on'en n'a besoin que pour la partie copie de shadercross dans "examples/shaders/tools", 
+      # qui permet la compilation offline des shaders, et pas pour le lien de shadercross à la target.
+      set(RC2D_ARCH "x64")
+    endif()
+    
     # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
     set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/linux/bin/SDL3_shadercross/${RC2D_ARCH}")
 
