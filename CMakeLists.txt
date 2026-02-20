@@ -196,8 +196,6 @@ set(SDLMIXER_VENDORED ON CACHE BOOL "" FORCE)
 # - wave               (.wav)
 # ============================================================
 if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
-  # Spécifiquement pour iOS, on force la compilation en statique pour SDL3_mixer et ses sous-dépendances.
-  # Les .dylib ne sont plus autorisées sur l'App Store.
   set(SDLMIXER_DEPS_SHARED OFF CACHE BOOL "" FORCE)
 endif()
 set(SDLMIXER_MP3 OFF CACHE BOOL "" FORCE)
