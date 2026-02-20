@@ -392,12 +392,9 @@ docker compose run --rm rc2d-builder-arm64
 chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
 ./build-scripts/generate-project/steamrt4-x64.sh
 
-# Android (Unix)
-chmod +x ./build-scripts/generate-project/android-unix.sh
-./build-scripts/generate-project/android-unix.sh
-
-# Android (Windows)
-.\build-scripts\generate-project\android-windows.bat
+# Android (run in Linux)
+chmod +x ./build-scripts/generate-project/android-linux.sh
+./build-scripts/generate-project/android-linux.sh
 
 # iOS (run in macOS)
 chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64.sh
