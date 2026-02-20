@@ -34,5 +34,6 @@ platforms/windows/resource.rc
 android-project/app/src/main/assets/
 icons/outputs
 
+# AppImage tools
 appimagetool-x86_64.AppImage
 appimagetool-aarch64.AppImage
