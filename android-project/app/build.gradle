@@ -104,9 +104,9 @@ android {
             assets {
                 srcDir '../../examples/assets'
                 srcDir '../../examples/shaders'
-                exclude 'tools/**'
-                exclude 'src/**'
-                exclude 'scripts/**'
+                exclude 'shaders/tools/**'
+                exclude 'shaders/src/**'
+                exclude 'shaders/scripts/**'
             }
         }
     }

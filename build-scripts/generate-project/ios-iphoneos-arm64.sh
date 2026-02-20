@@ -5,7 +5,6 @@ echo -e "\e[32m\nGenerating Xcode project for iOS (iphoneos, arm64)...\e[0m"
 
 cmake -S . -B build/ios/iphoneos \
   -G Xcode \
-  -DCMAKE_OSX_SYSROOT=iphoneos \
   -DCMAKE_SYSTEM_NAME=iOS
 
 for cfg in Debug Release; do
