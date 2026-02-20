@@ -22,8 +22,7 @@ for %%b in (Debug Release) do (
   cmake --build build\windows\arm64 --config %%b
 )
 
-call :print_green "Lib RC2D for Windows arm64 built successfully for Debug and Release."
-echo Go to dist\lib\windows\arm64.
+call :print_green "Generate lib RC2D for Windows arm64 in Release and Debug generated successfully, go to the build\windows\arm64 directory..."
 
 goto :eof
 

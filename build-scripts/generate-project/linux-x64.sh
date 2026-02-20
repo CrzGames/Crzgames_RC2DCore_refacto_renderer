@@ -18,4 +18,4 @@ for build_type in Debug Release; do
 done
 
 # Final message
-echo -e "\033[32m \n Generate lib RC2D for Linux x64 to Release/Debug generated successfully, go to the dist/lib/linux/x64 directory... \n\033[0m"
+echo -e "\033[32m \n Generate lib RC2D for Linux x64 in Release and Debug generated successfully, go to the build/linux/x64 directory... \n\033[0m"

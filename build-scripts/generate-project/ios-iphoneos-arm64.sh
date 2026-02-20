@@ -13,4 +13,4 @@ for cfg in Debug Release; do
   cmake --build build/ios/iphoneos --config $cfg
 done
 
-echo -e "\033[32m\nLib RC2D pour iOS (iphoneos/arm64) buildée en Debug et Release.\033[0m"
+echo -e "\033[32m \n Generate lib RC2D for iOS (iphoneos/arm64) to Release/Debug generated successfully, go to the build/ios/iphoneos directory... \n\033[0m"

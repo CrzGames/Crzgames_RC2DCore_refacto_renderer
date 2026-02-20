@@ -9,4 +9,4 @@ for build_type in Debug Release; do
   cmake --build build/macos/arm64 --config $build_type
 done
 
-echo -e "\033[32m\nLib RC2D for macOS arm64 built in Debug and Release configs.\nGo to the build/macos/arm64 directory to find the generated Xcode project and built libraries.\033[0m"
+echo -e "\033[32m\nLib RC2D for macOS Apple Silicon (arm64) built in Debug and Release. Go to the build/macos/arm64 directory...\n\033[0m"
