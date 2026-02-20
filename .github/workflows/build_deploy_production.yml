@@ -92,7 +92,7 @@ jobs:
           libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
       
       - name: Install patchelf - Linux (x64/arm64) / SteamRT4 (x64/arm64)
-        if: matrix.config.platform == 'linux' || matrix.config.platform == 'steamrt4'
+        if: matrix.config.platform == 'linux' || matrix.config.platform == 'steamrt4' || matrix.config.platform == 'android'
         run: |
           sudo apt-get update
           sudo apt-get install -y patchelf
