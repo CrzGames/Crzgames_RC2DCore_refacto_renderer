@@ -80,7 +80,7 @@ jobs:
         shell: bash
 
       - name: Install dev dependencies (for SDL3) - Linux (x64/arm64)
-        if: matrix.config.platform == 'linux'
+        if: matrix.config.platform == 'linux' || matrix.config.platform == 'steamrt4'
         run: |
           sudo apt-get update
           sudo apt-get -y install build-essential git make \
