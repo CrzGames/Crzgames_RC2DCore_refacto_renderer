@@ -4,5 +4,5 @@ SDL=https://github.com/libsdl-org/SDL.git:67c2f610686d9d35d84a462807fe60a736de31
 SDL_image=https://github.com/libsdl-org/SDL_image.git:8bd9f3d7f2d2bb59ce4331f13b77d65254cd8c7b
 SDL_ttf=https://github.com/libsdl-org/SDL_ttf.git:053bbc89517471427748a082583c9eada55c07b5
 SDL_mixer=https://github.com/libsdl-org/SDL_mixer.git:37b2f3325a0fb1e98ba265aa38826aa9e16624fb
-Crzgames_Libraries=https://github.com/CrzGames/Crzgames_Libraries.git:36461e282a825edbdbb17d80d3d29f5f77f44946
+Crzgames_Libraries=https://github.com/CrzGames/Crzgames_Libraries.git:b3d1a627e02d2dcc17b7686d8c93c99cb5735637
 cJSON=https://github.com/DaveGamble/cJSON:v1.7.19
