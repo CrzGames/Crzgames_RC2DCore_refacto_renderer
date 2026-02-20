@@ -93,7 +93,21 @@ android {
     }
     sourceSets {
         main {
-            assets.srcDirs = ['../../examples/assets']
+            /**
+                APK
+                └── assets/
+                    ├── (images, audio, etc.)
+                    └── shaders/
+                        ├── compiled/
+                        └── reflection/
+            */
+            assets {
+                srcDir '../../examples/assets'
+                srcDir '../../examples/shaders'
+                exclude 'tools/**'
+                exclude 'src/**'
+                exclude 'scripts/**'
+            }
         }
     }
 
