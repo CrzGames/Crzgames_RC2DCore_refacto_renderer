@@ -233,11 +233,9 @@ set(SDLMIXER_WAVPACK_DSD OFF CACHE BOOL "" FORCE)
 # - apng  (.apng)
 # ============================================================
 if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
-  # Spécifiquement pour iOS, on force la compilation en statique pour SDL3_image et ses sous-dépendances.
-  # Les .dylib ne sont plus autorisées sur l'App Store.
   set(SDLIMAGE_DEPS_SHARED OFF CACHE BOOL "" FORCE)
 
-  # 
+  # Pour APNG, on doit aussi forcer libpng et zlib en statique, car ils sont utilisés par SDL3_image pour le support APNG.
   set(SDLIMAGE_PNG_SHARED  OFF CACHE BOOL "" FORCE)
   set(PNG_SHARED OFF CACHE BOOL "" FORCE)
   set(PNG_STATIC ON  CACHE BOOL "" FORCE)
