@@ -136,16 +136,16 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          chmod +x ./build-scripts/generate-project/macos-arm64.sh
-          ./build-scripts/generate-project/macos-arm64.sh
+          chmod +x ./build-scripts/generate-project/macos-arm64-nosignedbundleapp.sh
+          ./build-scripts/generate-project/macos-arm64-nosignedbundleapp.sh
 
       - name: Build RC2D (scripts) - iOS (arm64 for iphoneos)
         if: matrix.config.platform == 'ios'
         shell: bash
         run: |
           set -euxo pipefail
-          chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64.sh
-          ./build-scripts/generate-project/ios-iphoneos-arm64.sh
+          chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
+          ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
 
       - name: Build RC2D (scripts) - Android (armeabi-v7a / arm64-v8a)
         if: matrix.config.platform == 'android'

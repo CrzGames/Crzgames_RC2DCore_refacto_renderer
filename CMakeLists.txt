@@ -79,8 +79,8 @@ option(RC2D_ASSERT_LEVEL "Niveau des assertions (0=none, 1=release, 2=debug, 3=p
 # Option pour construire les exemples
 option(RC2D_BUILD_EXAMPLES "Build examples" ON)
 
-# Option pour activer la signature de code pour les cibles d'exemple Apple (macOS/iOS)
-option(RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING "Enable code signing for Apple example targets (macOS/iOS)" OFF)
+# Option pour activer la signature du bundle de l’exemple sur Apple (iOS/macOS)
+option(RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING "Enable code signing for Apple examples (iOS/macOS)" OFF)
 
 # Option Tests unitaires avec Criterion (TODO: Pas encore implémenté pour les tests)
 option(RC2D_BUILD_TESTS "Build unit tests with Criterion" OFF)
@@ -1793,16 +1793,6 @@ if(RC2D_BUILD_EXAMPLES)
         XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual" # Style de signature (Manual ou Automatic)
         XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--options=runtime --strict --deep --force --timestamp --verbose" # Options supplémentaires pour la signature
       )
-    else()
-      # SIGNATURE DÉSACTIVÉE (Xcode ne doit rien signer)
-      set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
-        XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO"
-        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
-        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual"
-        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ""
-        XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS ""
-      )
     endif()
 
     set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
@@ -1913,16 +1903,6 @@ if(RC2D_BUILD_EXAMPLES)
         XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --strict --force --timestamp --verbose" # Options supplémentaires pour la signature
         XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "TestExe" # Remplacez par le nom de votre profil de provisionnement
         XCODE_ATTRIBUTE_PROVISIONING_PROFILE "d5115451-c438-4aa6-9c68-dee8a87a36e8" # Remplacez par l'UUID de votre profil de provisionnement
-      )
-    else()
-      set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-        XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
-        XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO"
-        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ""
-        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ""
-        XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER ""
-        XCODE_ATTRIBUTE_PROVISIONING_PROFILE ""
-        XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS ""
       )
     endif()
 

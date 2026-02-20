@@ -361,6 +361,7 @@ chmod +x ./build-scripts/generate-project/linux-x64.sh
 # Executable classique : SDL_AUDIODRIVER=dummy ./rc2d_example
 # Executable .AppImage : SDL_AUDIODRIVER=dummy ./rc2d_example.AppImage
 
+
 # Linux - arm64
 chmod +x ./build-scripts/generate-project/linux-arm64.sh
 ./build-scripts/generate-project/linux-arm64.sh
@@ -368,15 +369,26 @@ chmod +x ./build-scripts/generate-project/linux-arm64.sh
 # Executable classique : SDL_AUDIODRIVER=dummy ./rc2d_example
 # Executable .AppImage : SDL_AUDIODRIVER=dummy ./rc2d_example.AppImage
 
-# macOS - Apple Silicon arm64
-chmod +x ./build-scripts/generate-project/macos-arm64.sh
-./build-scripts/generate-project/macos-arm64.sh
+
+# macOS (Apple Silicon arm64) - No Signed Bundle .app
+chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
+./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
+
+
+# macOS (Apple Silicon arm64) - Signed Bundle .app
+chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-signedbundleapp.sh
+./build-scripts/generate-project/ios-iphoneos-arm64-signedbundleapp.sh
+# Informations : Rentrer les bonne informations dans le CMakelists ou il y a "RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING"
+# Concernant : XCODE_ATTRIBUTE_DEVELOPMENT_TEAM, XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY..etc
+
 
 # Windows - x64
 .\build-scripts\generate-project\windows-x64.bat
 
+
 # Windows - arm64
 .\build-scripts\generate-project\windows-arm64.bat
+
 
 # SteamRT4 - x64
 # Depuis Docker (Les artefacts générés (Debug / Release) sont disponibles dans le dossier : docker-build-output-steamrt4/): 
@@ -385,6 +397,7 @@ docker compose run --rm rc2d-builder-x64
 chmod +x ./build-scripts/generate-project/steamrt4-arm64.sh
 ./build-scripts/generate-project/steamrt4-arm64.sh
 
+
 # SteamRT4 - arm64
 # Depuis Docker (Les artefacts générés (Debug / Release) sont disponibles dans le dossier : docker-build-output-steamrt4/): 
 docker compose run --rm rc2d-builder-arm64
@@ -392,13 +405,22 @@ docker compose run --rm rc2d-builder-arm64
 chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
 ./build-scripts/generate-project/steamrt4-x64.sh
 
+
 # Android (run in Linux)
 chmod +x ./build-scripts/generate-project/android-linux.sh
 ./build-scripts/generate-project/android-linux.sh
 
-# iOS (run in macOS)
-chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64.sh
-./build-scripts/generate-project/ios-iphoneos-arm64.sh
+
+# iOS (run in macOS) - No Signed Bundle .app
+chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
+./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
+
+
+# iOS (run in macOS) - Signed Bundle .app
+chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-signedbundleapp.sh
+./build-scripts/generate-project/ios-iphoneos-arm64-signedbundleapp.sh
+# Informations : Rentrer les bonne informations dans le CMakelists ou il y a "RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING"
+# Concernant : XCODE_ATTRIBUTE_DEVELOPMENT_TEAM, XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY..etc
 ```
 3. Il y a un dossier `build` à la racine qui est générer.
 ```bash
