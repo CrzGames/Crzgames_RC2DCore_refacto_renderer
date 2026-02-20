@@ -187,7 +187,7 @@
 | Librairie | Version / Commit SHA utilisé par RC2D | Rôle dans RC2D | Statut / Intégration |
 |------------|----------------------------------------|----------------|----------------------|
 | **LZ4** | v1.10.0 | Compression ultra-rapide utilisée par `RC2D_data` | 🔒 Intégrée statiquement (sources embarquées dans RC2D) |
-| **SDL3** | commit `be82f316c4745d4cf0f8c0a5e37f5390beed9542` | Gestion fenêtre, entrées, rendu GPU | ⭐ Obligatoire |
+| **SDL3** | commit `2aacf018f0aa454177d774240eb34f064d8f36cb` | Gestion fenêtre, entrées, rendu GPU | ⭐ Obligatoire |
 | **SDL3_image** | commit `8bd9f3d7f2d2bb59ce4331f13b77d65254cd8c7b` | Chargement d’images (PNG, SVG, APNG…) | ⭐ Obligatoire |
 | **SDL3_ttf** | commit `053bbc89517471427748a082583c9eada55c07b5` | Rendu de polices TrueType | ⭐ Obligatoire |
 | **SDL3_mixer** | commit `37b2f3325a0fb1e98ba265aa38826aa9e16624fb` | Gestion audio (WAV, OGG, OPUS…) | ⭐ Obligatoire |
@@ -195,7 +195,7 @@
 | **SDL3_shadercross** | commit `7b7365a86611b2a7b6462e521cf1c43a037d0970` | Transpilation shaders (HLSL → MSL / SPIR-V / DXIL / METALLIB…) | 🟡 Dev uniquement – `RC2D_GPU_SHADER_HOT_RELOAD_ENABLED` |
 | **RCENet** | v1.4.0 | Communication réseau UDP (fork ENet) | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) |
 | **OpenSSL** | v3.6.1 | Hashing, chiffrement, crypto | 🟡 Optionnel – `RC2D_DATA_MODULE_ENABLED` (ON par défaut) |
-| **ONNX Runtime** | v1.24.1 | Inférence IA (modèles ONNX) | 🔵 Optionnel – `RC2D_ONNX_MODULE_ENABLED` (OFF par défaut) |
+| **ONNX Runtime** | v1.24.1 | Inférence IA (modèles ONNX) | 🔵 Optionnel – `RC2D_ONNX_MODULE_ENABLED` (ON par défaut) |
 | **FFmpeg** | v8.0.0 | Lecture vidéo (MP4, etc.) | 🟡 Optionnel – `RC2D_VIDEO_MODULE_ENABLED` (ON par défaut) |
 
 <br /><br />

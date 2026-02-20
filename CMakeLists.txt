@@ -65,7 +65,7 @@ option(RC2D_DATA_MODULE_ENABLED "Enable RC2D_data (OpenSSL-based)" ON)
 option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net (ENet-based)" ON)
 
 # Option pour activer le module RC2D_onnx (basé sur ONNX Runtime)
-option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" OFF)
+option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" ON)
 
 # Option pour le SDK Steamworks
 option(RC2D_STEAMWORKS_SDK_ENABLED "Enable RC2D Steamworks SDK integration" OFF)
@@ -1636,7 +1636,7 @@ if(RC2D_BUILD_EXAMPLES)
       ${RC2D_EXAMPLE_HEADERS}
     )
   endif()
-  
+
   # ============================================================
   # Include directories pour l’exemple
   # 
