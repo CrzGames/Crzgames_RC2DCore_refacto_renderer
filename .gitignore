@@ -33,3 +33,6 @@ platforms/windows/resource.rc
 # Game Project Example
 android-project/app/src/main/assets/
 icons/outputs
+
+appimagetool-x86_64.AppImage
+appimagetool-aarch64.AppImage

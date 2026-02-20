@@ -1915,7 +1915,7 @@ if(RC2D_BUILD_EXAMPLES)
       INSTALL_RPATH "\$ORIGIN;\$ORIGIN/usr/lib"
       BUILD_WITH_INSTALL_RPATH TRUE
     )
-    
+
     # ------------------------------------------------------------
     # Arch AppImage depuis RC2D_ARCH
     # ------------------------------------------------------------
@@ -1956,6 +1956,11 @@ if(RC2D_BUILD_EXAMPLES)
         APP_VERSION \"${APP_VERSION}\"
         APP_ARCH \"${APPIMAGE_ARCH}\"
         APPDIR \"${APPDIR}\"
+
+        # 👇 Copie des assets, shaders dans AppDir/ (à côté de l’exe)
+        ASSETS
+          \"${CMAKE_BINARY_DIR}/assets\"
+          \"${CMAKE_BINARY_DIR}/shaders\"
       )"
       COMPONENT Runtime
     )
