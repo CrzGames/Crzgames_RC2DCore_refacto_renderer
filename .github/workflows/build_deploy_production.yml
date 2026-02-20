@@ -48,7 +48,7 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Setup Android SDK (Platform + Build Tools + NDK + CMake + CLI)
+      - name: Setup Android SDK (Platform + Build Tools + NDK + CMake + CLI) - Android
         if: matrix.config.platform == 'android'
         uses: android-actions/setup-android@v3
         with:
@@ -79,7 +79,36 @@ jobs:
           echo "SDK Version: $SDKVERSION"
         shell: bash
 
+      - name: Install dev dependencies (for SDL3) - Linux (x64/arm64)
+        if: matrix.config.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install build-essential git make \
+          pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev \
+          libaudio-dev libfribidi-dev libjack-dev libsndio-dev libx11-dev libxext-dev \
+          libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+          libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
+          libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev libthai-dev \
+          libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
+      
+      - name: Install patchelf - Linux (x64/arm64) / SteamRT4 (x64/arm64)
+        if: matrix.config.platform == 'linux' || matrix.config.platform == 'steamrt4'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf
+
+      - name: Install fuse for .AppImage generation - Linux (x64/arm64)
+        if: matrix.config.platform == 'linux'
+        run: |
+          sudo apt update
+          sudo apt -y install libfuse2
+
+      - name: Get dependencies with CMake - All platforms
+        run: cmake -P cmake/setup_dependencies.cmake
+
       # TODO: Build RC2D via les scripts dans build-scripts/ pour chaque plateforme et architecture
+
+      # TODO: Upload les fichiers binaires générés ("librc2d_static" de tout les dossier de chaque plateforme/arch) en tant qu'artifacts pour chaque plateforme et architecture
 
   deploy_assets_github:
     needs: build_librc2d
@@ -91,6 +120,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v7
 
+        # TODO: Finir ici pour Organiser les fichiers binaires et headers téléchargés en les regroupant par plateforme et architecture, puis les compresser (zip ou tar.gz) pour les préparer à la publication sur GitHub Releases
       - name: Organize Artifacts
         run: |
           # Organize Android artifacts
