@@ -24,8 +24,6 @@ docker-build-output-steamrt4/
 
 # Ignore shader tools and scripts
 /examples/shaders/tools/
-/examples/assets/shaders/tools/
-/examples/assets/shaders/scripts/
 
 # For project Windows
 platforms/windows/resource.rc
