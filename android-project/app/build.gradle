@@ -103,12 +103,10 @@ android {
             */
             assets {
                 srcDir '../../examples/assets'
-
-                from('../../examples/shaders') {
-                    exclude 'tools/**'
-                    exclude 'src/**'
-                    exclude 'scripts/**'
-                }
+                srcDir '../../examples/shaders/'
+                exclude 'tools/**' // Exclure les shaders de l'outil de compilation (s'ils sont présents dans le dossier shaders)
+                exclude 'src/**'   // Exclure les shaders sources (s'ils sont présents dans le dossier shaders)
+                exclude 'scripts/**' // Exclure les scripts de l'outil de compilation (s'ils sont présents dans le dossier shaders)
             }
         }
     }
