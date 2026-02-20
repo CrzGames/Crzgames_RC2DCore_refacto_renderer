@@ -1265,6 +1265,27 @@ function(rc2d_link_linux_system_libraries target_name)
 endfunction()
 
 # ============================================================
+# rc2d_enable_linux_feature_macros
+#
+# Active les feature test macros sur Linux (glibc).
+#
+# Pourquoi :
+# - Certaines déclarations/types (ex: clockid_t) dans les headers POSIX
+#   peuvent dépendre de feature macros.
+# - _GNU_SOURCE est très courant sur Linux et règle des cas CI/distros
+#   où pthread.h expose moins de choses par défaut.
+#
+# Important :
+# - On l'applique AUX TARGETS RC2D uniquement (rc2d + rc2d_example),
+#   pour ne pas impacter les subprojects vendored (SDL, cJSON, etc.).
+# ============================================================
+function(rc2d_enable_linux_feature_macros target_name)
+  if(UNIX AND NOT APPLE AND NOT ANDROID)
+    target_compile_definitions(${target_name} PRIVATE _GNU_SOURCE)
+  endif()
+endfunction()
+
+# ============================================================
 # rc2d_include_headers
 #
 # Ajoute les include paths publics de RC2D.
@@ -1451,6 +1472,14 @@ endif()
 rc2d_target_compile_definitions(${PROJECT_NAME})
 
 # ============================================================
+# Linux Feature Macros
+# ============================================================
+# Active les feature test macros sur Linux pour éviter des problèmes de types manquants 
+# (ex: clockid_t) dans les headers POSIX.
+# ============================================================
+rc2d_enable_linux_feature_macros(${PROJECT_NAME}) 
+
+# ============================================================
 # Include Directories (Public API)
 # ============================================================
 # Expose les headers publics (include/) et les éventuels headers externes
@@ -1621,6 +1650,14 @@ if(RC2D_BUILD_EXAMPLES)
       ${RC2D_EXAMPLE_HEADERS}
     )
   endif()
+
+  # ============================================================
+  # Linux Feature Macros
+  # ============================================================
+  # Active les feature test macros sur Linux pour éviter des problèmes de types manquants 
+  # (ex: clockid_t) dans les headers POSIX.
+  # ============================================================
+  rc2d_enable_linux_feature_macros(${RC2D_EXAMPLE_TARGET_NAME}) 
 
   # ============================================================
   # Include directories pour l’exemple
