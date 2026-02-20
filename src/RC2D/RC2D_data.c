@@ -1,17 +1,15 @@
 #if RC2D_DATA_MODULE_ENABLED
 
 #include <RC2D/RC2D_data.h>
-#include <RC2D/RC2D_logger.h>
-#include <RC2D/RC2D_memory.h>
+
+// Librairies standards C
+#include <time.h>
+#include <sys/types.h>
 
 /*
 Librairies pour la compression de données
 */
 #include <lz4/lz4.h>      // Required for : Algorithm LZ4
-
-// Librairies standards C
-#include <time.h>
-#include <sys/types.h>
 
 /*
 Librairies OpenSSL pour les algorithmes de chiffrement symétrique / asymétrique et de hachage
@@ -22,6 +20,10 @@ Librairies OpenSSL pour les algorithmes de chiffrement symétrique / asymétriqu
 #include <openssl/hmac.h> // Required for : HMAC (Keyed-Hashing for Message Authentication)
 #include <openssl/rand.h> // Required for :
 #include <openssl/err.h>  // Required for : Gestion des erreurs OpenSSL
+
+// Internal headers
+#include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_memory.h>
 
 /*
 Encrypt and Decrypt

@@ -1,8 +1,9 @@
 #ifndef RC2D_LOCAL_H
 #define RC2D_LOCAL_H
 
-#include <SDL3/SDL_locale.h>  // Required for : SDL_Locale, SDL_GetPreferredLocales
 #include <stddef.h>           // Required for : size_t
+
+#include <SDL3/SDL_locale.h>  // Required for : SDL_Locale, SDL_GetPreferredLocales
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

@@ -1,8 +1,9 @@
 #ifndef RC2D_MESSAGEBOX_H
 #define RC2D_MESSAGEBOX_H
 
-#include <SDL3/SDL_messagebox.h> // Requis pour : SDL_Window, SDL_MessageBoxFlags
 #include <stdbool.h>             // Requis pour : bool
+
+#include <SDL3/SDL_messagebox.h> // Requis pour : SDL_Window, SDL_MessageBoxFlags
 
 /* Configuration pour les définitions de fonctions C, même en C++ */
 #ifdef __cplusplus

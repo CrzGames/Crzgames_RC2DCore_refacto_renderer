@@ -1,8 +1,9 @@
 #include <RC2D/RC2D_mouse.h>
-#include <RC2D/RC2D_internal.h>
-#include <RC2D/RC2D_logger.h>
 
 #include <SDL3/SDL_mouse.h>
+
+#include <RC2D/RC2D_internal.h>
+#include <RC2D/RC2D_logger.h>
 
 bool rc2d_mouse_isGrabbed(void) 
 {

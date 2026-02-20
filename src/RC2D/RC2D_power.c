@@ -1,7 +1,8 @@
 #include <RC2D/RC2D_power.h>
-#include <RC2D/RC2D_logger.h>
 
 #include <SDL3/SDL_power.h>
+
+#include <RC2D/RC2D_logger.h>
 
 RC2D_PowerInfo rc2d_system_getPowerInfo(void)
 {

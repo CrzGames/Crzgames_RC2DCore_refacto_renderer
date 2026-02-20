@@ -1,5 +1,3 @@
-
-
 #ifndef RC2D_KEYCODE_H
 #define RC2D_KEYCODE_H
 

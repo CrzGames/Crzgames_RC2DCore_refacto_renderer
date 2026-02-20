@@ -1,8 +1,9 @@
 #ifndef RC2D_MOUSE_H
 #define RC2D_MOUSE_H
 
-#include <SDL3/SDL_mouse.h>
 #include <stdbool.h> // Required for : bool
+
+#include <SDL3/SDL_mouse.h>
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

@@ -1,8 +1,9 @@
 #include <RC2D/RC2D_thread.h>
-#include <RC2D/RC2D_logger.h>
 
 #include <SDL3/SDL_thread.h>
 #include <SDL3/SDL_properties.h>
+
+#include <RC2D/RC2D_logger.h>
 
 // Convertit RC2D_ThreadPriority en SDL_ThreadPriority
 static SDL_ThreadPriority rc2d_thread_convert_priority(RC2D_ThreadPriority priority) 

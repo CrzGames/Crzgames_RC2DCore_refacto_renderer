@@ -1,8 +1,9 @@
 #include <RC2D/RC2D_storage.h>
-#include <RC2D/RC2D_logger.h>
-#include <RC2D/RC2D_memory.h>
 
 #include <SDL3/SDL_storage.h>
+
+#include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_memory.h>
 
 static SDL_Storage *storage_title = NULL;
 static SDL_Storage *storage_user  = NULL;

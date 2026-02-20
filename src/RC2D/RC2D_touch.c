@@ -1,9 +1,10 @@
 #include <RC2D/RC2D_touch.h>
+
+#include <SDL3/SDL_events.h>
+
 #include <RC2D/RC2D_memory.h>
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_window.h>
-
-#include <SDL3/SDL_events.h>
 
 /**
  * \brief Structure pour stocker l'état des points de contact tactiles.

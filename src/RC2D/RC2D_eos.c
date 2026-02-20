@@ -3,13 +3,14 @@
 // TODO: Reste pour ce module à implémenter l'auth/connect utilisateur, la gestion des achievements.
 
 #include <RC2D/RC2D_eos.h>
-#include <RC2D/RC2D_logger.h>
-#include <RC2D/RC2D_memory.h>
-#include <RC2D/RC2D_cmdline.h>
 
 #include <eos_sdk.h>
 #include <eos_achievements.h>
 #include <eos_achievements_types.h>
+
+#include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_memory.h>
+#include <RC2D/RC2D_cmdline.h>
 
 /**
  * Définitions par défaut des constantes EOS (peuvent être redéfinies dans le build system) pour le SDK EOS.

@@ -1,16 +1,16 @@
 #include <RC2D/RC2D_texturepacker.h>
 
-#include <RC2D/RC2D_logger.h>
-#include <RC2D/RC2D_memory.h>
-#include <RC2D/RC2D_storage.h>
-#include <RC2D/RC2D_internal.h>
-#include <RC2D/RC2D_platform_defines.h>
+#include <string.h>
 
 #include <SDL3/SDL_stdinc.h>
 
 #include <cJSON.h>
 
-#include <string.h>
+#include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_memory.h>
+#include <RC2D/RC2D_storage.h>
+#include <RC2D/RC2D_internal.h>
+#include <RC2D/RC2D_platform_defines.h>
 
 /* ========================================================================= */
 /*                                 UTILITAIRES                                */

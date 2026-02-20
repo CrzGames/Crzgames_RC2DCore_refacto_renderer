@@ -1,10 +1,11 @@
-#include <RC2D/RC2D_internal.h>
 #include <RC2D/RC2D_graphics.h>
+
+#include <SDL3/SDL_iostream.h>
+
+#include <RC2D/RC2D_internal.h>
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_memory.h>
 #include <RC2D/RC2D_math.h>
-
-#include <SDL3/SDL_iostream.h>
 
 /**
 * Couleur de rendu courante.

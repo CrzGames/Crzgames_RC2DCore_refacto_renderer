@@ -11,8 +11,6 @@
 
 #if RC2D_VIDEO_MODULE_ENABLED
 
-#include <RC2D/RC2D_storage.h>
-
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
@@ -21,8 +19,12 @@
 #include <libavutil/opt.h>
 
 #include <SDL3/SDL.h>
+
 #include <SDL3_mixer/SDL_mixer.h>
 
+#include <RC2D/RC2D_storage.h>
+
+/* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus
 extern "C" {
 #endif

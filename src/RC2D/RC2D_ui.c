@@ -1,9 +1,10 @@
 #include <RC2D/RC2D_ui.h>
+
+#include <SDL3/SDL.h>
+
 #include <RC2D/RC2D_engine.h>    /* rc2d_engine_getVisibleSafeRectRender */
 #include <RC2D/RC2D_internal.h>  /* rc2d_engine_state.renderer */
 #include <RC2D/RC2D_logger.h>
-
-#include <SDL3/SDL.h>
 
 /* ---------- helpers internes ---------- */
 

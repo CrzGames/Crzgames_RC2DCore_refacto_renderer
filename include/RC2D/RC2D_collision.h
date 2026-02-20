@@ -1,10 +1,10 @@
 #ifndef RC2D_COLLISION_H
 #define RC2D_COLLISION_H
 
+#include <stdbool.h> // Required for : bool
+
 #include <RC2D/RC2D_math.h>
 #include <RC2D/RC2D_ui.h>
-
-#include <stdbool.h> // Required for : bool
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

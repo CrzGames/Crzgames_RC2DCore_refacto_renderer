@@ -1,10 +1,11 @@
 #ifndef RC2D_UI_H
 #define RC2D_UI_H
 
-#include <RC2D/RC2D_graphics.h>
-
 #include <stdbool.h> // Required for : bool
 
+#include <RC2D/RC2D_graphics.h>
+
+/* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -165,7 +166,7 @@ typedef struct RC2D_UIImage {
  */
 bool rc2d_ui_drawImage(RC2D_UIImage* uiImage);
 
-
+/*  */
 #ifdef __cplusplus
 }
 #endif

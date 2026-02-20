@@ -1,8 +1,9 @@
 #ifndef RC2D_THREAD_H
 #define RC2D_THREAD_H
 
-#include <SDL3/SDL_thread.h> // Requis pour : SDL_Thread, SDL_ThreadFunction, SDL_TLSID, SDL_ThreadPriority
 #include <stdbool.h>         // Requis pour : bool
+
+#include <SDL3/SDL_thread.h> // Requis pour : SDL_Thread, SDL_ThreadFunction, SDL_TLSID, SDL_ThreadPriority
 
 /* Configuration pour les définitions de fonctions C, même en C++ */
 #ifdef __cplusplus

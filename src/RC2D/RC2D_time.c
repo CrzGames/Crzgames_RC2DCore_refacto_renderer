@@ -1,7 +1,8 @@
 #include <RC2D/RC2D_time.h>
-#include <RC2D/RC2D_logger.h>
 
 #include <SDL3/SDL_time.h>
+
+#include <RC2D/RC2D_logger.h>
 
 /**
  * \brief Convertit un SDL_DateTime en RC2D_DateTime.

@@ -1,9 +1,10 @@
 #include <RC2D/RC2D_audio.h>
+
+#include <SDL3/SDL_properties.h>
+
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_internal.h>
 #include <RC2D/RC2D_memory.h>
-
-#include <SDL3/SDL_properties.h>
 
 /* ------------------------------------------------------------------------- */
 /*  Assets audio                                                             */

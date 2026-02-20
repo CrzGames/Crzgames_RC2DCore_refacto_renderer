@@ -1,12 +1,13 @@
 #if RC2D_ONNX_MODULE_ENABLED
 
 #include <RC2D/RC2D_onnx.h>
-#include <RC2D/RC2D_logger.h>
-#include <RC2D/RC2D_platform_defines.h>
-#include <RC2D/RC2D_memory.h>
 
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_filesystem.h>
+
+#include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_platform_defines.h>
+#include <RC2D/RC2D_memory.h>
 
 #ifdef RC2D_PLATFORM_WIN32
 #include <windows.h>

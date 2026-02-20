@@ -1,9 +1,10 @@
 #include <RC2D/RC2D_filedialog.h>
-#include <RC2D/RC2D_logger.h>
-#include <RC2D/RC2D_memory.h>
 
 #include <SDL3/SDL_dialog.h>
 #include <SDL3/SDL_properties.h>
+
+#include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_memory.h>
 
 // Structure interne pour passer les données du callback
 typedef struct RC2D_FileDialogCallbackData {

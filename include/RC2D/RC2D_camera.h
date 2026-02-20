@@ -1,8 +1,9 @@
 #ifndef RC2D_CAMERA_H
 #define RC2D_CAMERA_H
 
-#include <SDL3/SDL_camera.h> // Requis pour : SDL_Camera, SDL_CameraID, SDL_Surface
 #include <stdbool.h>         // Requis pour : bool
+
+#include <SDL3/SDL_camera.h> // Requis pour : SDL_Camera, SDL_CameraID, SDL_Surface
 
 /* Configuration pour les définitions de fonctions C, même en C++ */
 #ifdef __cplusplus

@@ -1,13 +1,14 @@
 #if RC2D_VIDEO_MODULE_ENABLED
 
 #include <RC2D/RC2D_video.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_audio.h>
 #include <RC2D/RC2D_internal.h>
 #include <RC2D/RC2D_memory.h>
-
-#include <stdio.h>
-#include <stdlib.h>
 
 /* -- Helpers internes ----------------------------------------------------- */
 

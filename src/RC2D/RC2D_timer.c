@@ -1,8 +1,9 @@
-#include <RC2D/RC2D_internal.h> // Required for : rc2d_delta_time
-#include <RC2D/RC2D_logger.h> // Required for : RC2D_log
 #include <RC2D/RC2D_timer.h> // Required for : RC2D_Timer
 
 #include <math.h> // Required for : round()
+
+#include <RC2D/RC2D_internal.h> // Required for : rc2d_delta_time
+#include <RC2D/RC2D_logger.h> // Required for : RC2D_log
 
 double rc2d_timer_getDelta(void) 
 {

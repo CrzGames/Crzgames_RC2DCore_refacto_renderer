@@ -1,4 +1,5 @@
 #include <RC2D/RC2D_memory.h>
+
 #include <RC2D/RC2D_logger.h>
 
 #if RC2D_MEMORY_DEBUG_ENABLED

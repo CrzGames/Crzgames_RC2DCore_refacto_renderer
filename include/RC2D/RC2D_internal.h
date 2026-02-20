@@ -1,11 +1,6 @@
 #ifndef RC2D_INTERNAL_H
 #define RC2D_INTERNAL_H
 
-#include <RC2D/RC2D_engine.h>
-#include <RC2D/RC2D_math.h>
-#include <RC2D/RC2D_gpu.h>
-#include <RC2D/RC2D_cmdline.h>
-
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_mutex.h>
@@ -13,7 +8,13 @@
 #include <SDL3/SDL_render.h>
 
 #include <SDL3_mixer/SDL_mixer.h>
+
 #include <SDL3_ttf/SDL_ttf.h>
+
+#include <RC2D/RC2D_engine.h>
+#include <RC2D/RC2D_math.h>
+#include <RC2D/RC2D_gpu.h>
+#include <RC2D/RC2D_cmdline.h>
 
 /**
  * IMPORTANT: 

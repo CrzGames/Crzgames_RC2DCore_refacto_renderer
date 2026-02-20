@@ -1,12 +1,12 @@
 #ifndef RC2D_GRAPHICS_H
 #define RC2D_GRAPHICS_H
 
-#include <RC2D/RC2D_math.h>
-#include <RC2D/RC2D_storage.h>
-
 #include <SDL3/SDL_render.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
+
+#include <RC2D/RC2D_math.h>
+#include <RC2D/RC2D_storage.h>
 
 /* Configuration pour les définitions de fonctions C, même en C++ */
 #ifdef __cplusplus

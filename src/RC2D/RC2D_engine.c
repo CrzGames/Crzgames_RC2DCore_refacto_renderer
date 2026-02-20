@@ -1,14 +1,4 @@
-#include <RC2D/RC2D_internal.h>
-#include <RC2D/RC2D_logger.h>
-#include <RC2D/RC2D_assert.h>
-#include <RC2D/RC2D_math.h>
-#include <RC2D/RC2D_filesystem.h>
-#include <RC2D/RC2D_platform_defines.h>
-#include <RC2D/RC2D_memory.h>
-#include <RC2D/RC2D_config.h>
 #include <RC2D/RC2D_engine.h>
-#include <RC2D/RC2D_gpu.h>
-#include <RC2D/RC2D_storage.h>
 
 #if RC2D_STEAMWORKS_SDK_ENABLED
 #include <RC2D/RC2D_steamworks.h>
@@ -35,8 +25,21 @@
 #endif // RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
 
 #if RC2D_NET_MODULE_ENABLED
-#include <rcenet/enet.h>
+#include <rcenet/RCENET_enet.h>
 #endif // RC2D_NET_MODULE_ENABLED
+
+// Internal headers
+#include <RC2D/RC2D_internal.h>
+#include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_assert.h>
+#include <RC2D/RC2D_math.h>
+#include <RC2D/RC2D_filesystem.h>
+#include <RC2D/RC2D_platform_defines.h>
+#include <RC2D/RC2D_memory.h>
+#include <RC2D/RC2D_config.h>
+#include <RC2D/RC2D_engine.h>
+#include <RC2D/RC2D_gpu.h>
+#include <RC2D/RC2D_storage.h>
 
 RC2D_EngineState rc2d_engine_state = {0};
 

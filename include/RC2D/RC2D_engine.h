@@ -1,16 +1,16 @@
 #ifndef RC2D_ENGINE_H
 #define RC2D_ENGINE_H
 
+#include <SDL3/SDL_video.h>
+#include <SDL3/SDL_sensor.h>
+#include <SDL3/SDL_keyboard.h>
+
 #include <RC2D/RC2D_gpu.h>
 #include <RC2D/RC2D_window.h>
 #include <RC2D/RC2D_local.h>
 #include <RC2D/RC2D_touch.h>
 #include <RC2D/RC2D_camera.h>
 #include <RC2D/RC2D_mouse.h>
-
-#include <SDL3/SDL_video.h>
-#include <SDL3/SDL_sensor.h>
-#include <SDL3/SDL_keyboard.h>
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

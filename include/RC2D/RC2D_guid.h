@@ -1,9 +1,9 @@
 #ifndef RC2D_GUID_H
 #define RC2D_GUID_H
 
-#include <SDL3/SDL_guid.h> // Required for: SDL_GUID, SDL_GUIDToString, SDL_StringToGUID
-
 #include <stdbool.h>      // Required for: bool
+
+#include <SDL3/SDL_guid.h> // Required for: SDL_GUID, SDL_GUIDToString, SDL_StringToGUID
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

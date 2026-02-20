@@ -1,8 +1,9 @@
 #include <RC2D/RC2D_collision.h>
-#include <RC2D/RC2D_logger.h>
 
 #include <math.h> // Required for : sqrt, fabs
 #include <float.h> // Required for : FLT_MAX
+
+#include <RC2D/RC2D_logger.h>
 
 bool rc2d_collision_pointInUIImagePixelPerfect(const RC2D_UIImage* ui, float x, float y)
 {

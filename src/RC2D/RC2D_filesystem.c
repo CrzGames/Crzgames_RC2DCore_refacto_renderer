@@ -1,8 +1,9 @@
 #include <RC2D/RC2D_filesystem.h>
-#include <RC2D/RC2D_logger.h>
-#include <RC2D/RC2D_memory.h>
 
 #include <SDL3/SDL_filesystem.h>
+
+#include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_memory.h>
 
 static char* prefPath = NULL;
 static char* basePath = NULL;

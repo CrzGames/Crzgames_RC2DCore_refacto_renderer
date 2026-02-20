@@ -1,13 +1,13 @@
 #ifndef RC2D_WINDOW_H
 #define RC2D_WINDOW_H
 
-#include <RC2D/RC2D_pixels.h>
-#include <RC2D/RC2D_math.h>
+#include <stdbool.h> // Required for : bool
+#include <stdint.h> // Required for : uint32_t
 
 #include <SDL3/SDL_video.h>
 
-#include <stdbool.h> // Required for : bool
-#include <stdint.h> // Required for : uint32_t
+#include <RC2D/RC2D_pixels.h>
+#include <RC2D/RC2D_math.h>
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

@@ -1,11 +1,12 @@
 #ifndef RC2D_KEYBOARD_H
 #define RC2D_KEYBOARD_H
 
-#include <RC2D/RC2D_scancode.h>
-#include <RC2D/RC2D_keycode.h>
+#include <stdbool.h> // Required for : bool
+
 #include <SDL3/SDL_keyboard.h>
 
-#include <stdbool.h> // Required for : bool
+#include <RC2D/RC2D_scancode.h>
+#include <RC2D/RC2D_keycode.h>
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

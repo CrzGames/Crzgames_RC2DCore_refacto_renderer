@@ -1,9 +1,9 @@
 #ifndef RC2D_GPU_H
 #define RC2D_GPU_H
 
-#include <RC2D/RC2D_storage.h>
-
 #include <SDL3/SDL_gpu.h>
+
+#include <RC2D/RC2D_storage.h>
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

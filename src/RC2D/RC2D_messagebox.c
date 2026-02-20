@@ -1,8 +1,9 @@
 #include <RC2D/RC2D_messagebox.h>
-#include <RC2D/RC2D_logger.h>
-#include <RC2D/RC2D_memory.h>
 
 #include <SDL3/SDL_messagebox.h>
+
+#include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_memory.h>
 
 // Convertit RC2D_MessageBoxType en SDL_MessageBoxFlags
 static SDL_MessageBoxFlags rc2d_messagebox_convert_type(RC2D_MessageBoxType type) 

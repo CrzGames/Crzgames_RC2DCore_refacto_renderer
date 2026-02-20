@@ -1,14 +1,14 @@
 #include <RC2D/RC2D_math.h>
-#include <RC2D/RC2D_logger.h>
-#include <RC2D/RC2D_memory.h>
-
-#include <SDL3/SDL_stdinc.h> // Require for : SDL_memcpy
 
 #include <stdarg.h> // Require for : va_list, va_start, va_arg, va_end
 #include <limits.h> // Require for : UINT_MAX
 #include <stdlib.h> // Require for : RAND_MAX
-
 #include <math.h>
+
+#include <SDL3/SDL_stdinc.h> // Require for : SDL_memcpy
+
+#include <RC2D/RC2D_logger.h>
+#include <RC2D/RC2D_memory.h>
 
 /**
  * Calcule le produit vectoriel de trois points pour déterminer la convexité.

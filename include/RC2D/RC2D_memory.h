@@ -1,9 +1,9 @@
 #ifndef RC2D_MEMORY_H
 #define RC2D_MEMORY_H
 
-#include <RC2D/RC2D_config.h>
-
 #include <SDL3/SDL_stdinc.h>
+
+#include <RC2D/RC2D_config.h>
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

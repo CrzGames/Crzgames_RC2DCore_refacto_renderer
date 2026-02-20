@@ -1,12 +1,12 @@
 #ifndef RC2D_TEXTUREPACKER_H
 #define RC2D_TEXTUREPACKER_H
 
-#include <RC2D/RC2D_graphics.h>  /* RC2D_Image, rc2d_graphics_* */
-#include <RC2D/RC2D_storage.h>   /* RC2D_StorageKind */
+#include <stdbool.h>             /* bool */
 
 #include <SDL3/SDL_rect.h>       /* SDL_FRect, SDL_FPoint */
 
-#include <stdbool.h>             /* bool */
+#include <RC2D/RC2D_graphics.h>  /* RC2D_Image, rc2d_graphics_* */
+#include <RC2D/RC2D_storage.h>   /* RC2D_StorageKind */
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

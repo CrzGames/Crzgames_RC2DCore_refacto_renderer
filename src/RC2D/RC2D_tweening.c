@@ -1,10 +1,11 @@
 #include <RC2D/RC2D_tweening.h>
-#include <RC2D/RC2D_timer.h>
-#include <RC2D/RC2D_logger.h>
+
+#include <math.h>
 
 #include <SDL3/SDL_stdinc.h>
 
-#include <math.h>
+#include <RC2D/RC2D_timer.h>
+#include <RC2D/RC2D_logger.h>
 
 // Définir la valeur du nombre d'Euler si elle n'est pas déjà définie
 #ifndef M_E

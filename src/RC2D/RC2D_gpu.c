@@ -1,12 +1,13 @@
 #include <RC2D/RC2D_gpu.h>
-#include <RC2D/RC2D_assert.h>
-#include <RC2D/RC2D_internal.h>
-#include <RC2D/RC2D_platform_defines.h>
-#include <RC2D/RC2D_memory.h>
 
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_gpu.h>
+
+#include <RC2D/RC2D_assert.h>
+#include <RC2D/RC2D_internal.h>
+#include <RC2D/RC2D_platform_defines.h>
+#include <RC2D/RC2D_memory.h>
 
 #if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
 #include <SDL3_shadercross/SDL_shadercross.h>

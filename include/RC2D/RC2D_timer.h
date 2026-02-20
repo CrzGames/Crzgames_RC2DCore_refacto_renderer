@@ -1,9 +1,9 @@
 #ifndef RC2D_TIMER_H
 #define RC2D_TIMER_H
 
-#include <SDL3/SDL_timer.h> // Required for : SDL_TimerID, SDL_TimerCallback, Uint32
-
 #include <stdbool.h> // Required for : bool
+
+#include <SDL3/SDL_timer.h> // Required for : SDL_TimerID, SDL_TimerCallback, Uint32
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus

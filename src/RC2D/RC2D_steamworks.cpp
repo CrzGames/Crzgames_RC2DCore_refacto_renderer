@@ -1,9 +1,10 @@
 #if RC2D_STEAMWORKS_SDK_ENABLED
 
 #include <RC2D/RC2D_steamworks.h>
-#include <RC2D/RC2D_logger.h>
 
 #include <steam_api.h>
+
+#include <RC2D/RC2D_logger.h>
 
 extern "C" {
 

@@ -1,11 +1,11 @@
 #ifndef RC2D_AUDIO_H
 #define RC2D_AUDIO_H
 
-#include <RC2D/RC2D_storage.h>
-
 #include <stdbool.h>
 
 #include <SDL3_mixer/SDL_mixer.h>
+
+#include <RC2D/RC2D_storage.h>
 
 #ifdef __cplusplus
 extern "C" {

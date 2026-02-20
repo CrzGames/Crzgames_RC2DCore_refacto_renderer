@@ -1,8 +1,9 @@
 #ifndef RC2D_FILEDIALOG_H
 #define RC2D_FILEDIALOG_H
 
-#include <SDL3/SDL_dialog.h> // Requis pour : SDL_Window, SDL_DialogFileFilter
 #include <stdbool.h>         // Requis pour : bool
+
+#include <SDL3/SDL_dialog.h> // Requis pour : SDL_Window, SDL_DialogFileFilter
 
 /* Configuration pour les définitions de fonctions C, même en C++ */
 #ifdef __cplusplus
