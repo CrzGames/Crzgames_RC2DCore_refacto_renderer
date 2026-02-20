@@ -265,6 +265,7 @@ set(SDLIMAGE_XPM  OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XV   OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_ANI  OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_JXL  OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_BACKEND_STB OFF CACHE BOOL "" FORCE)
 
 # ============================================================
 # SDL3 — Input / Controllers configuration
