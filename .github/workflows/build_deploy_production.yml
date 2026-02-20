@@ -107,6 +107,66 @@ jobs:
         run: cmake -P cmake/setup_dependencies.cmake
 
       # TODO: Build RC2D via les scripts dans build-scripts/ pour chaque plateforme et architecture
+      - name: Build RC2D (scripts) - Linux
+        if: matrix.config.platform == 'linux'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ "${{ matrix.config.arch }}" = "x64" ]; then
+            chmod +x ./build-scripts/generate-project/linux-x64.sh
+            ./build-scripts/generate-project/linux-x64.sh
+          else
+            chmod +x ./build-scripts/generate-project/linux-arm64.sh
+            ./build-scripts/generate-project/linux-arm64.sh
+          fi
+
+      - name: Build RC2D (scripts) - Windows
+        if: matrix.config.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ("${{ matrix.config.arch }}" -eq "x64") {
+            .\build-scripts\generate-project\windows-x64.bat
+          } else {
+            .\build-scripts\generate-project\windows-arm64.bat
+          }
+
+      - name: Build RC2D (scripts) - macOS
+        if: matrix.config.platform == 'macos'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x ./build-scripts/generate-project/macos-arm64.sh
+          ./build-scripts/generate-project/macos-arm64.sh
+
+      - name: Build RC2D (scripts) - iOS
+        if: matrix.config.platform == 'ios'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64.sh
+          ./build-scripts/generate-project/ios-iphoneos-arm64.sh
+
+      - name: Build RC2D (scripts) - Android
+        if: matrix.config.platform == 'android'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x ./build-scripts/generate-project/android-unix.sh
+          ./build-scripts/generate-project/android-unix.sh
+
+      - name: Build RC2D (docker-compose) - SteamRT4
+        if: matrix.config.platform == 'steamrt4'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ "${{ matrix.config.arch }}" = "x64" ] && [ -f "./build-scripts/generate-project/steamrt4-x64.sh" ]; then
+            chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
+            ./build-scripts/generate-project/steamrt4-x64.sh
+          else
+            chmod +x ./build-scripts/generate-project/steamrt4-arm64.sh
+            ./build-scripts/generate-project/steamrt4-arm64.sh
+          fi
 
       # TODO: Upload les fichiers binaires générés ("librc2d_static" de tout les dossier de chaque plateforme/arch) en tant qu'artifacts pour chaque plateforme et architecture
 
