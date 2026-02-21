@@ -1901,6 +1901,12 @@ if(RC2D_BUILD_EXAMPLES)
       COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/Info.plist"
       COMMENT "Adding keys to Info.plist"
     )
+
+    # Rendre executable l'executable dans le bundle .app généré (nécessaire pour l'exécuter sur macOS)
+    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
+      COMMAND chmod +x "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/MacOS/${RC2D_EXAMPLE_TARGET_NAME}"
+      COMMENT "Setting executable permissions for the .app bundle"
+    )
   elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
     # Ressource : Storyboard de lancement et Asset Catalog pour les icônes (obligatoire sur iOS)
     set(IOS_ASSETCATALOG "${CMAKE_CURRENT_SOURCE_DIR}/icons/ios/Assets.xcassets")
@@ -2128,9 +2134,9 @@ if(RC2D_BUILD_EXAMPLES)
   endif()
 
   # ============================================================
-  # Linux / SteamRT4 / Apple (macOS/iOS) — Rendre l'exécutable exécutable via chmod
+  # Linux / SteamRT4 — Rendre l'exécutable exécutable via chmod
   # ============================================================ 
-  if((UNIX OR APPLE) AND NOT ANDROID)
+  if(UNIX AND NOT APPLE AND NOT ANDROID) # Linux et SteamRT4
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
       COMMAND chmod +x "$<TARGET_FILE:${RC2D_EXAMPLE_TARGET_NAME}>"
       COMMENT "Rendre ${RC2D_EXAMPLE_TARGET_NAME} exécutable"
