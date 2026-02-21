@@ -184,21 +184,14 @@ jobs:
           echo "✅ Inspecting $APK"
           unzip -l "$APK"
 
-      - name: Upload Artifact - All platforms except Windows (x64/arm64)
+      - name: Upload Artifact - All platforms
         uses: actions/upload-artifact@v6
-        if: matrix.config.platform != 'windows'
         with:
           name: librc2d-${{ matrix.config.platform }}-${{ matrix.config.arch }}
           path: |
+            # For Unix platforms and Android
             build/**/librc2d_static.*
-          if-no-files-found: error
-
-      - name: Upload Artifact - Windows (x64/arm64)
-        uses: actions/upload-artifact@v6
-        if: matrix.config.platform == 'windows'
-        with:
-          name: librc2d-${{ matrix.config.platform }}-${{ matrix.config.arch }}
-          path: |
+            # For Windows
             build/**/rc2d_static.*
           if-no-files-found: error
 
@@ -216,46 +209,67 @@ jobs:
           path: artifacts
 
       - name: Organize Artifacts
+        shell: bash
         run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+
+          echo "=== Artifacts tree (top) ==="
+          find artifacts -maxdepth 4 -type f | sort || true
+
           mkdir -p android/armeabi-v7a android/arm64-v8a
           mkdir -p windows/x64 windows/arm64
           mkdir -p macos/arm64
           mkdir -p ios/arm64
           mkdir -p linux/x64 linux/arm64
           mkdir -p steamrt4/x64 steamrt4/arm64
-          
-          # Android
-          mv artifacts/librc2d-android-*/build/android/armeabi-v7a/librc2d_static.a android/armeabi-v7a/ || true
-          mv artifacts/librc2d-android-*/build/android/arm64-v8a/librc2d_static.a android/arm64-v8a/ || true
+          mkdir -p package/include
+
+          # Helper: pick first match or fail
+          pick() {
+            local pattern="$1"
+            local out="$2"
+            local f
+            f="$(find artifacts -type f -path "$pattern" | head -n 1 || true)"
+            if [[ -z "${f}" ]]; then
+              echo "❌ Not found: $pattern"
+              return 1
+            fi
+            echo "✅ Found: $f -> $out"
+            cp -f "$f" "$out"
+          }
+
+          # Android (adapte les patterns si ton build génère un sous-dossier différent)
+          pick "*/android/*/armeabi-v7a/*librc2d_static.a" "android/armeabi-v7a/librc2d_static.a"
+          pick "*/android/*/arm64-v8a/*librc2d_static.a"   "android/arm64-v8a/librc2d_static.a"
           zip -r librc2d-android.zip android/
-          
-          # Windows
-          mv artifacts/librc2d-windows-x64/build/windows/x64/librc2d_static.lib windows/x64/ || true
-          mv artifacts/librc2d-windows-arm64/build/windows/arm64/librc2d_static.lib windows/arm64/ || true
+
+          # Windows (on accepte les 2 noms possibles)
+          pick "*/windows/*/x64/*librc2d_static.lib"   "windows/x64/librc2d_static.lib"   || pick "*/windows/*/x64/*rc2d_static.lib"   "windows/x64/librc2d_static.lib"
+          pick "*/windows/*/arm64/*librc2d_static.lib" "windows/arm64/librc2d_static.lib" || pick "*/windows/*/arm64/*rc2d_static.lib" "windows/arm64/librc2d_static.lib"
           zip -r librc2d-windows.zip windows/
-          
+
           # macOS
-          mv artifacts/librc2d-macos-arm64/build/macos/arm64/librc2d_static.a macos/arm64/ || true
+          pick "*/macos/*/arm64/*librc2d_static.a" "macos/arm64/librc2d_static.a"
           tar -czvf librc2d-macos.tar.gz macos/
-          
+
           # iOS
-          mv artifacts/librc2d-ios-arm64/build/ios/arm64/librc2d_static.a ios/arm64/ || true
+          pick "*/ios/*/arm64/*librc2d_static.a" "ios/arm64/librc2d_static.a"
           tar -czvf librc2d-ios.tar.gz ios/
-          
+
           # Linux
-          mv artifacts/librc2d-linux-x64/build/linux/x64/librc2d_static.a linux/x64/ || true
-          mv artifacts/librc2d-linux-arm64/build/linux/arm64/librc2d_static.a linux/arm64/ || true
+          pick "*/linux/*/x64/*librc2d_static.a"   "linux/x64/librc2d_static.a"
+          pick "*/linux/*/arm64/*librc2d_static.a" "linux/arm64/librc2d_static.a"
           tar -czvf librc2d-linux.tar.gz linux/
-          
+
           # SteamRT4
-          mv artifacts/librc2d-steamrt4-x64/build/steamrt4/x64/librc2d_static.a steamrt4/x64/ || true
-          mv artifacts/librc2d-steamrt4-arm64/build/steamrt4/arm64/librc2d_static.a steamrt4/arm64/ || true
+          pick "*/steamrt4/*/x64/*librc2d_static.a"   "steamrt4/x64/librc2d_static.a"
+          pick "*/steamrt4/*/arm64/*librc2d_static.a" "steamrt4/arm64/librc2d_static.a"
           zip -r librc2d-steamrt4.zip steamrt4/
-          
-          # Include headers (common to all)
-          mkdir -p include
-          cp -r include/RC2D include/
-          tar -czvf include.tar.gz include/
+
+          # Headers (FIX: ne copie pas dans include/)
+          cp -r include/RC2D package/include/
+          tar -czvf include.tar.gz package/include
 
       - name: Deploy libraries assets - Release Github
         uses: softprops/action-gh-release@v2
