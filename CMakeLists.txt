@@ -482,10 +482,14 @@ function(rc2d_configure_ffmpeg target_name)
     elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, SteamRT4, Raspberry PI 5 etc.
       if (RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
         # Link le dossier include de FFmpeg à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_ffmpeg/ffmpeg")
+        # ==================================
+        # TODO:
+        # Dès qu'ont auras la librairie pour SteamRT4, il faudra juste changer 
+        # ce path pour "${CRZGAMES_LIBRARIES}/steamrt4/include/include_ffmpeg/ffmpeg"
+        # ==================================
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_ffmpeg/ffmpeg")
 
         # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
-
         # ==================================
         # TODO:
         # Dès qu'ont auras la librairie pour SteamRT4, il faudra juste changer 
