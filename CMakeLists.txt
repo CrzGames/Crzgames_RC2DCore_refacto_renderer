@@ -166,10 +166,10 @@ endif()
 # On vérifie que patchelf est installé pour pouvoir patcher les .so après la compilation,
 # afin que les .so soient trouvées à l'exécution (RPATH = $ORIGIN).
 # ============================================================
-if(UNIX AND NOT APPLE)
+if(CMAKE_HOST_UNIX AND NOT CMAKE_HOST_APPLE)
   find_program(PATCHELF_EXECUTABLE NAMES patchelf)
   if(NOT PATCHELF_EXECUTABLE)
-    message(FATAL_ERROR "patchelf non trouvé dans le PATH")
+    message(FATAL_ERROR "patchelf non trouvé dans le PATH (host Linux requis)")
   endif()
 endif()
 
