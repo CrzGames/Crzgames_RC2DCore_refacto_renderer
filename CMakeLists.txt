@@ -1809,6 +1809,18 @@ if(RC2D_BUILD_EXAMPLES)
       MACOSX_PACKAGE_LOCATION "Resources"
     )
 
+    # Ajouter le dossier shaders/compiled + shaders/reflection dans les ressources du bundle pour qu'ils soient accessibles à l'exécution
+    target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
+      "${PROJECT_SOURCE_DIR}/shaders/compiled"
+      "${PROJECT_SOURCE_DIR}/shaders/reflection"
+    )
+    set_source_files_properties(
+      "${PROJECT_SOURCE_DIR}/shaders/compiled"
+      "${PROJECT_SOURCE_DIR}/shaders/reflection"
+      PROPERTIES        
+      MACOSX_PACKAGE_LOCATION "Resources"
+    )
+
     # Configurez le bundle (.app)
     set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
       MACOSX_BUNDLE TRUE
@@ -1915,6 +1927,18 @@ if(RC2D_BUILD_EXAMPLES)
       "${PROJECT_SOURCE_DIR}/examples/assets"
     )
     set_source_files_properties("${PROJECT_SOURCE_DIR}/examples/assets" PROPERTIES
+      MACOSX_PACKAGE_LOCATION "Resources"
+    )
+
+    # Ajouter le dossier shaders/compiled + shaders/reflection dans les ressources du bundle pour qu'ils soient accessibles à l'exécution
+    target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
+      "${PROJECT_SOURCE_DIR}/shaders/compiled"
+      "${PROJECT_SOURCE_DIR}/shaders/reflection"
+    )
+    set_source_files_properties(
+      "${PROJECT_SOURCE_DIR}/shaders/compiled"
+      "${PROJECT_SOURCE_DIR}/shaders/reflection"
+      PROPERTIES        
       MACOSX_PACKAGE_LOCATION "Resources"
     )
 
