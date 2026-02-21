@@ -1987,33 +1987,35 @@ if(RC2D_BUILD_EXAMPLES)
     endif()
 
     # Ajoute une étape de post-build pour ajouter des clés au fichier Info.plist
+    set(IOS_INFO_PLIST "$<TARGET_BUNDLE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist")
+
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
       # Active le support des périphériques d'entrée indirects (souris, trackpad, clavier, manettes)
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UIApplicationSupportsIndirectInputEvents bool true" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UIApplicationSupportsIndirectInputEvents bool true" "${IOS_INFO_PLIST}"
       COMMENT "Adding keys mouse, trackpad, keyboard, game controllers support to Info.plist"
 
       # Description obligatoire pour l'utilisation du Bluetooth (CoreBluetooth)
-      COMMAND /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 'MyApp souhaite rester connecté aux contrôleurs de jeu et aux manettes de jeu Bluetooth à proximité, même lorsque vous n'utilisez pas l'application.'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 'MyApp souhaite rester connecté aux contrôleurs de jeu et aux manettes de jeu Bluetooth à proximité, même lorsque vous n'utilisez pas l'application.'" "${IOS_INFO_PLIST}"
       COMMENT "Adding keys for Bluetooth usage description to Info.plist"
 
       # Ajoute les clés pour autoriser le High DPI
-      COMMAND /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "${IOS_INFO_PLIST}"
       COMMENT "Adding key High DPI to Info.plist"
 
       # Ajoute les clés pour autoriser les orientations supportées
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string 'UIInterfaceOrientationPortrait'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:1 string 'UIInterfaceOrientationPortraitUpsideDown'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:2 string 'UIInterfaceOrientationLandscapeLeft'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:3 string 'UIInterfaceOrientationLandscapeRight'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" "${IOS_INFO_PLIST}"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string 'UIInterfaceOrientationPortrait'" "${IOS_INFO_PLIST}"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:1 string 'UIInterfaceOrientationPortraitUpsideDown'" "${IOS_INFO_PLIST}"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:2 string 'UIInterfaceOrientationLandscapeLeft'" "${IOS_INFO_PLIST}"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:3 string 'UIInterfaceOrientationLandscapeRight'" "${IOS_INFO_PLIST}"
       COMMENT "Adding supported interface orientations to Info.plist"
 
       # Ajoute la clé ITSAppUsesNonExemptEncryption pour le chiffrement
-      COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "${IOS_INFO_PLIST}"
       COMMENT "Adding ITSAppUsesNonExemptEncryption key to Info.plist"
 
       # Ajoute la clé UILaunchStoryboardName pour le storyboard de lancement
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UILaunchStoryboardName string 'LaunchScreen'" "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UILaunchStoryboardName string 'LaunchScreen'" "${IOS_INFO_PLIST}"
       COMMENT "Adding launch storyboard name to Info.plist"
     )
   elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4"))
