@@ -1811,12 +1811,12 @@ if(RC2D_BUILD_EXAMPLES)
 
     # Ajouter le dossier shaders/compiled + shaders/reflection dans les ressources du bundle pour qu'ils soient accessibles à l'exécution
     target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
-      "${PROJECT_SOURCE_DIR}/shaders/compiled"
-      "${PROJECT_SOURCE_DIR}/shaders/reflection"
+      "${PROJECT_SOURCE_DIR}/examples/shaders/compiled"
+      "${PROJECT_SOURCE_DIR}/examples/shaders/reflection"
     )
     set_source_files_properties(
-      "${PROJECT_SOURCE_DIR}/shaders/compiled"
-      "${PROJECT_SOURCE_DIR}/shaders/reflection"
+      "${PROJECT_SOURCE_DIR}/examples/shaders/compiled"
+      "${PROJECT_SOURCE_DIR}/examples/shaders/reflection"
       PROPERTIES        
       MACOSX_PACKAGE_LOCATION "Resources"
     )
@@ -1902,6 +1902,21 @@ if(RC2D_BUILD_EXAMPLES)
       COMMENT "Adding keys to Info.plist"
     )
 
+    # Créer le dossier Contents/Frameworks dans le bundle .app pour y copier les .dylib embarquées (SDL3, SDL3_image, SDL3_ttf, SDL3_mixer, onnxruntime, SDL3_shadercross, etc.)
+    set(FRAMEWORKS_DIR "$<TARGET_BUNDLE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Contents/Frameworks")
+    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${FRAMEWORKS_DIR}"
+      COMMENT "Create Contents/Frameworks in app bundle"
+    )
+
+    # Copier les .dylib générées dans le dossier Contents/Frameworks du bundle .app
+    set(DYLIB_SOURCE_DIR "${CMAKE_BINARY_DIR}/$<CONFIG>")
+    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
+      COMMAND /bin/sh -c "cp -a \"${DYLIB_SOURCE_DIR}\"/*.dylib \"${FRAMEWORKS_DIR}\"/ 2>/dev/null || true"
+      COMMENT "Copy dylibs into Contents/Frameworks (cp -a keeps symlinks)"
+      VERBATIM
+    )
+
     # Rendre executable l'executable dans le bundle .app généré (nécessaire pour l'exécuter sur macOS)
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
       COMMAND chmod +x "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/MacOS/${RC2D_EXAMPLE_TARGET_NAME}"
@@ -1938,12 +1953,12 @@ if(RC2D_BUILD_EXAMPLES)
 
     # Ajouter le dossier shaders/compiled + shaders/reflection dans les ressources du bundle pour qu'ils soient accessibles à l'exécution
     target_sources(${RC2D_EXAMPLE_TARGET_NAME} PRIVATE
-      "${PROJECT_SOURCE_DIR}/shaders/compiled"
-      "${PROJECT_SOURCE_DIR}/shaders/reflection"
+      "${PROJECT_SOURCE_DIR}/examples/shaders/compiled"
+      "${PROJECT_SOURCE_DIR}/examples/shaders/reflection"
     )
     set_source_files_properties(
-      "${PROJECT_SOURCE_DIR}/shaders/compiled"
-      "${PROJECT_SOURCE_DIR}/shaders/reflection"
+      "${PROJECT_SOURCE_DIR}/examples/shaders/compiled"
+      "${PROJECT_SOURCE_DIR}/examples/shaders/reflection"
       PROPERTIES        
       MACOSX_PACKAGE_LOCATION "Resources"
     )
