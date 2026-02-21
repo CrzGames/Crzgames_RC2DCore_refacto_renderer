@@ -122,7 +122,7 @@ bool rc2d_onnx_init(void)
     }
 
     // Liste les Execution Providers disponibles et les log
-    const char** available_providers = NULL;
+    char** available_providers = NULL;
     int num_providers = 0;
     status = ort->GetAvailableProviders(&available_providers, &num_providers);
     if (status == NULL) 
@@ -700,8 +700,16 @@ bool rc2d_onnx_run(RC2D_OnnxModel* model, RC2D_OnnxTensor* inputs, RC2D_OnnxTens
      * Pour un batch dynamique, traite N inférences simultanément
      * (par exemple, [150, 3] pour 150 PNJ avec [x, y, santé]).
      */
-    OrtStatus* status = ort->Run(model->session, NULL, input_names, input_values, input_count,
-                                 output_names, output_count, output_values);
+    OrtStatus* status = ort->Run(
+        model->session,
+        NULL,
+        input_names,
+        (const OrtValue* const*)input_values,
+        input_count,
+        output_names,
+        output_count,
+        output_values
+    );
 
     /**
      * Vérifie si une erreur est survenue pendant l’inférence
@@ -730,7 +738,6 @@ bool rc2d_onnx_run(RC2D_OnnxModel* model, RC2D_OnnxTensor* inputs, RC2D_OnnxTens
     else
     {
         RC2D_log(RC2D_LOG_INFO, "ONNX inference succeeded");
-        ort->ReleaseStatus(status);
     }
 
     /**
