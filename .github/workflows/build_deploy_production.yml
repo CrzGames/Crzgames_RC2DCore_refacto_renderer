@@ -168,6 +168,22 @@ jobs:
             ./build-scripts/generate-project/steamrt4-arm64.sh
           fi
 
+      - name: Inspect APK (Release) - Android
+        if: matrix.config.platform == 'android'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APK="android-project/app/build/outputs/apk/release/app-release.apk"
+
+          if [ ! -f "$APK" ]; then
+            echo "❌ app-release.apk not found"
+            exit 1
+          fi
+
+          echo "✅ Inspecting $APK"
+          unzip -l "$APK"
+
       - name: Upload Artifact - All platforms except Windows (x64/arm64)
         uses: actions/upload-artifact@v6
         if: matrix.config.platform != 'windows'

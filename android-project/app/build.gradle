@@ -103,8 +103,7 @@ android {
             */
             assets {
                 srcDir '../../examples/assets'
-                srcDir '../../examples/shaders/compiled'
-                srcDir '../../examples/shaders/reflection'
+                srcDir "$buildDir/generated/rc2d-shaders"
             }
         }
     }
@@ -116,4 +115,19 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+}
+
+tasks.register("stageRc2dShaders", Sync) {
+    from("../../examples/shaders/compiled") {
+        into "shaders/compiled"
+    }
+    from("../../examples/shaders/reflection") {
+        into "shaders/reflection"
+    }
+
+    into("$buildDir/generated/rc2d-shaders")
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("stageRc2dShaders")
 }
