@@ -80,7 +80,7 @@ jobs:
           echo "SDK Version: $SDKVERSION"
         shell: bash
 
-      - name: Install dev dependencies (for SDL3) - Linux (x64/arm64)
+      - name: Install dev dependencies (for SDL3) - Linux (x64/arm64) / SteamRT4 (x64/arm64)
         if: matrix.config.platform == 'linux' || matrix.config.platform == 'steamrt4'
         run: |
           sudo apt-get update
