@@ -754,7 +754,7 @@ function(rc2d_configure_onnxruntime target_name)
         COMMENT "Copie des bibliothèques ONNX Runtime avec conservation des liens symboliques"
         VERBATIM
       )
-    elseif (UNIX AND NOT APPLE AND NOT ANDROID AND NOT RC2D_PLATFORM STREQUAL "STEAMRT4") # Linux, Raspberry PI 5 etc.
+    elseif (UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4")) # Linux, Raspberry PI 5 etc.
         # Link le dossier include de ONNX Runtime à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_onnxruntime/onnxruntime")
 
