@@ -370,12 +370,12 @@ chmod +x ./build-scripts/generate-project/linux-arm64.sh
 # Executable .AppImage : SDL_AUDIODRIVER=dummy ./rc2d_example.AppImage
 
 
-# macOS (Apple Silicon arm64) - No Signed Bundle .app
+# macOS (Apple Silicon arm64) - No Signed Bundle .app for Project Example
 chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
 ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
 
 
-# macOS (Apple Silicon arm64) - Signed Bundle .app
+# macOS (Apple Silicon arm64) - Signed Bundle .app for Project Example
 chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-signedbundleapp.sh
 ./build-scripts/generate-project/ios-iphoneos-arm64-signedbundleapp.sh
 # Informations : Rentrer les bonne informations dans le CMakelists ou il y a "RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING"
