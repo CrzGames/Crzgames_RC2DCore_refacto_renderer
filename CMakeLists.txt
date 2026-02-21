@@ -1916,13 +1916,6 @@ if(RC2D_BUILD_EXAMPLES)
     endif()
 
     # ------------------------------------------------------------
-    # Build type (single-config) : Debug / Release
-    # ------------------------------------------------------------
-    if(NOT CMAKE_BUILD_TYPE)
-      message(FATAL_ERROR "CMAKE_BUILD_TYPE est requis (Debug/Release) avec Unix Makefiles.")
-    endif()
-
-    # ------------------------------------------------------------
     # APPDIR : isolé par arch + build_type (évite collisions)
     # On le met dans le build tree, pas dans le source tree.
     # Exemple :

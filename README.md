@@ -273,7 +273,7 @@
 
 
 
-  # Android (only Linux) :
+  # Android (only Linux x64) :
   1. Download and Install : Android Studio 2025.3.1 or newer
   2. Add environment variable: ANDROID_HOME for path SDK Android (SDK Manager path), sous Windows en général : C:\Users\Corentin\AppData\Local\Android\Sdk
   3. Ouvrir Android Studio et installer certains composants du SDK : Android v16.0, Android SDK v36.1.0, NDK v29.0.14206865, Android SDK Command Line v20, CMake v3.30.3.
