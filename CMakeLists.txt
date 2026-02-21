@@ -1003,15 +1003,7 @@ function(rc2d_configure_shadercross target_name)
         VERBATIM
       )
     endif()
-  elseif(UNIX AND NOT APPLE) # Linux, Android, Raspberry PI 5 etc.
-    if(ANDROID)
-      # Set RC2D_ARCH à x64, puisque de manière générale, on compile un projet Android sur 
-      # une machine de développement x64, et que les outils de shadercross sont compilés pour la plateforme de développement (et pas pour Android).
-      # Mais on'en n'a besoin que pour la partie copie de shadercross dans "examples/shaders/tools", 
-      # qui permet la compilation offline des shaders, et pas pour le lien de shadercross à la target.
-      set(RC2D_ARCH "x64")
-    endif()
-    
+  elseif(UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.    
     # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
     set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/linux/bin/SDL3_shadercross/${RC2D_ARCH}")
 
@@ -1061,7 +1053,7 @@ function(rc2d_configure_shadercross target_name)
       VERBATIM
     )
 
-    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND NOT ANDROID)
+    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
         "${CRZGAMES_LIBRARIES}/linux/include/include_sdl3shadercross"
@@ -1079,6 +1071,91 @@ function(rc2d_configure_shadercross target_name)
       add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND cp -a ${SHADERCROSS_SO} "$<TARGET_FILE_DIR:${target_name}>/"
         COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
+        VERBATIM
+      )
+    endif()
+  elseif(ANDROID)
+    # Déduire l'arch hôte en "x64"/"arm64"
+    set(_host_proc "${CMAKE_HOST_SYSTEM_PROCESSOR}")
+    string(TOLOWER "${_host_proc}" _host_proc_l)
+
+    set(HOST_ARCH "x64")
+    if(_host_proc_l MATCHES "arm64|aarch64")
+      set(HOST_ARCH "arm64")
+    elseif(_host_proc_l MATCHES "x86_64|amd64")
+      set(HOST_ARCH "x64")
+    endif()
+
+    set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
+
+    add_custom_command(TARGET ${target_name} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_TOOLS_DIR}"
+    )
+
+    # --- Choix des chemins selon l'OS HÔTE ---
+    if(CMAKE_HOST_WIN32) # host Windows
+      set(SHADERCROSS_BIN_DIR "${CRZGAMES_LIBRARIES}/windows/bin/SDL3_shadercross/${HOST_ARCH}")
+      file(GLOB _files
+        "${SHADERCROSS_BIN_DIR}/*.exe"
+        "${SHADERCROSS_BIN_DIR}/*.dll"
+      )
+      foreach(f IN LISTS _files)
+        get_filename_component(n "${f}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${f}" "${SHADER_TOOLS_DIR}/${n}"
+        )
+      endforeach()
+
+    elseif(CMAKE_HOST_APPLE) # host macOS
+      set(SHADERCROSS_BIN_DIR "${CRZGAMES_LIBRARIES}/macos/bin/SDL3_shadercross")
+      file(GLOB _bins "${SHADERCROSS_BIN_DIR}/*")
+      foreach(f IN LISTS _bins)
+        get_filename_component(n "${f}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${f}" "${SHADER_TOOLS_DIR}/${n}"
+        )
+      endforeach()
+
+      file(GLOB _dylibs "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross/*.dylib")
+      foreach(f IN LISTS _dylibs)
+        get_filename_component(n "${f}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${f}" "${SHADER_TOOLS_DIR}/${n}"
+        )
+      endforeach()
+
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND chmod +x "${SHADER_TOOLS_DIR}/shadercross"
+      )
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND install_name_tool -add_rpath @loader_path "${SHADER_TOOLS_DIR}/shadercross"
+      )
+
+    elseif(CMAKE_HOST_UNIX) # host Linux
+      set(SHADERCROSS_BIN_DIR "${CRZGAMES_LIBRARIES}/linux/bin/SDL3_shadercross/${HOST_ARCH}")
+
+      file(GLOB _bins "${SHADERCROSS_BIN_DIR}/*")
+      foreach(f IN LISTS _bins)
+        get_filename_component(n "${f}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${f}" "${SHADER_TOOLS_DIR}/${n}"
+        )
+      endforeach()
+
+      file(GLOB _sos
+        "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${HOST_ARCH}/*.so"
+        "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${HOST_ARCH}/*.so.*"
+      )
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND cp -a ${_sos} "${SHADER_TOOLS_DIR}/"
+        VERBATIM
+      )
+
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND chmod +x "${SHADER_TOOLS_DIR}/shadercross"
+      )
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND ${PATCHELF_EXECUTABLE} --set-rpath "\$ORIGIN" "${SHADER_TOOLS_DIR}/shadercross"
         VERBATIM
       )
     endif()

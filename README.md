@@ -212,13 +212,13 @@
 2. (Optional) Download and Install Node.js >= 18.0.0 (pour lancer la documentation, pour Vitepress).
 3. Steps by Platform :
   ```bash  
-  # Windows :
-  1. Requirements : Windows >= 10 (x64 or arm64)
+  # Windows (x64/arm64) :
+  1. Requirements : Windows >= 10
   2. Download and Install Visual Studio == 2022 (MSVC >= v143 + Windows SDK >= 10) : https://visualstudio.microsoft.com/fr/downloads/
   3. Download and Install CMake >= 3.28.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
 
 
-  # Linux :
+  # Linux (x64/arm64) :
   1. Requirements : glibc >= 2.35.0 (Exemple : Ubuntu >= 22.04 OR Debian >= 12.0), checker via : ldd --version
   2. Download and Install (gcc, g++, make..) :
      sudo apt update
@@ -264,7 +264,7 @@
 
 
 
-  # macOS :
+  # macOS (Apple Silicon arm64) :
   1. Requirements : MacOS X >= 15.0.0
   2. Download and Install xCode >= 16.4.0
   3. Download and Install Command Line Tools : xcode-select --install
@@ -273,14 +273,14 @@
 
 
 
-  # Android (only Linux x64) :
+  # Android (Unix/Windows) :
   1. Download and Install : Android Studio 2025.3.1 or newer
   2. Add environment variable: ANDROID_HOME for path SDK Android (SDK Manager path), sous Windows en général : C:\Users\Corentin\AppData\Local\Android\Sdk
   3. Ouvrir Android Studio et installer certains composants du SDK : Android v16.0, Android SDK v36.1.0, NDK v29.0.14206865, Android SDK Command Line v20, CMake v3.30.3.
   4. Download and Install CMake >= 3.28.0 and add PATH ENVIRONMENT.
   5. Download and Install Java JDK 17 LTS (Temurin) : https://adoptium.net/fr/temurin/releases?version=17&os=any&arch=any  (Pendant l installation du SDK Java de Temurin cocher la case pour ajouté automatiquement la variable d environnement JAVA_HOME)
   6. Si vous avez oublié de coché la case pour ajouter automatiquement la variable d environnement "JAVA_HOME", sous Windows en général : C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot
-  7. Download and Install Patchelf : sudo apt install -y patchelf
+  7. Download and Install Patchelf (Pour Linux seulement) : sudo apt install -y patchelf
 
 
 
@@ -406,9 +406,13 @@ chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
 ./build-scripts/generate-project/steamrt4-x64.sh
 
 
-# Android (run in Linux x64)
-chmod +x ./build-scripts/generate-project/android-linux.sh
-./build-scripts/generate-project/android-linux.sh
+# Android - Unix (Linux x64/arm64 or macOS Apple Silicon arm64)
+chmod +x ./build-scripts/generate-project/android-unix.sh
+./build-scripts/generate-project/android-unix.sh
+
+
+# Android - Windows (x64/arm64)
+.\build-scripts\generate-project\android-windows.bat
 
 
 # iOS (run in macOS) - No Signed Bundle .app for Project Example
