@@ -260,7 +260,6 @@
     libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
     libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev libthai-dev \
     ibpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
-  6. Download and Install Patchelf : sudo apt install -y patchelf
 
 
 
