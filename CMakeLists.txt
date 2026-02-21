@@ -1999,7 +1999,7 @@ if(RC2D_BUILD_EXAMPLES)
       VERBATIM
     )
 
-    # Copier compiled/ si présent
+    # Copier shaders/compiled/ si présent
     if(EXISTS "${PROJECT_SOURCE_DIR}/examples/shaders/compiled")
       add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders/compiled"
@@ -2011,7 +2011,7 @@ if(RC2D_BUILD_EXAMPLES)
       )
     endif()
 
-    # Copier reflection/ si présent
+    # Copier shaders/reflection/ si présent
     if(EXISTS "${PROJECT_SOURCE_DIR}/examples/shaders/reflection")
       add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/shaders/reflection"
