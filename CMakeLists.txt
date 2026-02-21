@@ -1887,18 +1887,20 @@ if(RC2D_BUILD_EXAMPLES)
     )
 
     # Ajoute une étape de post-build pour copier les fichiers nécessaires dans le bundle .app et modifier le fichier Info.plist
+    set(MACOS_INFO_PLIST "$<TARGET_BUNDLE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Contents/Info.plist")
+
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD      
       # Active le support des périphériques d'entrée indirects (souris, trackpad, clavier, manettes)
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UIApplicationSupportsIndirectInputEvents bool true" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UIApplicationSupportsIndirectInputEvents bool true" "${MACOS_INFO_PLIST}"
       
       # Description obligatoire pour l'utilisation du Bluetooth (CoreBluetooth)
-      COMMAND /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 'MyApp souhaite rester connecté aux contrôleurs de jeu et aux manettes de jeu Bluetooth à proximité, même lorsque vous n'utilisez pas l'application.'" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 'MyApp souhaite rester connecté aux contrôleurs de jeu et aux manettes de jeu Bluetooth à proximité, même lorsque vous n'utilisez pas l'application.'" "${MACOS_INFO_PLIST}"
       
       # Ajoute les clés pour autoriser le High DPI
-      COMMAND /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "${MACOS_INFO_PLIST}"
 
       # Ajoute la clé ITSAppUsesNonExemptEncryption pour le chiffrement
-      COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/Info.plist"
+      COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "${MACOS_INFO_PLIST}"
       COMMENT "Adding keys to Info.plist"
     )
 
@@ -1915,12 +1917,6 @@ if(RC2D_BUILD_EXAMPLES)
       COMMAND /bin/sh -c "cp -a \"${DYLIB_SOURCE_DIR}\"/*.dylib \"${FRAMEWORKS_DIR}\"/ 2>/dev/null || true"
       COMMENT "Copy dylibs into Contents/Frameworks (cp -a keeps symlinks)"
       VERBATIM
-    )
-
-    # Rendre executable l'executable dans le bundle .app généré (nécessaire pour l'exécuter sur macOS)
-    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-      COMMAND chmod +x "$<TARGET_FILE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/${RC2D_EXAMPLE_TARGET_NAME}.app/Contents/MacOS/${RC2D_EXAMPLE_TARGET_NAME}"
-      COMMENT "Setting executable permissions for the .app bundle"
     )
   elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
     # Ressource : Storyboard de lancement et Asset Catalog pour les icônes (obligatoire sur iOS)
