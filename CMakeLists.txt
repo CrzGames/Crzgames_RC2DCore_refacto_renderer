@@ -1988,8 +1988,7 @@ if(RC2D_BUILD_EXAMPLES)
     #   - examples/shaders/compiled
     #   - examples/shaders/reflection
     #
-    # tools/ et src/ restent dans le repo :
-    #   examples/shaders/tools (utilisé par les scripts .sh/.bat)
+    # tools/, scripts/ et src/ restent dans le repo :
     # ---------------------------------------------------------------------------
 
     # Créer le dossier shaders/ à côté de l'exe (même si compiled/reflection n'existent pas)
