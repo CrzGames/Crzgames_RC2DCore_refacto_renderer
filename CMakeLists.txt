@@ -414,7 +414,6 @@ function(rc2d_configure_ffmpeg target_name)
                   "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
         )
       endforeach()
-      
     elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
       # Link le dossier include de FFmpeg à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/include_ffmpeg/ffmpeg")
@@ -486,7 +485,7 @@ function(rc2d_configure_ffmpeg target_name)
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_ffmpeg/ffmpeg")
 
         # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
-        
+
         # ==================================
         # TODO:
         # Dès qu'ont auras la librairie pour SteamRT4, il faudra juste changer 
@@ -755,30 +754,7 @@ function(rc2d_configure_onnxruntime target_name)
         COMMENT "Copie des bibliothèques ONNX Runtime avec conservation des liens symboliques"
         VERBATIM
       )
-    elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, SteamRT4, Raspberry PI 5 etc.
-      if(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
-        # Link le dossier include de ONNX Runtime à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_onnxruntime/onnxruntime")
-
-        # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
-        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}")
-
-        # Link les librairies ONNX Runtime
-        target_link_libraries(${target_name} PUBLIC
-          onnxruntime
-        )
-
-        # Copier aussi les libraries dynamique dans le répertoire de l'exécutable
-        file(GLOB_RECURSE ONNX_SO
-          "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so"
-          "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
-        )
-        add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND cp -a ${ONNX_SO} "$<TARGET_FILE_DIR:${target_name}>/"
-          COMMENT "Copie des bibliothèques ONNX Runtime avec conservation des liens symboliques"
-          VERBATIM
-        )
-      else() # Linux, Raspberry PI 5 etc.
+    elseif (UNIX AND NOT APPLE AND NOT ANDROID AND NOT RC2D_PLATFORM STREQUAL "STEAMRT4") # Linux, Raspberry PI 5 etc.
         # Link le dossier include de ONNX Runtime à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_onnxruntime/onnxruntime")
 
@@ -800,7 +776,6 @@ function(rc2d_configure_onnxruntime target_name)
           COMMENT "Copie des bibliothèques ONNX Runtime avec conservation des liens symboliques"
           VERBATIM
         )
-      endif()
     endif()
   endif()
 endfunction()
