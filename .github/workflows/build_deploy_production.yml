@@ -37,6 +37,7 @@ jobs:
         - { runner: macos-26,         platform: ios,      arch: arm64, sdk: iphoneos }
     name: ${{ matrix.config.platform }}-${{ matrix.config.arch }}-${{ matrix.config.sdk }}
     runs-on: ${{ matrix.config.runner }}
+    container: ${{ matrix.config.platform == 'steamrt4' && matrix.config.container || '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
