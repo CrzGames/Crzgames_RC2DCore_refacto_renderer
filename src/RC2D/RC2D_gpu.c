@@ -165,8 +165,11 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
      * pas au filesystem de l'OS (plus de SDL_GetBasePath()).
      *
      * Exemple : storage_path = "assets/water.fragment"
-     *   -> offline:   "assets/shaders/compiled/spirv/water.fragment.spv"
+     *   offline:   
+     *   -> binaire compilé:"assets/shaders/compiled/spirv/water.fragment.spv" (ou .metallib, .msl, .dxil selon le backend)
      *   -> reflection:"assets/shaders/reflection/water.fragment.json"
+     *
+     *   online:
      *   -> hot reload:"assets/shaders/src/water.fragment.hlsl"
      */
     char dirbuf[256], root_shaders[320], fullPath[512];
