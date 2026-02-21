@@ -117,6 +117,13 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 }
 
+/**
+ * Tâche personnalisée pour copier les shaders compilés et de réflexion
+ * depuis les exemples vers le dossier de build de l'application.
+ *
+ * Cette tâche est exécutée avant la compilation pour s'assurer que les
+ * shaders sont disponibles dans les assets au moment du build.
+ */
 tasks.register("stageRc2dShaders", Sync) {
     from("../../examples/shaders/compiled") {
         into "shaders/compiled"
@@ -127,7 +134,6 @@ tasks.register("stageRc2dShaders", Sync) {
 
     into("$buildDir/generated/rc2d-shaders")
 }
-
 tasks.named("preBuild").configure {
     dependsOn("stageRc2dShaders")
 }
