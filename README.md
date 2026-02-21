@@ -210,6 +210,12 @@
   git clone git@github.com:CrzGames/Crzgames_RC2D.git
   ```
 2. (Optional) Download and Install Node.js >= 18.0.0 (pour lancer la documentation, pour Vitepress).
+  ```bash
+  # Run website documentation
+  cd docs/
+  npm install
+  npm run dev
+  ```
 3. Steps by Platform :
   ```bash  
   # Windows (x64/arm64) :
