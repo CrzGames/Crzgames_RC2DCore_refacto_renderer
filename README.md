@@ -411,12 +411,12 @@ chmod +x ./build-scripts/generate-project/android-linux.sh
 ./build-scripts/generate-project/android-linux.sh
 
 
-# iOS (run in macOS) - No Signed Bundle .app
+# iOS (run in macOS) - No Signed Bundle .app for Project Example
 chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
 ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
 
 
-# iOS (run in macOS) - Signed Bundle .app
+# iOS (run in macOS) - Signed Bundle .app for Project Example
 chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-signedbundleapp.sh
 ./build-scripts/generate-project/ios-iphoneos-arm64-signedbundleapp.sh
 # Informations : Rentrer les bonne informations dans le CMakelists ou il y a "RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING"
