@@ -1643,7 +1643,7 @@ if(RC2D_BUILD_EXAMPLES)
   if(DEFINED ENV{APP_LEGAL_COPYRIGHT})
     set(APP_LEGAL_COPYRIGHT "$ENV{APP_LEGAL_COPYRIGHT}" CACHE STRING "Droits d'auteur")
   else()
-    set(APP_LEGAL_COPYRIGHT "Copyright 2025 CrzGames" CACHE STRING "Droits d'auteur")
+    set(APP_LEGAL_COPYRIGHT "Copyright 2026 CrzGames" CACHE STRING "Droits d'auteur")
   endif()
 
   if(DEFINED ENV{APP_IOSMACOS_BUILD_VERSION})
