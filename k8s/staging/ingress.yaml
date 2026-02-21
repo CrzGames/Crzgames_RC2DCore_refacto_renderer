@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: staging-librc2d-frontend-ingress
+  namespace: staging-librc2d-frontend
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - staging.librc2d.crzgames.com
+      secretName: staging-librc2d-frontend-tls
+  rules:
+    - host: staging.librc2d.crzgames.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: '/'
+            backend:
+              service:
+                name: staging-librc2d-frontend-service
+                port:
+                  number: 80

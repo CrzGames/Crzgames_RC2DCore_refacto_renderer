@@ -15,6 +15,9 @@ public class MyGame extends SDLActivity {
         return new String[] { 
             /**
              * Lib : SDL3, SDL3_image, SDL3_mixer, SDL3_ttf
+             * 
+             * SDL3 dois être chargé avant les autres libs SDL3_* pour que les symboles de
+             * SDL3_image, SDL3_mixer et SDL3_ttf soient résolus correctement
              */
             "SDL3",
             "SDL3_image",

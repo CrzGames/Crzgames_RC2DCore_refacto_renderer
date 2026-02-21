@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: staging-librc2d-frontend-deployment
+  namespace: staging-librc2d-frontend
+  labels:
+    app: staging-librc2d-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prod-librc2d-frontend
+  template:
+    metadata:
+      labels:
+        app: prod-librc2d-frontend
+    spec:
+      containers:
+        - name: prod-librc2d-frontend
+          image: corentin35/librc2d-website-frontend:${TAG_VERSION}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+      resources:
+        requests:
+          cpu: "20m"
+          memory: "40Mi"
+        limits:
+          cpu: "40m"
+          memory: "80Mi"
+      imagePullSecrets:
+        - name: regcred
