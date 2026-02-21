@@ -14,7 +14,7 @@ public class MyGame extends SDLActivity {
     protected String[] getLibraries() {
         return new String[] { 
             /**
-             * Lib : SDL3 and related
+             * Lib : SDL3, SDL3_image, SDL3_mixer, SDL3_ttf
              */
             "SDL3",
             "SDL3_image",
@@ -34,6 +34,12 @@ public class MyGame extends SDLActivity {
              * Lib : onnxruntime
              */
             "onnxruntime",
+            /**
+             * Lib : main
+             *
+             * C'est la lib qui contient le code de l'application, et elle doit être chargé
+             * après toutes les autres libs pour que les symboles soient résolus correctement
+             */
             "main"
         };
     }
