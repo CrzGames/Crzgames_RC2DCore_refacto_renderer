@@ -1890,19 +1890,48 @@ if(RC2D_BUILD_EXAMPLES)
     # Ajoute une étape de post-build pour copier les fichiers nécessaires dans le bundle .app et modifier le fichier Info.plist
     set(MACOS_INFO_PLIST "$<TARGET_BUNDLE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Contents/Info.plist")
 
-    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD      
-      # Active le support des périphériques d'entrée indirects (souris, trackpad, clavier, manettes)
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UIApplicationSupportsIndirectInputEvents bool true" "${MACOS_INFO_PLIST}"
-      
-      # Description obligatoire pour l'utilisation du Bluetooth (CoreBluetooth)
-      COMMAND /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 'MyApp souhaite rester connecté aux contrôleurs de jeu et aux manettes de jeu Bluetooth à proximité, même lorsque vous n'utilisez pas l'application.'" "${MACOS_INFO_PLIST}"
-      
-      # Ajoute les clés pour autoriser le High DPI
-      COMMAND /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "${MACOS_INFO_PLIST}"
+    add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
+      # ------------------------------------------------------------
+      # Indirect input (souris / trackpad / clavier / manettes)
+      # ------------------------------------------------------------
+      COMMAND /bin/sh -c "
+      /usr/libexec/PlistBuddy -c 'Add :UIApplicationSupportsIndirectInputEvents bool true' '${MACOS_INFO_PLIST}' 2>/dev/null ||
+      /usr/libexec/PlistBuddy -c 'Set :UIApplicationSupportsIndirectInputEvents true' '${MACOS_INFO_PLIST}'
+      "
 
-      # Ajoute la clé ITSAppUsesNonExemptEncryption pour le chiffrement
-      COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "${MACOS_INFO_PLIST}"
-      COMMENT "Adding keys to Info.plist"
+      # ------------------------------------------------------------
+      # Bluetooth (CoreBluetooth)
+      # ------------------------------------------------------------
+      COMMAND /bin/sh -c "
+      /usr/libexec/PlistBuddy -c 'Add :NSBluetoothAlwaysUsageDescription string \"MyApp souhaite rester connecté aux contrôleurs de jeu Bluetooth à proximité, même lorsque vous n\\x27utilisez pas l\\x27application.\"' '${MACOS_INFO_PLIST}' 2>/dev/null ||
+      /usr/libexec/PlistBuddy -c 'Set :NSBluetoothAlwaysUsageDescription \"MyApp souhaite rester connecté aux contrôleurs de jeu Bluetooth à proximité, même lorsque vous n\\x27utilisez pas l\\x27application.\"' '${MACOS_INFO_PLIST}'
+      "
+
+      # ------------------------------------------------------------
+      # High DPI
+      # ------------------------------------------------------------
+      COMMAND /bin/sh -c "
+      /usr/libexec/PlistBuddy -c 'Add :NSHighResolutionCapable bool true' '${MACOS_INFO_PLIST}' 2>/dev/null ||
+      /usr/libexec/PlistBuddy -c 'Set :NSHighResolutionCapable true' '${MACOS_INFO_PLIST}'
+      "
+
+      # ------------------------------------------------------------
+      # Non-exempt encryption (obligatoire pour la validation sur l'App Store si l'application utilise du chiffrement, même de manière indirecte via des dépendances)
+      # ------------------------------------------------------------
+      COMMAND /bin/sh -c "
+      /usr/libexec/PlistBuddy -c 'Add :ITSAppUsesNonExemptEncryption bool false' '${MACOS_INFO_PLIST}' 2>/dev/null ||
+      /usr/libexec/PlistBuddy -c 'Set :ITSAppUsesNonExemptEncryption false' '${MACOS_INFO_PLIST}'
+      "
+
+      # ------------------------------------------------------------
+      # Caméra (SDL_Camera)
+      # ------------------------------------------------------------
+      COMMAND /bin/sh -c "
+      /usr/libexec/PlistBuddy -c 'Add :NSCameraUsageDescription string \"Cette application utilise la caméra pour des fonctionnalités en jeu.\"' '${MACOS_INFO_PLIST}' 2>/dev/null ||
+      /usr/libexec/PlistBuddy -c 'Set :NSCameraUsageDescription \"Cette application utilise la caméra pour des fonctionnalités en jeu.\"' '${MACOS_INFO_PLIST}'
+      "
+
+      COMMENT "Adding keys to Info.plist (macOS)"
     )
 
     # Créer le dossier Contents/Frameworks dans le bundle .app pour y copier les .dylib embarquées (SDL3, SDL3_image, SDL3_ttf, SDL3_mixer, onnxruntime, SDL3_shadercross, etc.)
@@ -1990,33 +2019,68 @@ if(RC2D_BUILD_EXAMPLES)
     set(IOS_INFO_PLIST "$<TARGET_BUNDLE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Info.plist")
 
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-      # Active le support des périphériques d'entrée indirects (souris, trackpad, clavier, manettes)
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UIApplicationSupportsIndirectInputEvents bool true" "${IOS_INFO_PLIST}"
-      COMMENT "Adding keys mouse, trackpad, keyboard, game controllers support to Info.plist"
+      # ------------------------------------------------------------
+      # Support souris / trackpad / clavier / manettes
+      # ------------------------------------------------------------
+      COMMAND /bin/sh -c "
+      /usr/libexec/PlistBuddy -c 'Add :UIApplicationSupportsIndirectInputEvents bool true' '${IOS_INFO_PLIST}' 2>/dev/null ||
+      /usr/libexec/PlistBuddy -c 'Set :UIApplicationSupportsIndirectInputEvents true' '${IOS_INFO_PLIST}'
+      "
+      COMMENT "Enable indirect input devices support"
 
-      # Description obligatoire pour l'utilisation du Bluetooth (CoreBluetooth)
-      COMMAND /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 'MyApp souhaite rester connecté aux contrôleurs de jeu et aux manettes de jeu Bluetooth à proximité, même lorsque vous n'utilisez pas l'application.'" "${IOS_INFO_PLIST}"
-      COMMENT "Adding keys for Bluetooth usage description to Info.plist"
+      # ------------------------------------------------------------
+      # Bluetooth (HIDAPI / CoreBluetooth)
+      # ------------------------------------------------------------
+      COMMAND /bin/sh -c "
+      /usr/libexec/PlistBuddy -c 'Add :NSBluetoothAlwaysUsageDescription string \"MyApp souhaite rester connecté aux contrôleurs de jeu Bluetooth à proximité.\"' '${IOS_INFO_PLIST}' 2>/dev/null ||
+      /usr/libexec/PlistBuddy -c 'Set :NSBluetoothAlwaysUsageDescription \"MyApp souhaite rester connecté aux contrôleurs de jeu Bluetooth à proximité.\"' '${IOS_INFO_PLIST}'
+      "
+      COMMENT "Adding Bluetooth usage description"
 
-      # Ajoute les clés pour autoriser le High DPI
-      COMMAND /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "${IOS_INFO_PLIST}"
-      COMMENT "Adding key High DPI to Info.plist"
+      # ------------------------------------------------------------
+      # High DPI 
+      # ------------------------------------------------------------
+      COMMAND /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "${IOS_INFO_PLIST}" 2>/dev/null || true
 
-      # Ajoute les clés pour autoriser les orientations supportées
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" "${IOS_INFO_PLIST}"
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string 'UIInterfaceOrientationPortrait'" "${IOS_INFO_PLIST}"
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:1 string 'UIInterfaceOrientationPortraitUpsideDown'" "${IOS_INFO_PLIST}"
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:2 string 'UIInterfaceOrientationLandscapeLeft'" "${IOS_INFO_PLIST}"
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:3 string 'UIInterfaceOrientationLandscapeRight'" "${IOS_INFO_PLIST}"
-      COMMENT "Adding supported interface orientations to Info.plist"
+      # ------------------------------------------------------------
+      # Orientations supportées
+      # ------------------------------------------------------------
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" "${IOS_INFO_PLIST}" 2>/dev/null || true
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string 'UIInterfaceOrientationPortrait'" "${IOS_INFO_PLIST}" 2>/dev/null || true
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:1 string 'UIInterfaceOrientationPortraitUpsideDown'" "${IOS_INFO_PLIST}" 2>/dev/null || true
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:2 string 'UIInterfaceOrientationLandscapeLeft'" "${IOS_INFO_PLIST}" 2>/dev/null || true
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:3 string 'UIInterfaceOrientationLandscapeRight'" "${IOS_INFO_PLIST}" 2>/dev/null || true
+      COMMENT "Adding supported interface orientations"
 
-      # Ajoute la clé ITSAppUsesNonExemptEncryption pour le chiffrement
-      COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "${IOS_INFO_PLIST}"
-      COMMENT "Adding ITSAppUsesNonExemptEncryption key to Info.plist"
+      # ------------------------------------------------------------
+      # Non-exempt encryption (obligatoire pour la validation sur l'App Store si l'application utilise du chiffrement, même de manière indirecte via des dépendances)
+      # ------------------------------------------------------------
+      COMMAND /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "${IOS_INFO_PLIST}" 2>/dev/null || true
+      COMMENT "Adding ITSAppUsesNonExemptEncryption key"
 
-      # Ajoute la clé UILaunchStoryboardName pour le storyboard de lancement
-      COMMAND /usr/libexec/PlistBuddy -c "Add :UILaunchStoryboardName string 'LaunchScreen'" "${IOS_INFO_PLIST}"
-      COMMENT "Adding launch storyboard name to Info.plist"
+      # ------------------------------------------------------------
+      # LaunchScreen
+      # ------------------------------------------------------------
+      COMMAND /usr/libexec/PlistBuddy -c "Add :UILaunchStoryboardName string 'LaunchScreen'" "${IOS_INFO_PLIST}" 2>/dev/null || true
+      COMMENT "Adding launch storyboard name"
+
+      # ============================================================
+      # 🆕 Caméra (SDL_Camera)
+      # ============================================================
+      COMMAND /bin/sh -c "
+      /usr/libexec/PlistBuddy -c 'Add :NSCameraUsageDescription string \"Cette application utilise la caméra pour des fonctionnalités en jeu.\"' '${IOS_INFO_PLIST}' 2>/dev/null ||
+      /usr/libexec/PlistBuddy -c 'Set :NSCameraUsageDescription \"Cette application utilise la caméra pour des fonctionnalités en jeu.\"' '${IOS_INFO_PLIST}'
+      "
+      COMMENT "Adding camera usage description"
+
+      # ============================================================
+      # 🆕 120Hz ProMotion
+      # ============================================================
+      COMMAND /bin/sh -c "
+      /usr/libexec/PlistBuddy -c 'Add :CADisableMinimumFrameDurationOnPhone bool true' '${IOS_INFO_PLIST}' 2>/dev/null ||
+      /usr/libexec/PlistBuddy -c 'Set :CADisableMinimumFrameDurationOnPhone true' '${IOS_INFO_PLIST}'
+      "
+      COMMENT "Enable 120Hz ProMotion support"
     )
   elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4"))
     # Pour l'executable "classique" sur Linux (on ne parle pas de l'AppImage ici, mais rc2d_example)
