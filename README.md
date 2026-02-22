@@ -278,6 +278,9 @@
   3. Download and Install Command Line Tools : xcode-select --install
   4. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   5. Download and Install CMake >= 3.28.0 : brew install cmake
+  6. Check SDK version : 
+    xcrun --sdk iphoneos --show-sdk-version
+    xcrun --sdk macosx --show-sdk-version
 
 
 
@@ -298,7 +301,10 @@
   3. Download and Install SDK iOS >= 18.0.0
   4. Download and Install Command Line Tools : xcode-select --install
   5. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  6. Download and Install cmake >= 3.28.0 : brew install cmake 
+  6. Download and Install cmake >= 3.28.0 : brew install cmake
+  7. Check SDK version : 
+     xcrun --sdk iphoneos --show-sdk-version
+     xcrun --sdk macosx --show-sdk-version
   ```
   
 4. Avant toute compilation, exécute le script suivant :
