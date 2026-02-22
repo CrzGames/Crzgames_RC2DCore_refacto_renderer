@@ -254,7 +254,7 @@
 
 
 
-  # SteamRT4 (for Steam Linux / Steam Deck) :
+  # SteamRT4 (for Steam Linux x64-arm64 / Steam Deck x64) :
   1. Utiliser un container via le tag de l image SteamRT4 voir : https://repo.steampowered.com/steamrt4/images/
   2. Download and Install (gcc, g++, make..) :
      sudo apt update
