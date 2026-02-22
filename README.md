@@ -190,13 +190,13 @@
 | Librairie | Version / Commit SHA utilisé par RC2D | Rôle dans RC2D | Statut / Intégration | Impact si désactivé |
 |------------|----------------------------------------|----------------|----------------------|----------------------|
 | **LZ4** | v1.10.0 | Compression ultra-rapide utilisée par `RC2D_data` | ⭐ Obligatoire (intégré statiquement) |  |
-| **SDL3** | commit `2aacf018f0aa454177d774240eb34f064d8f36cb` | Gestion fenêtre, entrées, rendu GPU | ⭐ Obligatoire |  |
+| **SDL3** | commit `2e18cf8d096657be40ab301a523e2f10a2a10508` | Gestion fenêtre, entrées, rendu GPU | ⭐ Obligatoire |  |
 | **SDL3_image** | commit `8bd9f3d7f2d2bb59ce4331f13b77d65254cd8c7b` | Chargement d’images (PNG, SVG, APNG…) | ⭐ Obligatoire |  |
 | **SDL3_ttf** | commit `053bbc89517471427748a082583c9eada55c07b5` | Rendu de polices TrueType | ⭐ Obligatoire |  |
 | **SDL3_mixer** | commit `37b2f3325a0fb1e98ba265aa38826aa9e16624fb` | Gestion audio (WAV, OGG, OPUS…) | ⭐ Obligatoire | |
 | **cJSON** | v1.7.19 | Parsing JSON léger | ⭐ Obligatoire (intégré statiquement) |  |
 | **SDL3_shadercross** | commit `7b7365a86611b2a7b6462e521cf1c43a037d0970` | Transpilation shaders (HLSL → MSL / SPIR-V / DXIL / METALLIB…) | 🟡 Optionnel (Dev uniquement) – `RC2D_GPU_SHADER_HOT_RELOAD_ENABLED` (OFF par défaut) | Si désactivé : pas de hot-reload / compilation runtime des shaders |
-| **RCENet** | v1.4.0 | Communication réseau UDP (fork ENet) | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : module réseau indisponible (`RC2D_net.h`) |
+| **RCENet** | v1.4.6 | Communication réseau UDP (fork ENet) | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : module réseau indisponible (`RC2D_net.h`) |
 | **OpenSSL** | v3.6.1 | Hashing, chiffrement, crypto | 🟡 Optionnel – `RC2D_DATA_MODULE_ENABLED` (ON par défaut) | Si désactivé : module data/crypto indisponible (`RC2D_data.h`) |
 | **ONNX Runtime** | v1.24.1 | Inférence IA (modèles ONNX) | 🟡 Optionnel – `RC2D_ONNX_MODULE_ENABLED` (ON par défaut) | Si désactivé : module IA indisponible (`RC2D_onnx.h`) |
 | **FFmpeg** | v8.0.0 | Lecture vidéo (MP4, etc.) | 🟡 Optionnel – `RC2D_VIDEO_MODULE_ENABLED` (ON par défaut) | Si désactivé : module vidéo indisponible (`RC2D_video.h`) |
