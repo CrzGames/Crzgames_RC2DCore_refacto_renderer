@@ -227,6 +227,7 @@
   3. Download and Install CMake >= 3.28.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
 
 
+
   # Linux (x64/arm64) :
   1. Requirements : glibc >= 2.35.0 (Exemple : Ubuntu >= 22.04 OR Debian >= 12.0), checker via : ldd --version
   2. Download and Install (gcc, g++, make..) :
@@ -281,6 +282,8 @@
   6. Check SDK version : 
     xcrun --sdk iphoneos --show-sdk-version
     xcrun --sdk macosx --show-sdk-version
+  7. Lister tous les certificats installés sur ton Mac :
+     security find-identity -v -p codesigning
 
 
 
@@ -302,9 +305,11 @@
   4. Download and Install Command Line Tools : xcode-select --install
   5. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   6. Download and Install cmake >= 3.28.0 : brew install cmake
-  7. Check SDK version : 
+  7. Checker les versions des SDK : 
      xcrun --sdk iphoneos --show-sdk-version
      xcrun --sdk macosx --show-sdk-version
+  8. Lister tous les certificats installés sur ton Mac :
+     security find-identity -v -p codesigning
   ```
   
 4. Avant toute compilation, exécute le script suivant :
