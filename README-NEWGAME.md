@@ -181,30 +181,25 @@ protected String[] getLibraries() {
 
 RC2D centralise les icônes via une image source unique.
 
-## Fichier source :
-```
+## Fichier source (changer l'image par la votre) :
+```bash
+# Format obligatoire : PNG
+# Taille obligatoire : 1024x1024
 icons/app-icon-default.png
 ```
 
-## ✅ Contraintes :
-- 1024x1024  
-- Format PNG  
-
 ## 🚀 Générer les icônes
-
 ### macOS / Linux :
 ```bash
 chmod +x ./build-scripts/generate-icons/generate-icons-unix.sh
 ./build-scripts/generate-icons/generate-icons-unix.sh
 ```
-
 ### Windows :
 ```bat
 .\build-scripts\generate-icons\generate-icons-windows.bat
 ```
 
 Une fois exécuté, tout est régénéré automatiquement pour toutes les plateformes supportées  
-(icônes app / bundle / ressources).
 
 <br /><br />
 
