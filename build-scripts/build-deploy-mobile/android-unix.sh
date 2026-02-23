@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
+# ==================================================
+# 🔧 CONFIG (À CHANGER SEULEMENT SI PROJET CHANGE)
+# ==================================================
+APP_COMPONENT="com.crzgames.testexe/.MyGame" # Package / Activity à lancer (à adapter à ton app)
+
 # --------------------------------------------------
 # Couleurs ANSI
 # --------------------------------------------------
@@ -64,7 +69,7 @@ info "Appareil détecté :"
 echo "$ADB_LIST" | sed 's/^/  - /'
 
 # --------------------------------------------------
-# Variables projet (à adapter)
+# Variables projet
 # --------------------------------------------------
 
 # Dossier du projet Android
@@ -72,9 +77,6 @@ ANDROID_PROJECT_DIR="android-project"
 
 # Gradle wrapper (dans android-project/)
 GRADLE="./gradlew"
-
-# Package / Activity à lancer (à adapter à ton app)
-APP_COMPONENT="com.crzgames.testexe/.MyGame"
 
 # Tags logcat (tu peux les changer)
 LOG_TAGS=( "SDL:V" "SDL/APP:V" )

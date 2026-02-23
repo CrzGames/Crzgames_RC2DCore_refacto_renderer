@@ -1,6 +1,11 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
+REM ==================================================
+REM 🔧 CONFIG (À CHANGER SEULEMENT SI PROJET CHANGE)
+REM ==================================================
+set "APP_COMPONENT=com.crzgames.testexe/.MyGame"
+
 REM --------------------------------------------------
 REM Couleurs (ANSI) : fonctionne sur Windows 10/11 si VT est activé.
 REM Si ça n'affiche pas de couleurs, ça restera lisible quand même.
@@ -16,7 +21,6 @@ REM Helpers
 REM --------------------------------------------------
 set "ANDROID_PROJECT_DIR=android-project"
 set "GRADLE=gradlew.bat"
-set "APP_COMPONENT=com.crzgames.testexe/.MyGame"
 set "LOG_TAGS=SDL:V SDL/APP:V"
 
 call :info "Verification environnement..."

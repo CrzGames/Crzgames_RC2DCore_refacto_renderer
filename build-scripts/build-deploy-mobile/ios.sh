@@ -10,9 +10,6 @@ APP_NAME="rc2d_example"
 # Bundle identifier iOS
 BUNDLE_ID="com.crzgames.testexe"
 
-# Pattern pour filtrer les logs
-LOG_PATTERN="$APP_NAME"
-
 # ==================================================
 # 🎨 Colors
 # ==================================================
@@ -85,6 +82,10 @@ xcrun devicectl device install app --device "$DEVICE_ID" "$APP_PATH"
 # ==================================================
 echo -e "${GREEN}\nLaunching app (attached console)...${NC}"
 
+# Pattern pour filtrer les logs
+LOG_PATTERN="$APP_NAME"
+
+# Lancement de l'app avec attachement de la console, et filtrage des logs
 xcrun devicectl device process launch \
   --device "$DEVICE_ID" \
   --console \
