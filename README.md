@@ -218,6 +218,10 @@
   1. Requirements : Windows >= 10
   2. Download and Install Visual Studio == 2022 (MSVC >= v143 + Windows SDK >= 10) : https://visualstudio.microsoft.com/fr/downloads/
   3. Download and Install CMake >= 3.28.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
+  4. Installer Rust + Cargo, ouvrir un terminal PowerShell (for Icons) :
+     winget install Rustlang.Rustup
+  5. Installer Tauri CLI (for Icons) :
+     cargo install tauri-cli
 
 
 
@@ -244,6 +248,22 @@
      Pour Debian (>= 13) et Ubuntu (>= 24.04) : 
       sudo apt update
       sudo apt install -y libfuse2t64
+  7. Installer Rust + Cargo (for Icons) :
+     curl https://sh.rustup.rs -sSf | sh
+     source $HOME/.cargo/env
+  8. Installer Tauri CLI (for Icons) :
+     cargo install tauri-cli
+  9. Install dev dependencies Tauri (for Icons) :
+     sudo apt update
+     sudo apt install libwebkit2gtk-4.1-dev \
+      build-essential \
+      curl \
+      wget \
+      file \
+      libxdo-dev \
+      libssl-dev \
+      libayatana-appindicator3-dev \
+      librsvg2-dev
 
 
 
@@ -277,7 +297,11 @@
     xcrun --sdk macosx --show-sdk-version
   7. Lister tous les certificats installés sur ton Mac (si besoin) :
      security find-identity -v -p codesigning
-
+  8. Installer Rust + Cargo (for Icons) :
+     curl https://sh.rustup.rs -sSf | sh
+     source $HOME/.cargo/env
+  9. Installer Tauri CLI (for Icons) :
+     cargo install tauri-cli
 
 
   # Android (Linux x64-arm64 / macOS Apple Silicon arm64 / Windows x64-arm64) :
