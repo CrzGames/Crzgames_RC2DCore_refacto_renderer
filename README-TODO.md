@@ -59,3 +59,9 @@ else()
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 endif()
+
+
+
+TODO 9 : 
+- Finir dans le CMakelists.txt pour le SDK EOS / SDK SteamWorks qui est configuré que pour Windows pour le moment.
+- Finir le module RC2D_eos.c (non fini, mais commencé).
