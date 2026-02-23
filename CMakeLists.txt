@@ -2059,8 +2059,8 @@ if(RC2D_BUILD_EXAMPLES)
   elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4"))
     # Pour l'executable "classique" sur Linux (on ne parle pas de l'AppImage ici, mais rc2d_example)
     set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-      BUILD_RPATH "\$ORIGIN;\$ORIGIN/usr/lib"
-      INSTALL_RPATH "\$ORIGIN;\$ORIGIN/usr/lib"
+      BUILD_RPATH "\$ORIGIN"
+      INSTALL_RPATH "\$ORIGIN"
       BUILD_WITH_INSTALL_RPATH TRUE
     )
 
@@ -2082,6 +2082,7 @@ if(RC2D_BUILD_EXAMPLES)
     #   build/linux/x64/Debug/AppDir
     #   build/linux/x64/Release/AppDir
     #   build/linux/arm64/Debug/AppDir
+    #   build/linux/arm64/Release/AppDir
     # ------------------------------------------------------------
     set(APPDIR "${CMAKE_BINARY_DIR}/AppDir")
     set(APPIMAGE_OUTPUT "${CMAKE_BINARY_DIR}/${RC2D_EXAMPLE_TARGET_NAME}.AppImage")
@@ -2129,7 +2130,7 @@ if(RC2D_BUILD_EXAMPLES)
   endif()
 
   # ============================================================
-  # Copie des ressources (dossiers : shaders, assets) dans le dossier de sortie de l'exécutable
+  # Copie des ressources (dossiers : shaders, assets) dans le dossier de sortie de l'exécutable pour : Windows, Linux, SteamRT4
   # Infos :
   # Android copie automatiquement les ressources dans le dossier assets/ de l'APK, donc pas besoin de les copier manuellement.
   # Sur Apple (macOS/iOS), les ressources sont intégrées dans le bundle .app, donc pas besoin de les copier manuellement.
