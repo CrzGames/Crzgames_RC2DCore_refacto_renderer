@@ -16,7 +16,7 @@ create_directory_if_not_exists() {
 # Créer le dossier 'outputs' dans 'icons' s'il n'existe pas
 create_directory_if_not_exists "icons/outputs"
 
-# Exécuter la commande Tauri pour générer les icônes
+# Exécuter la commande Tauri pour générer les icônes (1024x1024) à partir de l'image source
 cargo tauri icon --output icons/outputs icons/app-icon-default.png
 
 # Renommer et copier les fichiers icônes dans leurs dossiers respectifs
