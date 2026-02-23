@@ -17,3 +17,8 @@ TODO 3 :
 
 TODO 4 :
 - Fixer tout les warning pour GCC / CLANG / CL
+
+
+
+TODO 5 :
+- Ajouter un clang format, l'équivalent d'un prettier pour C/C++.
