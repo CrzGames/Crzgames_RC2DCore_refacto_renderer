@@ -6,7 +6,6 @@ Quand tu crées un nouveau jeu, la majorité des changements à faire concernent
 - ✅ **Android** (package / Activity / libs / nom affiché)
 - ✅ **Icônes** (une seule image → génération automatique pour toutes les plateformes)
 - ✅ **Métadonnées globales (CMake)** 
-- ✅ **Signature iOS / macOS (CMake)** 
 
 <br /><br />
 
@@ -223,30 +222,15 @@ APP_GAME_DESCRIPTION
 APP_LEGAL_COPYRIGHT  
 APP_IOSMACOS_BUILD_VERSION  
 APP_IOSMACOS_IDENTIFIER  
+APP_IOSMACOS_DEVELOPMENT_TEAM_ID
+APP_IOS_PROVISIONING_PROFILE_NAME
+APP_IOS_PROVISIONING_PROFILE_UUID
+APP_IOS_CODE_SIGN_IDENTITY
+APP_MACOS_CODE_SIGN_IDENTITY
 
 Exemple :
 if(DEFINED ENV{APP_IOSMACOS_IDENTIFIER})
     set(APP_IOSMACOS_IDENTIFIER "$ENV{APP_IOSMACOS_IDENTIFIER}")
 else()
     set(APP_IOSMACOS_IDENTIFIER "com.crzgames.testexe")
-endif()
-
-<br /><br />
-
----
-
-<br /><br />
-
-# 🧾 Signature iOS / macOS (CMake)
-
-Dans CMakeLists.txt tu as (modifie si besoin) :
-if(RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING)
-  set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-    XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "U3D28WJ8DV" # Remplacez par votre Team ID Apple
-    XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development: Corentin Recanzone (2X96T6AM4K)" # Remplacez par votre identité de signature
-    XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual" # Style de signature (Manual ou Automatic)
-    XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --strict --force --timestamp --verbose" # Options supplémentaires pour la signature
-    XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "TestExe" # Remplacez par le nom de votre profil de provisionnement
-    XCODE_ATTRIBUTE_PROVISIONING_PROFILE "d5115451-c438-4aa6-9c68-dee8a87a36e8" # Remplacez par l'UUID de votre profil de provisionnement
-  )
 endif()

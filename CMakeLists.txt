@@ -1658,6 +1658,36 @@ if(RC2D_BUILD_EXAMPLES)
     set(APP_IOSMACOS_IDENTIFIER "com.crzgames.testexe" CACHE STRING "Identifiant de l'application")
   endif()
 
+  if(DEFINED ENV APP_IOSMACOS_DEVELOPMENT_TEAM_ID)
+    set(APP_IOSMACOS_DEVELOPMENT_TEAM_ID "$ENV{APP_IOSMACOS_DEVELOPMENT_TEAM_ID}" CACHE STRING "Apple Development Team ID")
+  else()
+    set(APP_IOSMACOS_DEVELOPMENT_TEAM_ID "2X96T6AM4K" CACHE STRING "Apple Development Team ID")
+  endif()
+
+  if(DEFINED ENV{APP_IOS_PROVISIONING_PROFILE_NAME})
+    set(APP_IOS_PROVISIONING_PROFILE_NAME "$ENV{APP_IOS_PROVISIONING_PROFILE_NAME}" CACHE STRING "Nom du profil de provisioning Apple")
+  else()
+    set(APP_IOS_PROVISIONING_PROFILE_NAME "TestExe" CACHE STRING "Nom du profil de provisioning Apple")
+  endif()
+
+  if(DEFINED ENV APP_IOS_PROVISIONING_PROFILE_UUID)
+    set(APP_IOS_PROVISIONING_PROFILE_UUID "$ENV{APP_IOS_PROVISIONING_PROFILE_UUID}" CACHE STRING "UUID du profil de provisioning Apple")
+  else()
+    set(APP_IOS_PROVISIONING_PROFILE_UUID "d5115451-c438-4aa6-9c68-dee8a87a36e8" CACHE STRING "UUID du profil de provisioning Apple")
+  endif()
+
+  if(DEFINED ENV APP_IOS_CODE_SIGN_IDENTITY)
+    set(APP_IOS_CODE_SIGN_IDENTITY "$ENV{APP_IOS_CODE_SIGN_IDENTITY}" CACHE STRING "Identité de code signing Apple iOS")
+  else()
+    set(APP_IOS_CODE_SIGN_IDENTITY "Apple Development: Corentin Recanzone (2X96T6AM4K)" CACHE STRING "Identité de code signing Apple iOS")
+  endif()
+
+  if(DEFINED ENV APP_MACOS_CODE_SIGN_IDENTITY)
+    set(APP_MACOS_CODE_SIGN_IDENTITY "$ENV{APP_MACOS_CODE_SIGN_IDENTITY}" CACHE STRING "Identité de code signing Apple macOS")
+  else()
+    set(APP_MACOS_CODE_SIGN_IDENTITY "Developer ID Application: Corentin Recanzone (2X96T6AM4K)" CACHE STRING "Identité de code signing Apple macOS")
+  endif()
+
   # ============================================================
   # Fichiers source de l’exemple
   #
@@ -1838,8 +1868,8 @@ if(RC2D_BUILD_EXAMPLES)
     if(RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING)
       # SIGNATURE ACTIVÉE
       set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "U3D28WJ8DV" # Remplacez par votre Team ID Apple
-        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Developer ID Application: Corentin Recanzone (U3D28WJ8DV)" # Remplacez par votre identité de signature
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${APP_IOSMACOS_DEVELOPMENT_TEAM_ID} # Remplacez par votre Team ID Apple
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ${APP_MACOS_CODE_SIGN_IDENTITY} # Remplacez par votre identité de signature
         XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual" # Style de signature (Manual ou Automatic)
         XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--options=runtime --strict --deep --force --timestamp --verbose" # Options supplémentaires pour la signature
       )
@@ -1991,12 +2021,12 @@ if(RC2D_BUILD_EXAMPLES)
     # --- Code signing (optionnel) ---
     if(RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING)
       set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "U3D28WJ8DV" # Remplacez par votre Team ID Apple
-        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development: Corentin Recanzone (2X96T6AM4K)" # Remplacez par votre identité de signature
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${APP_IOSMACOS_DEVELOPMENT_TEAM_ID} # Remplacez par votre Team ID Apple
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ${APP_IOS_CODE_SIGN_IDENTITY} # Remplacez par votre identité de signature
         XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual" # Style de signature (Manual ou Automatic)
         XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --strict --force --timestamp --verbose" # Options supplémentaires pour la signature
-        XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "TestExe" # Remplacez par le nom de votre profil de provisionnement
-        XCODE_ATTRIBUTE_PROVISIONING_PROFILE "d5115451-c438-4aa6-9c68-dee8a87a36e8" # Remplacez par l'UUID de votre profil de provisionnement
+        XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER ${APP_IOS_PROVISIONING_PROFILE_NAME} # Remplacez par le nom de votre profil de provisionnement
+        XCODE_ATTRIBUTE_PROVISIONING_PROFILE ${APP_IOS_PROVISIONING_PROFILE_UUID} # Remplacez par l'UUID de votre profil de provisionnement
       )
     endif()
 
