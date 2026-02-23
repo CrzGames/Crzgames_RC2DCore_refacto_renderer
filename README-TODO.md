@@ -27,3 +27,8 @@ TODO 5 :
 
 TODO 6 : 
 - Générer la documentation à partir des fichiers include, via doxygen ou autres (similaire à SDL3).
+
+
+
+TODO 7 : 
+- Finir la CI/CD, juste concernant l'upload des artifact / déploiement des artifact dans les release github sinon le build..etc OK.
