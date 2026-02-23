@@ -7,3 +7,8 @@ TODO 1 :
 
 TODO 2 :
 - Dans Crzgames_Builder_Libraries, certaines libraries dynamique (.so) casse les symlink, parce qu'il faut que ce sois déployer sur les release github via .tar.gz ou flag de .zip pour conserver les symlink.
+
+
+
+TODO 3 :
+- iOS/ffmpeg: La librarie ffmpeg récupérer est en version min os : 18.5.0, on attends de build via les sources pour ffmpeg pour toute les plateformes, pour le gérer en 18.0.0 poue iOS
