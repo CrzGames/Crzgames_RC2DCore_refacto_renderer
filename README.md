@@ -304,15 +304,14 @@
     - ✅ NDK v29.0.14206865
     - ✅ Android SDK Command-line Tools v20.0
     - ✅ CMake v3.30.3
-  4. Download and Install CMake ≥ 3.28.0 and add it to your system PATH.
-  5. Download and Install Java JDK 17 LTS (Temurin) : 
+  4. Download and Install Java JDK 17 LTS (Temurin) : 
     https://adoptium.net/fr/temurin/releases?version=17&os=any&arch=any  
-  6. Add environment variable `JAVA_HOME` → path to Java JDK Temurin :
+  5. Add environment variable `JAVA_HOME` → path to Java JDK Temurin :
     - Windows example:  
       `C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot`
     - macOS example: 
       `/Library/Java/JavaVirtualMachines/temurin-17.jdk`
-  7. Install patchelf (Linux seulement) :
+  6. Install patchelf (Linux seulement) :
     sudo apt install -y patchelf
 
 
