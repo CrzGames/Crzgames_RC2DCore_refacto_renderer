@@ -29,7 +29,7 @@ BUILD_DIR="./build/ios/iphoneos"
 # ➕ Générer le projet Xcode si le dossier n'existe pas
 if [ ! -d "$BUILD_DIR" ]; then
     echo -e "${GREEN}Generating Xcode project for iOS (iphoneos)...${NC}"
-    cmake -S . -B "$BUILD_DIR" -G Xcode -DCMAKE_OSX_SYSROOT=iphoneos
+    cmake -S . -B "$BUILD_DIR" -G Xcode -DCMAKE_SYSTEM_NAME=iOS -DRC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING=ON
 fi
 
 # Clean and rebuild the project
@@ -60,7 +60,7 @@ DEVICE_ID=$(ios-deploy --no-wifi -c | grep -oE 'Found ([0-9A-Za-z\-]+)' | sed 's
 if [ -n "$DEVICE_ID" ]; then
   # Run the application in real device
   echo -e "\e[32m\nApplication installed in real device now...\e[0m"
-  ios-deploy --justlaunch --bundle "$APP_PATH" --id "$DEVICE_ID"
+  ios-deploy --no-wifi --justlaunch --bundle "$APP_PATH" --id "$DEVICE_ID"
   
   # Start log with a filter for your application (équivalent adb: SDL:V "SDL/APP:V")
   echo -e "\e[32m\nStarting device logs (filter: SDL, SDL/APP)...\e[0m"
