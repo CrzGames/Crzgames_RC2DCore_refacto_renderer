@@ -218,7 +218,7 @@
   1. Requirements : Windows >= 10
   2. Download and Install Visual Studio == 2022 (MSVC >= v143 + Windows SDK >= 10) : https://visualstudio.microsoft.com/fr/downloads/
   3. Download and Install CMake >= 3.28.0 : https://cmake.org/download/ and add PATH ENVIRONMENT.
-  4. Installer Rust + Cargo, ouvrir un terminal PowerShell (for Icons) :
+  4. Installer Rust + Cargo (for Icons) :
      winget install Rustlang.Rustup
   5. Installer Tauri CLI (for Icons) :
      cargo install tauri-cli
