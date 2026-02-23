@@ -22,3 +22,8 @@ TODO 4 :
 
 TODO 5 :
 - Ajouter un clang format, l'équivalent d'un prettier pour C/C++.
+
+
+
+TODO 6 : 
+- Générer la documentation à partir des fichiers include, via doxygen ou autres (similaire à SDL3).
