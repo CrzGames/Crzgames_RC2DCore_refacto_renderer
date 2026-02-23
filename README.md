@@ -288,13 +288,32 @@
 
 
   # Android (Linux x64-arm64 / macOS Apple Silicon arm64 / Windows x64-arm64) :
-  1. Download and Install : Android Studio 2025.3.1 or newer
-  2. Add environment variable: ANDROID_HOME for path SDK Android (SDK Manager path), sous Windows en général : C:\Users\Corentin\AppData\Local\Android\Sdk
-  3. Ouvrir Android Studio et installer certains composants du SDK : Android v16.0, Android SDK v36.1.0, NDK v29.0.14206865, Android SDK Command Line v20, CMake v3.30.3.
-  4. Download and Install CMake >= 3.28.0 and add PATH ENVIRONMENT.
-  5. Download and Install Java JDK 17 LTS (Temurin) : https://adoptium.net/fr/temurin/releases?version=17&os=any&arch=any  (Pendant l installation du SDK Java de Temurin cocher la case pour ajouté automatiquement la variable d environnement JAVA_HOME)
-  6. Si vous avez oublié de coché la case pour ajouter automatiquement la variable d environnement "JAVA_HOME", sous Windows en général : C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot
-  7. Download and Install Patchelf (Pour Linux seulement) : sudo apt install -y patchelf
+  1. Download and Install: Android Studio 2025.3.1 or newer
+  2. Add environment variable `ANDROID_HOME` → path to Android SDK :
+    - Windows :  
+      `C:\Users\<your-user>\AppData\Local\Android\Sdk`
+    - macOS (.zshrc):  
+      `/Users/<your-user>/Library/Android/sdk`
+    - Linux (.bashrc):  
+      `/home/<your-user>/Android/Sdk`
+  3. Open **Android Studio → SDK Manager** and install the following components:
+    ### 📦 SDK Platforms (tab "SDK Platforms")
+    - ✅ Android v16.0
+    ### 🛠 SDK Tools (tab "SDK Tools")
+    - ✅ Android SDK Build-Tools v36.1.0
+    - ✅ NDK v29.0.14206865
+    - ✅ Android SDK Command-line Tools v20.0
+    - ✅ CMake v3.30.3
+  4. Download and Install CMake ≥ 3.28.0 and add it to your system PATH.
+  5. Download and Install Java JDK 17 LTS (Temurin) : 
+    https://adoptium.net/fr/temurin/releases?version=17&os=any&arch=any  
+  6. Add environment variable `JAVA_HOME` → path to Java JDK Temurin :
+    - Windows example:  
+      `C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot`
+    - macOS example: 
+      `/Library/Java/JavaVirtualMachines/temurin-17.jdk`
+  7. Install patchelf (Linux seulement) :
+    sudo apt install -y patchelf
 
 
 

@@ -5,8 +5,9 @@ plugins {
 def buildWithCMake = project.hasProperty('BUILD_WITH_CMAKE');
 
 android {
-    namespace = "com.crzgames.testexe"
+    namespace = "com.crzgames.testexe"  
     compileSdkVersion 36
+    buildToolsVersion "36.1.0"
     ndkVersion "29.0.14206865"
     defaultConfig {
         applicationId "com.crzgames.testexe"
