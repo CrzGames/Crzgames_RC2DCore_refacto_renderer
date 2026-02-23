@@ -27,12 +27,14 @@ REM --------------------------------------------------
 
 REM JAVA_HOME obligatoire
 if "%JAVA_HOME%"=="" (
-  call :die "JAVA_HOME n'est pas defini. Exemple : setx JAVA_HOME ""C:\Program Files\Eclipse Adoptium\jdk-17"""
+  call :die "JAVA_HOME n'est pas defini. Exemple : setx JAVA_HOME ""C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot"""
+  call :die "Assure-toi d'avoir Java JDK 17 installé (Temurin) et que JAVA_HOME pointe vers le dossier racine du JDK."
 )
 
 REM ANDROID_HOME obligatoire
 if "%ANDROID_HOME%"=="" (
-  call :die "ANDROID_HOME n'est pas defini. Exemple : setx ANDROID_HOME ""%LOCALAPPDATA%\Android\Sdk"""
+  call :die "ANDROID_HOME n'est pas defini. Exemple : setx ANDROID_HOME ""C:\Users\<your-user>\AppData\Local\Android\Sdk"""
+  call :die "Assure-toi d'avoir le SDK Android installé (via Android Studio) et que ANDROID_HOME pointe vers le dossier racine du SDK."
 )
 
 REM Retirer trailing backslash si présent

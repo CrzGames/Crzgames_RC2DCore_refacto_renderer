@@ -22,12 +22,14 @@ warn() { echo -e "${YELLOW}Attention : $*${NC}"; }
 
 # JAVA_HOME obligatoire (Gradle tourne sur Java)
 if [ -z "${JAVA_HOME:-}" ]; then
-  die "JAVA_HOME n'est pas défini. Exemple : export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk"
+  die "JAVA_HOME n'est pas défini. Exemple macOS : export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk"
+  die "Assure-toi d'avoir Java JDK 17 installé (Temurin) et que JAVA_HOME pointe vers le dossier racine du JDK."
 fi
 
 # ANDROID_HOME obligatoire (SDK requis par Gradle + adb)
 if [ -z "${ANDROID_HOME:-}" ]; then
-  die "ANDROID_HOME n'est pas défini. Exemple macOS : export ANDROID_HOME=~/Library/Android/sdk"
+  die "ANDROID_HOME n'est pas défini. Exemple macOS : export ANDROID_HOME=/Users/<your-user>/Library/Android/sdk"
+  die "Assure-toi d'avoir le SDK Android installé (via Android Studio) et que ANDROID_HOME pointe vers le dossier racine du SDK."
 fi
 
 ANDROID_HOME="${ANDROID_HOME%/}"
