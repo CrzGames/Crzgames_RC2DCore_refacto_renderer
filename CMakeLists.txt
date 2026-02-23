@@ -1919,7 +1919,6 @@ if(RC2D_BUILD_EXAMPLES)
 
     # Ajoute une étape de post-build pour modifier le fichier Info.plist (macOS)
     set(MACOS_INFO_PLIST "$<TARGET_BUNDLE_DIR:${RC2D_EXAMPLE_TARGET_NAME}>/Contents/Info.plist")
-
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
       # ------------------------------------------------------------
       # Indirect input (souris / trackpad / clavier / manettes)
@@ -2088,9 +2087,9 @@ if(RC2D_BUILD_EXAMPLES)
     )
   elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4"))
     # Pour l'executable "classique" sur Linux (on ne parle pas de l'AppImage ici, mais rc2d_example)
-    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-      BUILD_RPATH "\$ORIGIN"
-      INSTALL_RPATH "\$ORIGIN"
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+      BUILD_RPATH "\$ORIGIN;\$ORIGIN/usr/lib"
+      INSTALL_RPATH "\$ORIGIN;\$ORIGIN/usr/lib"
       BUILD_WITH_INSTALL_RPATH TRUE
     )
 
