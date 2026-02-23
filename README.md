@@ -476,6 +476,99 @@ Debug : .\build\windows\x64\Release
 
 <br /><br />
 
+## 📲 Build & Deploy Mobile (Android / iOS)
+Les scripts dans `build-scripts/build-deploy-mobile/` permettent de **build + installer + lancer** l’app d’exemple RC2D directement sur un appareil réel.
+
+## 🤖 Android
+### Scripts
+- macOS / Linux : `build-scripts/build-deploy-mobile/android-unix.sh`
+- Windows : `build-scripts/build-deploy-mobile/android-windows.bat`
+
+### 🔧 Variables à modifier
+En haut du script :
+```bash
+# APP_COMPONENT = PACKAGE_NAME/.ACTIVITY_NAME (important quand tu changes d’app)
+APP_COMPONENT="com.crzgames.testexe/.MyGame"
+```
+
+### 📋 Prérequis
+Pour que le script `android-unix.sh ou android-windows.bat` fonctionne, il faut que :
+
+#### 💻 Sur le Windows/macOS/Linux
+- ✅ La valeur de la variable `APP_COMPONENT` du script (`android-unix.sh ou android-windows.bat`) corresponde exactement au package de l'application Android.
+
+#### 📱 Sur l'Android
+- ✅ Mode Developer Options activé
+- ✅ USB Debugging activé
+- ✅ Popup “Allow USB debugging” acceptée
+
+### ▶️ Exécuter
+```bash
+# Linux x64/arm64 - macOS Apple Silicon arm64
+chmod +x ./build-scripts/build-deploy-mobile/android-unix.sh
+./build-scripts/build-deploy-mobile/android-unix.sh
+
+# Windows x64/arm64
+.\build-scripts\build-deploy-mobile\android-windows.bat
+```
+
+<br />
+
+## 🍎 iOS
+### Scripts
+- macOS : `build-scripts/build-deploy-mobile/ios.sh`
+
+### 🔧 Variables à modifier
+En haut du script :
+```bash
+# Bundle ID (important quand tu changes d’app)
+BUNDLE_ID="com.crzgames.testexe"
+
+# Pattern de logs (le nom de l’exécutable / target CMake)
+PATTERN="rc2d_example"
+```
+
+### 🔐 Configuration de Signature iOS (OBLIGATOIRE)
+La signature est configurée dans le CMakeLists.txt via :
+```bash
+if(RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING)
+  set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
+    XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "YOUR_TEAM_ID"
+    XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development: Your Name"
+    XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual"
+    XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "YourProfileName"
+    XCODE_ATTRIBUTE_PROVISIONING_PROFILE "PROFILE_UUID"
+  )
+endif()
+```
+
+### 📋 Prérequis iOS (Apple Developer + Device)
+Pour que le script `ios.sh` fonctionne, il faut que : 
+
+#### 💻 Sur le Mac
+- ✅ Certificat Apple Development installé sur le Mac
+- ✅ Provisioning Profile valide installé sur le Mac
+- ✅ La valeur de la variable `BUNDLE_ID` du script (`ios.sh`) corresponde exactement à celui signé (donc l'identifier exemple : com.crzgames.testexe)
+- ✅ La valeur de la variable `PATTERN` du script (`ios.sh`) corresponde exactement à la target CMake donc au nom du `project()` dans le `CMakelists.txt`.
+
+#### 📱 Sur l’iPhone
+- ✅ L’iPhone soit enregistré dans ton compte Apple Developer (Devices → UDID ajouté)
+- ✅ L’iPhone soit : 
+  - Déverrouillé
+  - Branché en USB
+  - Accepté la popup quand on branche en usb "faire confiance à cette ordinateur"
+  - Developer Mode activé
+  - iOS version ≥ 18.0 (selon les prérequis RC2D)
+
+### ▶️ Exécuter
+```bash
+# macOS Apple Silicon arm64
+chmod +x ./build-scripts/build-deploy-mobile/ios.sh
+./build-scripts/build-deploy-mobile/ios.sh
+```
+
+<br /><br />
+
 ---
 
 <br /><br />
