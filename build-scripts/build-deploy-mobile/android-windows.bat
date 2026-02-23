@@ -74,7 +74,7 @@ if not errorlevel 1 (
 REM au moins un device prêt ?
 adb devices | findstr /R /C:" device$" >nul 2>&1
 if errorlevel 1 (
-  call :die "Aucun appareil Android pret ('device') n'est connecte. Lance un emulateur ou branche un telephone (USB debugging)."
+  call :die "Branche un telephone via USB ou accepte la popup 'Autoriser le debogage USB' sur l'appareil."
 )
 
 call :info "Appareil detecte :"

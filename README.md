@@ -330,6 +330,7 @@
       `/Library/Java/JavaVirtualMachines/temurin-17.jdk`
   6. Install patchelf (Linux seulement) :
     sudo apt install -y patchelf
+  7. Ajouter au PATH ENVIRONMENT pour adb (Windows seulement) : C:\Users\<your-user>\AppData\Local\Android\Sdk\platform-tools
 
 
 
