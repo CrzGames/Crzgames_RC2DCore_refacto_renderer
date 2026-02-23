@@ -60,7 +60,7 @@ DEVICE_ID=$(ios-deploy --no-wifi -c | grep -oE 'Found ([0-9A-Za-z\-]+)' | sed 's
 if [ -n "$DEVICE_ID" ]; then
   # Run the application in real device
   echo -e "\e[32m\nApplication installed in real device now...\e[0m"
-  ios-deploy --no-wifi --justlaunch --bundle "$APP_PATH" --id "$DEVICE_ID"
+  ios-deploy --justlaunch --bundle "$APP_PATH" --id "$DEVICE_ID"
   
   # Start log with a filter for your application (équivalent adb: SDL:V "SDL/APP:V")
   echo -e "\e[32m\nStarting device logs (filter: SDL, SDL/APP)...\e[0m"
