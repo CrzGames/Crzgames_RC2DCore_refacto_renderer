@@ -526,11 +526,12 @@ La signature est configurée dans le CMakeLists.txt via :
 ```bash
 if(RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING)
   set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
-    XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "YOUR_TEAM_ID"
-    XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development: Your Name"
-    XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual"
-    XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER "YourProfileName"
-    XCODE_ATTRIBUTE_PROVISIONING_PROFILE "PROFILE_UUID"
+    XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${APP_IOSMACOS_DEVELOPMENT_TEAM_ID} # Remplacez par votre Team ID Apple
+    XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ${APP_IOS_CODE_SIGN_IDENTITY} # Remplacez par votre identité de signature
+    XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual" # Style de signature (Manual ou Automatic)
+    XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --strict --force --timestamp --verbose" # Options supplémentaires pour la signature
+    XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER ${APP_IOS_PROVISIONING_PROFILE_NAME} # Remplacez par le nom de votre profil de provisionnement
+    XCODE_ATTRIBUTE_PROVISIONING_PROFILE ${APP_IOS_PROVISIONING_PROFILE_UUID} # Remplacez par l'UUID de votre profil de provisionnement
   )
 endif()
 ```
