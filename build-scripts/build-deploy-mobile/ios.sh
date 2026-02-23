@@ -1,70 +1,92 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# Define ANSI color codes
+# ==================================================
+# 🔧 CONFIGURATION (À MODIFIER SI PROJET CHANGE)
+# ==================================================
+# Nom de la target CMake / exécutable
+APP_NAME="rc2d_example"
+
+# Bundle identifier iOS
+BUNDLE_ID="com.crzgames.testexe"
+
+# Pattern pour filtrer les logs
+LOG_PATTERN="$APP_NAME"
+
+# ==================================================
+# 🎨 Colors
+# ==================================================
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-CONFIGURATION="Debug" # Default configuration
+CONFIGURATION="Debug"
 
-# Process command line arguments
+# ==================================================
+# 📦 Args
+# ==================================================
 while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --config)
-            CONFIGURATION="$2"
-            shift # pass to next argument
-            ;;
-        *)
-            echo -e "${RED}Erreur : Argument non reconnu : $1${NC}"
-            exit 1
-            ;;
-    esac
-    shift # pass to next argument or value
+  case $1 in
+    --config) CONFIGURATION="$2"; shift ;;
+    *) echo -e "${RED}Erreur : Argument non reconnu : $1${NC}"; exit 1 ;;
+  esac
+  shift
 done
 
-# Define your project-specific variables (nouveau chemin)
+# ==================================================
+# 🏗 Build
+# ==================================================
 BUILD_DIR="./build/ios/iphoneos"
 
-# ➕ Générer le projet Xcode si le dossier n'existe pas
 if [ ! -d "$BUILD_DIR" ]; then
-    echo -e "${GREEN}Generating Xcode project for iOS (iphoneos)...${NC}"
-    cmake -S . -B "$BUILD_DIR" -G Xcode -DCMAKE_SYSTEM_NAME=iOS -DRC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING=ON
+  echo -e "${GREEN}Generating Xcode project for iOS (iphoneos)...${NC}"
+  cmake -S . -B "$BUILD_DIR" -G Xcode \
+    -DCMAKE_SYSTEM_NAME=iOS \
+    -DRC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING=ON
 fi
 
-# Clean and rebuild the project
 echo -e "${GREEN}Cleaning and rebuilding the project...${NC}"
 cmake --build "$BUILD_DIR" --target clean
 cmake --build "$BUILD_DIR" --config "$CONFIGURATION"
 
-# Define the path to the .app file for iphoneos
-APP_PATH=$(find "$BUILD_DIR/$CONFIGURATION" -name "*.app" -print -quit)
-
-# Check if the .app file exists
+APP_PATH="$(find "$BUILD_DIR/$CONFIGURATION" -name "$APP_NAME.app" -print -quit)"
 if [ ! -d "$APP_PATH" ]; then
-    echo -e "${RED}Erreur : Aucun fichier .app trouvé dans $BUILD_DIR/$CONFIGURATION${NC}"
-    exit 1
+  echo -e "${RED}Erreur : Aucun fichier $APP_NAME.app trouvé.${NC}"
+  exit 1
 fi
 
-# Vérifier que ios-deploy est installé
-if ! command -v ios-deploy &> /dev/null; then
-    echo -e "${RED}Erreur : ios-deploy n'est pas installé.${NC}"
-    echo "👉 Installe-le avec : brew install ios-deploy"
-    exit 1
+# ==================================================
+# 📱 Device detection (CoreDevice UUID)
+# ==================================================
+DEVICE_ID="$(
+  xcrun devicectl list devices 2>/dev/null \
+    | grep -i 'connected' \
+    | grep -Eo '[0-9A-Fa-f-]{36}' \
+    | head -n 1 || true
+)"
+
+if [ -z "$DEVICE_ID" ]; then
+  echo -e "${RED}Aucun device iOS détecté.${NC}"
+  echo -e "${RED}Tips: USB + déverrouille + Trust.${NC}"
+  exit 1
 fi
 
-# Extraire l'ID du premier périphérique connecté via USB (supposant qu'il y en ait au moins un)
-DEVICE_ID=$(ios-deploy --no-wifi -c | grep -oE 'Found ([0-9A-Za-z\-]+)' | sed 's/Found //g')
+echo -e "${GREEN}Device: $DEVICE_ID${NC}"
+echo -e "${GREEN}Bundle ID: $BUNDLE_ID${NC}"
 
-# Vérifier si un périphérique a été détecté
-if [ -n "$DEVICE_ID" ]; then
-  # Run the application in real device
-  echo -e "\e[32m\nApplication installed in real device now...\e[0m"
-  ios-deploy --justlaunch --bundle "$APP_PATH" --id "$DEVICE_ID"
-  
-  # Start log with a filter for your application (équivalent adb: SDL:V "SDL/APP:V")
-  echo -e "\e[32m\nStarting device logs (filter: SDL, SDL/APP)...\e[0m"
-  idevicesyslog -u "$DEVICE_ID" | grep -E --line-buffered "SDL|SDL/APP"
-else
-  echo -e "${RED}Warning: Aucun device iOS détecté.${NC}"
-fi
+# ==================================================
+# 📲 Install
+# ==================================================
+echo -e "${GREEN}\nInstalling app...${NC}"
+xcrun devicectl device install app --device "$DEVICE_ID" "$APP_PATH"
+
+# ==================================================
+# 🚀 Launch + Attach Console
+# ==================================================
+echo -e "${GREEN}\nLaunching app (attached console)...${NC}"
+
+xcrun devicectl device process launch \
+  --device "$DEVICE_ID" \
+  --console \
+  "$BUNDLE_ID" 2>&1 \
+  | grep -E --line-buffered "$LOG_PATTERN"

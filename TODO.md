@@ -12,3 +12,8 @@ TODO 2 :
 
 TODO 3 :
 - iOS/ffmpeg: La librarie ffmpeg récupérer est en version min os : 18.5.0, on attends de build via les sources pour ffmpeg pour toute les plateformes, pour le gérer en 18.0.0 poue iOS
+
+
+
+TODO 4 :
+- Fixer tout les warning pour GCC / CLANG / CL

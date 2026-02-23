@@ -323,11 +323,10 @@
   4. Download and Install Command Line Tools : xcode-select --install
   5. Download and Install brew : /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   6. Download and Install cmake >= 3.28.0 : brew install cmake
-  7. Download and Install ios-deploy : brew install ios-deploy
-  8. Checker les versions des SDK : 
+  7. Checker les versions des SDK : 
      xcrun --sdk iphoneos --show-sdk-version
      xcrun --sdk macosx --show-sdk-version
-  9. Lister tous les certificats installés sur ton Mac (si besoin) :
+  8. Lister tous les certificats installés sur ton Mac (si besoin) :
      security find-identity -v -p codesigning
   ```
   
