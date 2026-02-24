@@ -1694,7 +1694,7 @@ if(RC2D_BUILD_EXAMPLES)
   if(DEFINED ENV{APP_MACOS_CODE_SIGN_IDENTITY})
     set(APP_MACOS_CODE_SIGN_IDENTITY "$ENV{APP_MACOS_CODE_SIGN_IDENTITY}" CACHE STRING "Identité de code signing Apple macOS")
   else()
-    set(APP_MACOS_CODE_SIGN_IDENTITY "Developer ID Application: Corentin Recanzone (2X96T6AM4K)" CACHE STRING "Identité de code signing Apple macOS")
+    set(APP_MACOS_CODE_SIGN_IDENTITY "Developer ID Application: Corentin Recanzone (U3D28WJ8DV)" CACHE STRING "Identité de code signing Apple macOS")
   endif()
 
   # ============================================================
