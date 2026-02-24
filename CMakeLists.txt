@@ -1624,7 +1624,7 @@ if(RC2D_BUILD_EXAMPLES)
     set(APP_VERSION_NUMERIC "1.0.0" CACHE STRING "Version numerique (major.minor.patch)")
   endif()
 
-  # Version "string" libre -> visible dans les propriétés Windows, Android, SteamRT4.
+  # Version "string" libre -> visible dans les propriétés Windows, Android, Linux.
   if(DEFINED ENV{APP_VERSION_STR})
     set(APP_VERSION_STR "$ENV{APP_VERSION_STR}" CACHE STRING "Version string (peut contenir branch/sha)")
   else()
