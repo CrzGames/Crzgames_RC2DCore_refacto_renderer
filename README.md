@@ -470,10 +470,12 @@ chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
 # Android - Unix (Linux x64/arm64 or macOS Apple Silicon arm64)
 chmod +x ./build-scripts/generate-project/android-unix.sh
 ./build-scripts/generate-project/android-unix.sh
+# Generate la librairie static RC2D + APK/AAB (donc le projet d'exemple RC2D qui seras dans le AAB/APK)
 
 
 # Android - Windows (x64/arm64)
 .\build-scripts\generate-project\android-windows.bat
+# Generate la librairie static RC2D + APK/AAB (donc le projet d'exemple RC2D qui seras dans le AAB/APK)
 
 
 # iOS (run in macOS) - No Signed Bundle .app for Project Example
@@ -500,7 +502,7 @@ Debug : .\build\windows\x64\Release
 
 <br /><br />
 
-## 📲 Build & Deploy Mobile (Android / iOS)
+## 📲 Build & Deploy Mobile (Android / iOS) - For Development
 Les scripts dans `build-scripts/build-deploy-mobile/` permettent de **build + installer + lancer** l’app d’exemple RC2D directement sur un appareil réel.
 
 ## 🤖 Android
