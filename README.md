@@ -229,6 +229,7 @@
   8. Fermer/RéOuvrir un nouveau terminal pour prendre en compte les deux dernières étapes.
 
 
+
   # Linux (x64/arm64) :
   1. Requirements : glibc >= 2.35.0 (Exemple : Ubuntu >= 22.04 OR Debian >= 12.0), checker via : ldd --version
   2. Download and Install (gcc, g++, make..) :
@@ -306,6 +307,7 @@
      source $HOME/.cargo/env
   9. Installer Tauri CLI (for Icons) :
      cargo install tauri-cli
+
 
 
   # Android (Linux x64-arm64 / macOS Apple Silicon arm64 / Windows x64-arm64) :
