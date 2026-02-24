@@ -211,7 +211,8 @@ Une fois exécuté, tout est régénéré automatiquement pour toutes les platef
 
 Dans CMakeLists.txt tu as (modifier si besoin) :
 
-APP_VERSION  
+APP_VERSION_NUMERIC
+APP_VERSION_STR
 APP_COMPANY_NAME  
 APP_GAME_DESCRIPTION  
 APP_LEGAL_COPYRIGHT  

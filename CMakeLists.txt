@@ -1616,14 +1616,23 @@ if(RC2D_BUILD_EXAMPLES)
   # C'est utiliser pour générer dynamiquement le fichier de ressources Windows (.rc) ou les Info.plist pour Apple, 
   # afin d'inclure ces métadonnées dans l'exécutable final.
   # ============================================================
-  if(DEFINED ENV{APP_VERSION})
-    set(APP_VERSION "$ENV{APP_VERSION}" CACHE STRING "Version de l'application")
+
+  # Version "numérique" strict (SemVer) -> pour FILEVERSION/PRODUCTVERSION (Windows) et CFBundleShortVersionString (iOS/macOS).
+  if(DEFINED ENV{APP_VERSION_NUMERIC})
+    set(APP_VERSION_NUMERIC "$ENV{APP_VERSION_NUMERIC}" CACHE STRING "Version numerique (major.minor.patch)")
   else()
-    set(APP_VERSION "1.0.0" CACHE STRING "Version de l'application")
+    set(APP_VERSION_NUMERIC "1.0.0" CACHE STRING "Version numerique (major.minor.patch)")
   endif()
 
-  # Découper la version en parties
-  string(REPLACE "." ";" VERSION_LIST ${APP_VERSION})
+  # Version "string" libre -> visible dans les propriétés Windows, Android, SteamRT4.
+  if(DEFINED ENV{APP_VERSION_STR})
+    set(APP_VERSION_STR "$ENV{APP_VERSION_STR}" CACHE STRING "Version string (peut contenir branch/sha)")
+  else()
+    set(APP_VERSION_STR "1.0.0-staging-commitshashort" CACHE STRING "Version string (peut contenir branch/sha)")
+  endif()
+
+  # Découper APP_VERSION_NUMERIC (strictement major.minor.patch)
+  string(REPLACE "." ";" VERSION_LIST ${APP_VERSION_NUMERIC})
   list(GET VERSION_LIST 0 APP_VERSION_MAJOR)
   list(GET VERSION_LIST 1 APP_VERSION_MINOR)
   list(GET VERSION_LIST 2 APP_VERSION_PATCH)
@@ -1857,7 +1866,7 @@ if(RC2D_BUILD_EXAMPLES)
       MACOSX_BUNDLE TRUE
       MACOSX_BUNDLE_BUNDLE_NAME ${RC2D_EXAMPLE_TARGET_NAME} # Nom de l'application (à modifier pour chaque application)
       MACOSX_BUNDLE_GUI_IDENTIFIER ${APP_IOSMACOS_IDENTIFIER} # L'identifiant de votre application (via identifiers sur le compte apple developer), à modifier pour chaque application
-      MACOSX_BUNDLE_SHORT_VERSION_STRING ${APP_VERSION} # Version utilisateur lisible (à modifier pour chaque application)
+      MACOSX_BUNDLE_SHORT_VERSION_STRING ${APP_VERSION_NUMERIC} # Version utilisateur lisible (à modifier pour chaque application)
       MACOSX_BUNDLE_BUNDLE_VERSION ${APP_IOSMACOS_BUILD_VERSION} # Version de build unique (à modifier pour chaque application)
       MACOSX_BUNDLE_COPYRIGHT ${APP_LEGAL_COPYRIGHT} # Droits d'auteur (à modifier pour chaque application)
       MACOSX_BUNDLE_ICON_FILE "app-icon.icns"
@@ -2009,7 +2018,7 @@ if(RC2D_BUILD_EXAMPLES)
       MACOSX_BUNDLE TRUE
       MACOSX_BUNDLE_BUNDLE_NAME ${RC2D_EXAMPLE_TARGET_NAME} # Nom de l'application (à modifier pour chaque application)
       MACOSX_BUNDLE_GUI_IDENTIFIER ${APP_IOSMACOS_IDENTIFIER} # L'identifiant de votre application (via identifiers sur le compte apple developer) à modifier pour chaque application
-      MACOSX_BUNDLE_SHORT_VERSION_STRING ${APP_VERSION} # Version utilisateur lisible (à modifier pour chaque application)
+      MACOSX_BUNDLE_SHORT_VERSION_STRING ${APP_VERSION_NUMERIC} # Version utilisateur lisible (à modifier pour chaque application)
       MACOSX_BUNDLE_BUNDLE_VERSION ${APP_IOSMACOS_BUILD_VERSION} # Version de build unique (à modifier pour chaque application)
       MACOSX_BUNDLE_COPYRIGHT ${APP_LEGAL_COPYRIGHT} # Droits d'auteur
       MACOSX_BUNDLE_INFO_STRING ${APP_GAME_DESCRIPTION} # Description de l'application (à modifier pour chaque application)
@@ -2124,7 +2133,7 @@ if(RC2D_BUILD_EXAMPLES)
         ICON \"${PROJECT_SOURCE_DIR}/icons/linux/app-icon.png\"
         DIR_ICON \"${PROJECT_SOURCE_DIR}/icons/linux/app-icon.png\"
         OUTPUT_NAME \"${APPIMAGE_OUTPUT}\"
-        APP_VERSION \"${APP_VERSION}\"
+        APP_VERSION \"${APP_VERSION_STR}\"
         APP_ARCH \"${APPIMAGE_ARCH}\"
         APPDIR \"${APPDIR}\"
 
