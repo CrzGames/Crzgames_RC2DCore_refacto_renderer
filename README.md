@@ -226,6 +226,7 @@
      reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f
   7. Activer long paths dans Git :
      git config --global core.longpaths true
+  8. Fermer/RéOuvrir un nouveau terminal pour prendre en compte les deux dernières étapes.
 
 
   # Linux (x64/arm64) :
