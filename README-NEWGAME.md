@@ -209,7 +209,7 @@ Une fois exécuté, tout est régénéré automatiquement pour toutes les platef
  
 # 🧾 Métadonnées globales (CMake)
 
-Dans CMakeLists.txt tu as (modifie si besoin) :
+Dans CMakeLists.txt tu as (modifier si besoin) :
 
 APP_VERSION  
 APP_COMPANY_NAME  
@@ -229,3 +229,6 @@ if(DEFINED ENV{APP_IOSMACOS_IDENTIFIER})
 else()
     set(APP_IOSMACOS_IDENTIFIER "com.crzgames.testexe")
 endif()
+
+
+Et également modifier la valeur du nom de la target CMake (project()) : rc2d_example en : ce qu'ont souhaite.
