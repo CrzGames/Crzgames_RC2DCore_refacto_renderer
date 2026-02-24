@@ -165,15 +165,15 @@ for /R "app\build\outputs" %%F in (*release*.apk) do (
 )
 
 if defined APK_DEBUG (
-  copy /Y "!APK_DEBUG!" "%OUT_APK_BASE%\Debug\rc2d-debug.apk" >nul
-  echo APK Debug  -> %OUT_APK_BASE%\Debug\rc2d-debug.apk
+  copy /Y "!APK_DEBUG!" "%OUT_APK_BASE%\Debug\rc2d-example-debug.apk" >nul
+  echo APK Debug  -> %OUT_APK_BASE%\Debug\rc2d-example-debug.apk
 ) else (
   echo ^(warn^) Aucun APK Debug trouvé dans app\build\outputs\
 )
 
 if defined APK_RELEASE (
-  copy /Y "!APK_RELEASE!" "%OUT_APK_BASE%\Release\rc2d-release.apk" >nul
-  echo APK Release -> %OUT_APK_BASE%\Release\rc2d-release.apk
+  copy /Y "!APK_RELEASE!" "%OUT_APK_BASE%\Release\rc2d-example-release.apk" >nul
+  echo APK Release -> %OUT_APK_BASE%\Release\rc2d-example-release.apk
 ) else (
   echo ^(warn^) Aucun APK Release trouvé dans app\build\outputs\
 )
@@ -190,15 +190,15 @@ for /R "app\build\outputs" %%F in (*release*.aab) do (
 )
 
 if defined AAB_DEBUG (
-  copy /Y "!AAB_DEBUG!" "%OUT_AAB_BASE%\Debug\rc2d-debug.aab" >nul
-  echo AAB Debug  -> %OUT_AAB_BASE%\Debug\rc2d-debug.aab
+  copy /Y "!AAB_DEBUG!" "%OUT_AAB_BASE%\Debug\rc2d-example-debug.aab" >nul
+  echo AAB Debug  -> %OUT_AAB_BASE%\Debug\rc2d-example-debug.aab
 ) else (
   echo ^(warn^) Aucun AAB Debug trouvé dans app\build\outputs\
 )
 
 if defined AAB_RELEASE (
-  copy /Y "!AAB_RELEASE!" "%OUT_AAB_BASE%\Release\rc2d-release.aab" >nul
-  echo AAB Release -> %OUT_AAB_BASE%\Release\rc2d-release.aab
+  copy /Y "!AAB_RELEASE!" "%OUT_AAB_BASE%\Release\rc2d-example-release.aab" >nul
+  echo AAB Release -> %OUT_AAB_BASE%\Release\rc2d-example-release.aab
 ) else (
   echo ^(warn^) Aucun AAB Release trouvé dans app\build\outputs\
 )
@@ -263,11 +263,11 @@ echo   %OUT_BASE%\armeabi-v7a\Debug\librc2d_static.a
 echo   %OUT_BASE%\arm64-v8a\Release\librc2d_static.a  ^(built as RelWithDebInfo^)
 echo   %OUT_BASE%\armeabi-v7a\Release\librc2d_static.a ^(built as RelWithDebInfo^)
 echo Outputs (APK):
-echo   %OUT_BASE%\apk\Debug\rc2d-debug.apk
-echo   %OUT_BASE%\apk\Release\rc2d-release.apk
+echo   %OUT_BASE%\apk\Debug\rc2d-example-debug.apk
+echo   %OUT_BASE%\apk\Release\rc2d-example-release.apk
 echo Outputs (AAB):
-echo   %OUT_BASE%\aab\Debug\rc2d-debug.aab
-echo   %OUT_BASE%\aab\Release\rc2d-release.aab
+echo   %OUT_BASE%\aab\Debug\rc2d-example-debug.aab
+echo   %OUT_BASE%\aab\Release\rc2d-example-release.aab
 echo.
 
 exit /b 0
