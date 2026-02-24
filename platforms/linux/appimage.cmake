@@ -135,6 +135,8 @@ exec \"\$HERE/${EXE_NAME}\" \"\$@\"
 Type=Application
 Name=${ARGS_NAME}
 Icon=${ARGS_NAME}
+Exec=AppRun
+TryExec=AppRun
 Terminal=false
 Categories=Game;
 X-AppImage-Name=${ARGS_NAME}
