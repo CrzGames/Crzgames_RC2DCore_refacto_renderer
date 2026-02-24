@@ -222,7 +222,10 @@
      winget install Rustlang.Rustup
   5. Installer Tauri CLI (for Icons) :
      cargo install tauri-cli
-
+  6. Activer le support long path dans Windows (Powershell en adminstrateur) : 
+     reg add HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled /t REG_DWORD /d 1 /f
+  7. Activer long paths dans Git :
+     git config --global core.longpaths true
 
 
   # Linux (x64/arm64) :
