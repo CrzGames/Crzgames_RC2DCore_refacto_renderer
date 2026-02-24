@@ -106,29 +106,29 @@ AAB_DEBUG="$(find "app/build/outputs" -type f -name "*debug*.aab" 2>/dev/null | 
 AAB_RELEASE="$(find "app/build/outputs" -type f -name "*release*.aab" 2>/dev/null | head -n 1 || true)"
 
 if [ -n "$APK_DEBUG" ]; then
-  cp -f "$APK_DEBUG" "../${OUT_APK_BASE}/Debug/rc2d-debug.apk"
-  echo "APK Debug  -> ${OUT_APK_BASE}/Debug/rc2d-debug.apk"
+  cp -f "$APK_DEBUG" "../${OUT_APK_BASE}/Debug/rc2d-example-debug.apk"
+  echo "APK Debug  -> ${OUT_APK_BASE}/Debug/rc2d-example-debug.apk"
 else
   echo "⚠️  Aucun APK Debug trouvé dans app/build/outputs/"
 fi
 
 if [ -n "$APK_RELEASE" ]; then
-  cp -f "$APK_RELEASE" "../${OUT_APK_BASE}/Release/rc2d-release.apk"
-  echo "APK Release -> ${OUT_APK_BASE}/Release/rc2d-release.apk"
+  cp -f "$APK_RELEASE" "../${OUT_APK_BASE}/Release/rc2d-example-release.apk"
+  echo "APK Release -> ${OUT_APK_BASE}/Release/rc2d-example-release.apk"
 else
   echo "⚠️  Aucun APK Release trouvé dans app/build/outputs/"
 fi
 
 if [ -n "$AAB_DEBUG" ]; then
-  cp -f "$AAB_DEBUG" "../${OUT_AAB_BASE}/Debug/rc2d-debug.aab"
-  echo "AAB Debug  -> ${OUT_AAB_BASE}/Debug/rc2d-debug.aab"
+  cp -f "$AAB_DEBUG" "../${OUT_AAB_BASE}/Debug/rc2d-example-debug.aab"
+  echo "AAB Debug  -> ${OUT_AAB_BASE}/Debug/rc2d-example-debug.aab"
 else
   echo "⚠️  Aucun AAB Debug trouvé dans app/build/outputs/"
 fi
 
 if [ -n "$AAB_RELEASE" ]; then
-  cp -f "$AAB_RELEASE" "../${OUT_AAB_BASE}/Release/rc2d-release.aab"
-  echo "AAB Release -> ${OUT_AAB_BASE}/Release/rc2d-release.aab"
+  cp -f "$AAB_RELEASE" "../${OUT_AAB_BASE}/Release/rc2d-example-release.aab"
+  echo "AAB Release -> ${OUT_AAB_BASE}/Release/rc2d-example-release.aab"
 else
   echo "⚠️  Aucun AAB Release trouvé dans app/build/outputs/"
 fi
@@ -189,8 +189,8 @@ echo "  ${OUT_BASE}/armeabi-v7a/Debug/librc2d_static.a"
 echo "  ${OUT_BASE}/arm64-v8a/Release/librc2d_static.a (built as RelWithDebInfo)"
 echo "  ${OUT_BASE}/armeabi-v7a/Release/librc2d_static.a (built as RelWithDebInfo)"
 echo "Outputs (APK):"
-echo "  ${OUT_BASE}/apk/Debug/rc2d-debug.apk"
-echo "  ${OUT_BASE}/apk/Release/rc2d-release.apk"
+echo "  ${OUT_BASE}/apk/Debug/rc2d-example-debug.apk"
+echo "  ${OUT_BASE}/apk/Release/rc2d-example-release.apk"
 echo "Outputs (AAB):"
-echo "  ${OUT_BASE}/aab/Debug/rc2d-debug.aab"
-echo "  ${OUT_BASE}/aab/Release/rc2d-release.aab"
+echo "  ${OUT_BASE}/aab/Debug/rc2d-example-debug.aab"
+echo "  ${OUT_BASE}/aab/Release/rc2d-example-release.aab"
