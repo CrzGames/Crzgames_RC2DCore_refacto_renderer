@@ -26,10 +26,10 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - { runner: ubuntu-latest,    platform: steamrt4, arch: x64, container: "registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk:4.0.20260119.200228" }
-        - { runner: ubuntu-24.04-arm, platform: steamrt4, arch: arm64,  container: "registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk/arm64:4.0.20260119.200228" }
+        - { runner: ubuntu-latest,    platform: steamrt4, arch: x64,   container: "registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk:4.0.20260119.200228" }
+        - { runner: ubuntu-24.04-arm, platform: steamrt4, arch: arm64, container: "registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk/arm64:4.0.20260119.200228" }
         - { runner: windows-2025,     platform: windows,  arch: x64 }
-        - { runner: windows-2025,     platform: windows,  arch: arm64 }
+        - { runner: windows-11-arm,   platform: windows,  arch: arm64 }
         - { runner: ubuntu-22.04,     platform: linux,    arch: x64 }
         - { runner: ubuntu-22.04-arm, platform: linux,    arch: arm64 }
         - { runner: ubuntu-latest,    platform: android,  arch: "armeabi-v7a,arm64-v8a" }
