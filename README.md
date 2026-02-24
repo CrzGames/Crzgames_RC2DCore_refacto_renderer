@@ -574,7 +574,7 @@ Pour que le script `ios.sh` fonctionne, il faut que :
 
 #### 💻 Sur le Mac
 - ✅ Certificat Apple Development installé sur le Mac
-- ✅ Provisioning Profile valide installé sur le Mac
+- ✅ Provisioning Profile de type Development valide installé sur le Mac
 - ✅ La valeur de la variable `BUNDLE_ID` du script (`ios.sh`) corresponde exactement à celui signé (donc l'identifier exemple : com.crzgames.testexe)
 - ✅ La valeur de la variable `PATTERN` du script (`ios.sh`) corresponde exactement à la target CMake donc au nom du `project()` dans le `CMakelists.txt`.
 
