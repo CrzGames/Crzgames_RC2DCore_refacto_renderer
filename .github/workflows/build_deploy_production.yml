@@ -183,152 +183,54 @@ jobs:
 
           echo "✅ Inspecting $APK"
           unzip -l "$APK"
-
-      - name: Upload Artifact - All platforms
-        uses: actions/upload-artifact@v6
-        with:
-          name: librc2d-${{ matrix.config.platform }}-${{ matrix.config.arch }}
-          path: |
-            # For Unix platforms and Android
-            build/**/librc2d_static.*
-            # For Windows
-            build/**/rc2d_static.*
-          if-no-files-found: error
-
-  deploy_assets_github:
-    needs: build_librc2d
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Download Artifacts
-        uses: actions/download-artifact@v7
-        with:
-          pattern: librc2d-*
-          path: artifacts
-
-      - name: Organize Artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s globstar nullglob
-
-          echo "=== Artifacts tree (top) ==="
-          find artifacts -maxdepth 4 -type f | sort || true
-
-          mkdir -p android/armeabi-v7a android/arm64-v8a
-          mkdir -p windows/x64 windows/arm64
-          mkdir -p macos/arm64
-          mkdir -p ios/arm64
-          mkdir -p linux/x64 linux/arm64
-          mkdir -p steamrt4/x64 steamrt4/arm64
-          mkdir -p package/include
-
-          # Helper: pick first match or fail
-          pick() {
-            local pattern="$1"
-            local out="$2"
-            local f
-            f="$(find artifacts -type f -path "$pattern" | head -n 1 || true)"
-            if [[ -z "${f}" ]]; then
-              echo "❌ Not found: $pattern"
-              return 1
-            fi
-            echo "✅ Found: $f -> $out"
-            cp -f "$f" "$out"
-          }
-
-          # Android (adapte les patterns si ton build génère un sous-dossier différent)
-          pick "*/android/*/armeabi-v7a/*librc2d_static.a" "android/armeabi-v7a/librc2d_static.a"
-          pick "*/android/*/arm64-v8a/*librc2d_static.a"   "android/arm64-v8a/librc2d_static.a"
-          zip -r librc2d-android.zip android/
-
-          # Windows (on accepte les 2 noms possibles)
-          pick "*/windows/*/x64/*librc2d_static.lib"   "windows/x64/librc2d_static.lib"   || pick "*/windows/*/x64/*rc2d_static.lib"   "windows/x64/librc2d_static.lib"
-          pick "*/windows/*/arm64/*librc2d_static.lib" "windows/arm64/librc2d_static.lib" || pick "*/windows/*/arm64/*rc2d_static.lib" "windows/arm64/librc2d_static.lib"
-          zip -r librc2d-windows.zip windows/
-
-          # macOS
-          pick "*/macos/*/arm64/*librc2d_static.a" "macos/arm64/librc2d_static.a"
-          tar -czvf librc2d-macos.tar.gz macos/
-
-          # iOS
-          pick "*/ios/*/arm64/*librc2d_static.a" "ios/arm64/librc2d_static.a"
-          tar -czvf librc2d-ios.tar.gz ios/
-
-          # Linux
-          pick "*/linux/*/x64/*librc2d_static.a"   "linux/x64/librc2d_static.a"
-          pick "*/linux/*/arm64/*librc2d_static.a" "linux/arm64/librc2d_static.a"
-          tar -czvf librc2d-linux.tar.gz linux/
-
-          # SteamRT4
-          pick "*/steamrt4/*/x64/*librc2d_static.a"   "steamrt4/x64/librc2d_static.a"
-          pick "*/steamrt4/*/arm64/*librc2d_static.a" "steamrt4/arm64/librc2d_static.a"
-          zip -r librc2d-steamrt4.zip steamrt4/
-
-          # Headers (FIX: ne copie pas dans include/)
-          cp -r include/RC2D package/include/
-          tar -czvf include.tar.gz package/include
-
-      - name: Deploy libraries assets - Release Github
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            librc2d-android.zip
-            librc2d-windows.zip
-            librc2d-macos.tar.gz
-            librc2d-ios.tar.gz
-            librc2d-linux.tar.gz
-            librc2d-steamrt4.zip
-            include.tar.gz
-
-  build_deploy_website:
-    needs: deploy_assets_github
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Get latest release tag
-        id: previoustag
-        uses: WyriHaximus/github-action-get-previous-tag@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-      - name: Build and push Docker image - Production version latest
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./docker/production/Dockerfile
-          push: true
-          tags: corentin35/librc2d-website-frontend:latest
-
-      - name: Build and push Docker image - Production version x.x.x
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./docker/production/Dockerfile
-          push: true
-          tags: corentin35/librc2d-website-frontend:${{ steps.previoustag.outputs.tag }}
-
-      - name: Replace image tag in deployment.yaml for Kubernetes
-        run: |
-          sed -i 's/\${TAG_VERSION}/'${{ steps.previoustag.outputs.tag }}'/g' k8s/production/deployment.yaml
-
-      - name: Connect to the cluster K3S for deploy
-        uses: actions-hub/kubectl@master
-        env:
-          # TODO: à changér pour le cluster de production
-          KUBE_CONFIG: ${{ secrets.KUBECONFIG_CLUSTER_STAGING_CRZGAMES_BASE64 }}
-        with:
-          args: |
-            apply -f k8s/production/namespace.yaml
-            -f k8s/production/docker-registry-secret.yaml
-            -f k8s/production/deployment.yaml
-            -f k8s/production/ingress.yaml
-            -f k8s/production/service.yaml
+  
+# build_deploy_website:
+#   needs: build_librc2d
+#   runs-on: ubuntu-latest
+#   steps:
+#
+#     - name: Checkout repository
+#       uses: actions/checkout@v6
+#
+#     - name: Get latest release tag
+#       id: previoustag
+#       uses: WyriHaximus/github-action-get-previous-tag@v2
+#
+#     - name: Login to DockerHub
+#       uses: docker/login-action@v3
+#       with:
+#         username: ${{ secrets.DOCKER_HUB_USERNAME }}
+#         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+#
+#     - name: Build and push Docker image - Production version latest
+#       uses: docker/build-push-action@v6
+#       with:
+#         context: .
+#         file: ./docker/production/Dockerfile
+#         push: true
+#         tags: corentin35/librc2d-website-frontend:latest
+#
+#     - name: Build and push Docker image - Production version x.x.x
+#       uses: docker/build-push-action@v6
+#       with:
+#         context: .
+#         file: ./docker/production/Dockerfile
+#         push: true
+#         tags: corentin35/librc2d-website-frontend:${{ steps.previoustag.outputs.tag }}
+#
+#     - name: Replace image tag in deployment.yaml for Kubernetes
+#       run: |
+#         sed -i 's/\${TAG_VERSION}/'${{ steps.previoustag.outputs.tag }}'/g' k8s/production/deployment.yaml
+#
+#     - name: Connect to the cluster K3S for deploy
+#       uses: actions-hub/kubectl@master
+#       env:
+#         # TODO: à changer pour le cluster de production
+#         KUBE_CONFIG: ${{ secrets.KUBECONFIG_CLUSTER_STAGING_CRZGAMES_BASE64 }}
+#       with:
+#         args: |
+#           apply -f k8s/production/namespace.yaml
+#           -f k8s/production/docker-registry-secret.yaml
+#           -f k8s/production/deployment.yaml
+#           -f k8s/production/ingress.yaml
+#           -f k8s/production/service.yaml
