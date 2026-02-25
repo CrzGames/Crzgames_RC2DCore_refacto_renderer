@@ -195,7 +195,7 @@
 | **SDL3_ttf** | commit `053bbc89517471427748a082583c9eada55c07b5` | Rendu de polices TrueType | ⭐ Obligatoire |  |
 | **SDL3_mixer** | commit `37b2f3325a0fb1e98ba265aa38826aa9e16624fb` | Gestion audio (WAV, OGG, OPUS…) | ⭐ Obligatoire | |
 | **cJSON** | v1.7.19 | Parsing JSON léger | ⭐ Obligatoire (intégré statiquement) |  |
-| **SDL3_shadercross** | commit `7b7365a86611b2a7b6462e521cf1c43a037d0970` | Transpilation shaders (HLSL → MSL / SPIR-V / DXIL / METALLIB…) | 🟡 Optionnel (Dev uniquement) – `RC2D_GPU_SHADER_HOT_RELOAD_ENABLED` (OFF par défaut) | Si désactivé : pas de hot-reload / compilation runtime des shaders |
+| **SDL3_shadercross** | commit `7b7365a86611b2a7b6462e521cf1c43a037d0970` | Transpilation shaders (HLSL → MSL / SPIR-V / DXIL / METALLIB…) | 🟡 Optionnel (Dev uniquement, marche pour Windows/macOS/Linux/SteamRT4) – `RC2D_GPU_SHADER_HOT_RELOAD_ENABLED` (OFF par défaut) | Si désactivé : pas de hot-reload / compilation runtime des shaders |
 | **RCENet** | v1.4.6 | Communication réseau UDP (fork ENet) | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : module réseau indisponible (`RC2D_net.h`) |
 | **OpenSSL** | v3.6.1 | Hashing, chiffrement, crypto | 🟡 Optionnel – `RC2D_DATA_MODULE_ENABLED` (ON par défaut) | Si désactivé : module data/crypto indisponible (`RC2D_data.h`) |
 | **ONNX Runtime** | v1.24.1 | Inférence IA (modèles ONNX) | 🟡 Optionnel – `RC2D_ONNX_MODULE_ENABLED` (ON par défaut) | Si désactivé : module IA indisponible (`RC2D_onnx.h`) |
