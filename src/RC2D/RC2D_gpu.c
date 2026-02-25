@@ -431,15 +431,17 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
     codeHLSLSource[codeHLSLSourceLen] = '\0';
     RC2D_safe_free(codeHLSLSourceBytes);
 
+    SDL_PropertiesID shaderProps = SDL_CreateProperties();
+    SDL_SetBooleanProperty(shaderProps, SDL_SHADERCROSS_PROP_SHADER_DEBUG_ENABLE_BOOLEAN, true);
+    SDL_SetStringProperty(shaderProps, SDL_SHADERCROSS_PROP_SHADER_DEBUG_NAME_STRING, storage_path);
+    SDL_SetBooleanProperty(shaderProps, SDL_SHADERCROSS_PROP_SHADER_CULL_UNUSED_BINDINGS_BOOLEAN, true);
     SDL_ShaderCross_HLSL_Info hlslInfo = {
         .source = codeHLSLSource,
         .entrypoint = "main",
         .include_dir = NULL,
         .defines = NULL,
         .shader_stage = (SDL_ShaderCross_ShaderStage)stage,
-        .enable_debug = true,
-        .name = storage_path,
-        .props = 0
+        .props = shaderProps
     };
 
     // Compiler HLSL vers SPIR-V
@@ -458,7 +460,9 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
 
     // Réfléchir les métadonnées du shader graphique
     SDL_ShaderCross_GraphicsShaderMetadata* metadata = SDL_ShaderCross_ReflectGraphicsSPIRV(
-        spirvByteCode, spirvByteCodeSize, 0
+        (const Uint8*)spirvByteCode, 
+        spirvByteCodeSize,
+        shaderProps
     );
     if (metadata == NULL)
     {
@@ -469,13 +473,11 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
 
     // Préparer les informations SPIR-V pour la compilation du shader
     SDL_ShaderCross_SPIRV_Info spirvInfo = {
-        .bytecode      = spirvByteCode,
+        .bytecode      = (const Uint8*)spirvByteCode,
         .bytecode_size = spirvByteCodeSize,
         .entrypoint    = "main",
         .shader_stage  = (SDL_ShaderCross_ShaderStage)stage,
-        .enable_debug  = true,
-        .name          = storage_path,
-        .props         = 0
+        .props         = shaderProps
     };
 
     // Compiler le shader graphique
@@ -489,6 +491,7 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
     // Libérer les ressources allouées pour les métadonnées et le code SPIR-V
     RC2D_safe_free(metadata);
     RC2D_safe_free(spirvByteCode);
+    SDL_DestroyProperties(shaderProps);
 
     // Vérifier si la compilation du shader graphique a réussi
     if (graphicsShader == NULL) 
