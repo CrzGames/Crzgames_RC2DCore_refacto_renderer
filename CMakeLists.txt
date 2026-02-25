@@ -54,6 +54,10 @@ option(RC2D_MEMORY_DEBUG_ENABLED "Enable RC2D memory debug tracking (realloc/mal
 # Option pour activer la compilation des shaders en ligne (hot reload) pour SDL3_shadercross
 # CONSEILLE : Désactivé pour la production (RC2D_GPU_SHADER_HOT_RELOAD_ENABLED=OFF).
 option(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED "Enable RC2D GPU shader hot reload (using SDL3_shadercross)" OFF)
+if (RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND ANDROID OR (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS"))
+  message(WARNING "Hot reload des shaders désactivé sur Android et iOS (pas encore de librairie shadercross compilé pour ces plateformes)")
+  set(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED OFF CACHE BOOL "Disable shader hot reload on Android/iOS" FORCE)
+endif()
 
 # Option pour activer le module RC2D_video (basé sur FFmpeg)
 option(RC2D_VIDEO_MODULE_ENABLED "Enable RC2D_video (FFmpeg-based)" ON)
