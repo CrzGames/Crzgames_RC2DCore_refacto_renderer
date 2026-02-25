@@ -134,9 +134,12 @@ exec \"\$HERE/${EXE_NAME}\" \"\$@\"
 "[Desktop Entry]
 Type=Application
 Name=${ARGS_NAME}
+Exec=AppRun
+TryExec=AppRun
 Icon=${ARGS_NAME}
 Terminal=false
 Categories=Game;
+StartupWMClass=${ARGS_NAME}
 X-AppImage-Name=${ARGS_NAME}
 X-AppImage-Version=${ARGS_APP_VERSION}
 X-AppImage-Arch=${ARGS_APP_ARCH}

@@ -190,12 +190,12 @@
 | Librairie | Version / Commit SHA utilisé par RC2D | Rôle dans RC2D | Statut / Intégration | Impact si désactivé |
 |------------|----------------------------------------|----------------|----------------------|----------------------|
 | **LZ4** | v1.10.0 | Compression ultra-rapide utilisée par `RC2D_data` | ⭐ Obligatoire (intégré statiquement) |  |
-| **SDL3** | commit `2e18cf8d096657be40ab301a523e2f10a2a10508` | Gestion fenêtre, entrées, rendu GPU | ⭐ Obligatoire |  |
+| **SDL3** | commit `550394eecdc250c7ce542a99f0c2b55683521656` | Gestion fenêtre, entrées, rendu GPU | ⭐ Obligatoire |  |
 | **SDL3_image** | commit `8bd9f3d7f2d2bb59ce4331f13b77d65254cd8c7b` | Chargement d’images (PNG, SVG, APNG…) | ⭐ Obligatoire |  |
 | **SDL3_ttf** | commit `053bbc89517471427748a082583c9eada55c07b5` | Rendu de polices TrueType | ⭐ Obligatoire |  |
-| **SDL3_mixer** | commit `37b2f3325a0fb1e98ba265aa38826aa9e16624fb` | Gestion audio (WAV, OGG, OPUS…) | ⭐ Obligatoire | |
+| **SDL3_mixer** | commit `8f7790334a7d8b680d90968ce2e211129b892492` | Gestion audio (WAV, OGG, OPUS…) | ⭐ Obligatoire | |
 | **cJSON** | v1.7.19 | Parsing JSON léger | ⭐ Obligatoire (intégré statiquement) |  |
-| **SDL3_shadercross** | commit `7b7365a86611b2a7b6462e521cf1c43a037d0970` | Transpilation shaders (HLSL → MSL / SPIR-V / DXIL / METALLIB…) | 🟡 Optionnel (Dev uniquement) – `RC2D_GPU_SHADER_HOT_RELOAD_ENABLED` (OFF par défaut) | Si désactivé : pas de hot-reload / compilation runtime des shaders |
+| **SDL3_shadercross** | commit `7b7365a86611b2a7b6462e521cf1c43a037d0970` | Transpilation shaders (HLSL → MSL / SPIR-V / DXIL / METALLIB…) | 🟡 Optionnel (Dev uniquement, marche uniquement pour Windows/macOS/Linux) – `RC2D_GPU_SHADER_HOT_RELOAD_ENABLED` (ON par défaut) | Si désactivé : pas de hot-reload / compilation runtime des shaders, il faudras utiliser la compilation hors ligne des shaders via les scripts des shaders |
 | **RCENet** | v1.4.6 | Communication réseau UDP (fork ENet) | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : module réseau indisponible (`RC2D_net.h`) |
 | **OpenSSL** | v3.6.1 | Hashing, chiffrement, crypto | 🟡 Optionnel – `RC2D_DATA_MODULE_ENABLED` (ON par défaut) | Si désactivé : module data/crypto indisponible (`RC2D_data.h`) |
 | **ONNX Runtime** | v1.24.1 | Inférence IA (modèles ONNX) | 🟡 Optionnel – `RC2D_ONNX_MODULE_ENABLED` (ON par défaut) | Si désactivé : module IA indisponible (`RC2D_onnx.h`) |
@@ -307,6 +307,8 @@
      source $HOME/.cargo/env
   9. Installer Tauri CLI (for Icons) :
      cargo install tauri-cli
+  10. Download and Install (pour le script de compilation des shaders hors ligne, notamment pour la compilation de metal / metallib : 
+      xcodebuild -downloadComponent MetalToolchain
 
 
 
@@ -352,6 +354,8 @@
      xcrun --sdk macosx --show-sdk-version
   8. Lister tous les certificats installés sur ton Mac (si besoin) :
      security find-identity -v -p codesigning
+  9. Download and Install (pour le script de compilation des shaders hors ligne, notamment pour la compilation de metal / metallib : 
+     xcodebuild -downloadComponent MetalToolchain
   ```
   
 3. Avant toute compilation, exécute le script suivant :
@@ -574,7 +578,7 @@ Pour que le script `ios.sh` fonctionne, il faut que :
 
 #### 💻 Sur le Mac
 - ✅ Certificat Apple Development installé sur le Mac
-- ✅ Provisioning Profile de type Development valide installé sur le Mac
+- ✅ Provisioning Profile de type Developpement valide installé sur le Mac
 - ✅ La valeur de la variable `BUNDLE_ID` du script (`ios.sh`) corresponde exactement à celui signé (donc l'identifier exemple : com.crzgames.testexe)
 - ✅ La valeur de la variable `PATTERN` du script (`ios.sh`) corresponde exactement à la target CMake donc au nom du `project()` dans le `CMakelists.txt`.
 
@@ -592,6 +596,21 @@ Pour que le script `ios.sh` fonctionne, il faut que :
 # macOS Apple Silicon arm64
 chmod +x ./build-scripts/build-deploy-mobile/ios.sh
 ./build-scripts/build-deploy-mobile/ios.sh
+```
+
+<br /><br />
+
+## Project Example - Shaders
+Pour la compilation hors ligne des shaders, il faut utilisé les scripts à disposition via :
+```bash
+# Unix
+chmod +x ./examples/shaders/scripts/compile-shaders-unix.sh
+cd ./examples/shaders/scripts/ # Il faut executer obligatoirement le script de compilation de shaders à partir du dossier "scripts"
+./compile-shaders-unix.sh
+
+# Windows
+cd .\examples\shaders\scripts\ # Il faut executer obligatoirement le script de compilation de shaders à partir du dossier "scripts"
+.\compile-shaders-windows.bat
 ```
 
 <br /><br />
