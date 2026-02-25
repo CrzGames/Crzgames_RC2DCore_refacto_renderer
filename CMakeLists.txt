@@ -800,56 +800,58 @@ endfunction()
 # ============================================================
 function(rc2d_configure_shadercross target_name)
   if (APPLE)
-    # Repertoire cible des binaires de shadercross pour "examples/shaders/tools"
-    set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/macos/bin/SDL3_shadercross")
+    if(RC2D_BUILD_EXAMPLES)
+      # Repertoire cible des binaires de shadercross pour "examples/shaders/tools"
+      set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/macos/bin/SDL3_shadercross")
 
-    # Répertoire cible pour les outils de shaders, pour la compilation hors ligne des shaders
-    set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
+      # Répertoire cible pour les outils de shaders, pour la compilation hors ligne des shaders
+      set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
 
-    # Crée le dossier "examples/shaders/tools" AVANT toute copie
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_TOOLS_DIR}"
-    )
-
-    # Copier le binaires de shadercross dans le répertoire "examples/shaders/tools"
-    file(GLOB_RECURSE SHADERCROSS_BINARY
-      "${SHADERCROSS_BINARY_DIR}/*"
-    )
-    foreach(FILE IN LISTS SHADERCROSS_BINARY)
-      get_filename_component(FILE_NAME "${FILE}" NAME)
+      # Crée le dossier "examples/shaders/tools" AVANT toute copie
       add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${FILE}"
-                "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_TOOLS_DIR}"
       )
-    endforeach()
 
-    # Copier aussi les librarieis dynamique (.dylib) dans le répertoire "examples/shaders/tools"
-    file(GLOB_RECURSE SHADERCROSS_DYLIB
-      "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross/*.dylib"
-    )
-    foreach(FILE IN LISTS SHADERCROSS_DYLIB)
-      get_filename_component(FILE_NAME "${FILE}" NAME)
+      # Copier le binaires de shadercross dans le répertoire "examples/shaders/tools"
+      file(GLOB_RECURSE SHADERCROSS_BINARY
+        "${SHADERCROSS_BINARY_DIR}/*"
+      )
+      foreach(FILE IN LISTS SHADERCROSS_BINARY)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                  "${FILE}"
+                  "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+        )
+      endforeach()
+
+      # Copier aussi les librarieis dynamique (.dylib) dans le répertoire "examples/shaders/tools"
+      file(GLOB_RECURSE SHADERCROSS_DYLIB
+        "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross/*.dylib"
+      )
+      foreach(FILE IN LISTS SHADERCROSS_DYLIB)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                  "${FILE}"
+                  "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+        )
+      endforeach()
+
+      # Rendre shadercross exécutable (important s’il est copié depuis une archive)
       add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${FILE}"
-                "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+        COMMAND chmod +x "${SHADER_TOOLS_DIR}/shadercross"
+        COMMENT "Rendre shadercross exécutable"
+        VERBATIM
       )
-    endforeach()
 
-    # Rendre shadercross exécutable (important s’il est copié depuis une archive)
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND chmod +x "${SHADER_TOOLS_DIR}/shadercross"
-      COMMENT "Rendre shadercross exécutable"
-      VERBATIM
-    )
-
-    # Ajouter @loader_path comme RPATH a l'executable "shadercross" pour que les .dylib soient trouvées dans le même dossier
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND install_name_tool -add_rpath @loader_path "${SHADER_TOOLS_DIR}/shadercross"
-      COMMENT "Ajout de @loader_path comme RPATH à shadercross"
-      VERBATIM
-    )
+      # Ajouter @loader_path comme RPATH a l'executable "shadercross" pour que les .dylib soient trouvées dans le même dossier
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND install_name_tool -add_rpath @loader_path "${SHADER_TOOLS_DIR}/shadercross"
+        COMMENT "Ajout de @loader_path comme RPATH à shadercross"
+        VERBATIM
+      )
+    endif()
 
     # Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est activé, on link la lib shadercross
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -880,30 +882,32 @@ function(rc2d_configure_shadercross target_name)
       endforeach()
     endif()
   elseif(WIN32) # Windows
-    # Repertoire cible des dll + binaire de shadercross pour "examples/shaders/tools"
-    set(SHADERCROSS_DLL_BINARY_DIR "${CRZGAMES_LIBRARIES}/windows/bin/SDL3_shadercross/${RC2D_ARCH}")
+    if(RC2D_BUILD_EXAMPLES)
+      # Repertoire cible des dll + binaire de shadercross pour "examples/shaders/tools"
+      set(SHADERCROSS_DLL_BINARY_DIR "${CRZGAMES_LIBRARIES}/windows/bin/SDL3_shadercross/${RC2D_ARCH}")
 
-    # Répertoire cible pour les outils de shaders, pour la compilation hors ligne des shaders
-    set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
+      # Répertoire cible pour les outils de shaders, pour la compilation hors ligne des shaders
+      set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
 
-    # Crée le dossier "examples/shaders/tools" AVANT toute copie
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_TOOLS_DIR}"
-    )
-
-    # Copier les DLLs et binaires de shadercross dans le répertoire "examples/shaders/tools"
-    file(GLOB_RECURSE SHADERCROSS_DLLS_BINARY
-      "${SHADERCROSS_DLL_BINARY_DIR}/*.dll"
-      "${SHADERCROSS_DLL_BINARY_DIR}/*.exe"
-    )
-    foreach(FILE IN LISTS SHADERCROSS_DLLS_BINARY)
-      get_filename_component(FILE_NAME "${FILE}" NAME)
+      # Crée le dossier "examples/shaders/tools" AVANT toute copie
       add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${FILE}"
-                "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_TOOLS_DIR}"
       )
-    endforeach()
+
+      # Copier les DLLs et binaires de shadercross dans le répertoire "examples/shaders/tools"
+      file(GLOB_RECURSE SHADERCROSS_DLLS_BINARY
+        "${SHADERCROSS_DLL_BINARY_DIR}/*.dll"
+        "${SHADERCROSS_DLL_BINARY_DIR}/*.exe"
+      )
+      foreach(FILE IN LISTS SHADERCROSS_DLLS_BINARY)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                  "${FILE}"
+                  "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+        )
+      endforeach()
+    endif()
 
     # Si RC2D_GPU_SHADER_HOT_RELOAD_ENABLED est activé, on link la lib shadercross
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
@@ -934,54 +938,56 @@ function(rc2d_configure_shadercross target_name)
       endforeach()
     endif()
   elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
-    # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
-    set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/steamrt4/bin/SDL3_shadercross/${RC2D_ARCH}")
-    
-    # Repertoire cible des .so + binaire de shadercross pour "examples/shaders/tools"
-    set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
+    if(RC2D_BUILD_EXAMPLES)
+      # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
+      set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/steamrt4/bin/SDL3_shadercross/${RC2D_ARCH}")
+      
+      # Repertoire cible des .so + binaire de shadercross pour "examples/shaders/tools"
+      set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
 
-    # Crée le dossier "examples/shaders/tools" AVANT toute copie
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_TOOLS_DIR}"
-    )
-
-    # Copier le binaire de shadercross dans le répertoire "examples/shaders/tools"
-    file(GLOB_RECURSE SHADERCROSS_BINARY
-      "${SHADERCROSS_BINARY_DIR}/*"
-    )
-    foreach(FILE IN LISTS SHADERCROSS_BINARY)
-      get_filename_component(FILE_NAME "${FILE}" NAME)
+      # Crée le dossier "examples/shaders/tools" AVANT toute copie
       add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${FILE}"
-                "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_TOOLS_DIR}"
       )
-    endforeach()
 
-    # Copier aussi les .so dans le répertoire "examples/shaders/tools"
-    file(GLOB_RECURSE SHADERCROSS_SO
-      "${CRZGAMES_LIBRARIES}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
-      "${CRZGAMES_LIBRARIES}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
-    )
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND cp -a ${SHADERCROSS_SO} "${SHADER_TOOLS_DIR}/"
-      COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
-      VERBATIM
-    )
+      # Copier le binaire de shadercross dans le répertoire "examples/shaders/tools"
+      file(GLOB_RECURSE SHADERCROSS_BINARY
+        "${SHADERCROSS_BINARY_DIR}/*"
+      )
+      foreach(FILE IN LISTS SHADERCROSS_BINARY)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                  "${FILE}"
+                  "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+        )
+      endforeach()
 
-    # Rendre shadercross exécutable (important s’il est copié depuis une archive)
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND chmod +x "${SHADER_TOOLS_DIR}/shadercross"
-      COMMENT "Rendre shadercross exécutable"
-      VERBATIM
-    )
+      # Copier aussi les .so dans le répertoire "examples/shaders/tools"
+      file(GLOB_RECURSE SHADERCROSS_SO
+        "${CRZGAMES_LIBRARIES}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
+        "${CRZGAMES_LIBRARIES}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
+      )
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND cp -a ${SHADERCROSS_SO} "${SHADER_TOOLS_DIR}/"
+        COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
+        VERBATIM
+      )
 
-    # Ajouter $ORIGIN comme RPATH a l'executable "shadercross" pour que les .so soient trouvées dans le même dossier
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND ${PATCHELF_EXECUTABLE} --set-rpath "\$ORIGIN" "${SHADER_TOOLS_DIR}/shadercross"
-      COMMENT "Ajout de $ORIGIN comme RPATH à shadercross"
-      VERBATIM
-    )
+      # Rendre shadercross exécutable (important s’il est copié depuis une archive)
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND chmod +x "${SHADER_TOOLS_DIR}/shadercross"
+        COMMENT "Rendre shadercross exécutable"
+        VERBATIM
+      )
+
+      # Ajouter $ORIGIN comme RPATH a l'executable "shadercross" pour que les .so soient trouvées dans le même dossier
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND ${PATCHELF_EXECUTABLE} --set-rpath "\$ORIGIN" "${SHADER_TOOLS_DIR}/shadercross"
+        COMMENT "Ajout de $ORIGIN comme RPATH à shadercross"
+        VERBATIM
+      )
+    endif()
 
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
       target_include_directories(${target_name} PUBLIC
@@ -1003,55 +1009,57 @@ function(rc2d_configure_shadercross target_name)
         VERBATIM
       )
     endif()
-  elseif(UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.    
-    # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
-    set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/linux/bin/SDL3_shadercross/${RC2D_ARCH}")
+  elseif(UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.
+    if(RC2D_BUILD_EXAMPLES)    
+      # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
+      set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/linux/bin/SDL3_shadercross/${RC2D_ARCH}")
 
-    # Repertoire cible des .so + binaire de shadercross pour "examples/shaders/tools"
-    set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
+      # Repertoire cible des .so + binaire de shadercross pour "examples/shaders/tools"
+      set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
 
-    # Crée le dossier "examples/shaders/tools" AVANT toute copie
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_TOOLS_DIR}"
-    )
-
-    # Copier le binaire de shadercross dans le répertoire "examples/shaders/tools"
-    file(GLOB_RECURSE SHADERCROSS_BINARY
-      "${SHADERCROSS_BINARY_DIR}/*"
-    )
-    foreach(FILE IN LISTS SHADERCROSS_BINARY)
-      get_filename_component(FILE_NAME "${FILE}" NAME)
+      # Crée le dossier "examples/shaders/tools" AVANT toute copie
       add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${FILE}"
-                "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADER_TOOLS_DIR}"
       )
-    endforeach()
 
-    # Copier aussi les .so dans le répertoire "examples/shaders/tools"
-    file(GLOB_RECURSE SHADERCROSS_SO
-      "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
-      "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
-    )
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND cp -a ${SHADERCROSS_SO} "${SHADER_TOOLS_DIR}/"
-      COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
-      VERBATIM
-    )
+      # Copier le binaire de shadercross dans le répertoire "examples/shaders/tools"
+      file(GLOB_RECURSE SHADERCROSS_BINARY
+        "${SHADERCROSS_BINARY_DIR}/*"
+      )
+      foreach(FILE IN LISTS SHADERCROSS_BINARY)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                  "${FILE}"
+                  "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+        )
+      endforeach()
 
-    # Rendre shadercross exécutable (important s’il est copié depuis une archive)
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND chmod +x "${SHADER_TOOLS_DIR}/shadercross"
-      COMMENT "Rendre shadercross exécutable"
-      VERBATIM
-    )
+      # Copier aussi les .so dans le répertoire "examples/shaders/tools"
+      file(GLOB_RECURSE SHADERCROSS_SO
+        "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
+        "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
+      )
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND cp -a ${SHADERCROSS_SO} "${SHADER_TOOLS_DIR}/"
+        COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
+        VERBATIM
+      )
 
-    # Ajouter $ORIGIN comme RPATH a l'executable "shadercross" pour que les .so soient trouvées dans le même dossier
-    add_custom_command(TARGET ${target_name} POST_BUILD
-      COMMAND ${PATCHELF_EXECUTABLE} --set-rpath "\$ORIGIN" "${SHADER_TOOLS_DIR}/shadercross"
-      COMMENT "Ajout de $ORIGIN comme RPATH à shadercross"
-      VERBATIM
-    )
+      # Rendre shadercross exécutable (important s’il est copié depuis une archive)
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND chmod +x "${SHADER_TOOLS_DIR}/shadercross"
+        COMMENT "Rendre shadercross exécutable"
+        VERBATIM
+      )
+
+      # Ajouter $ORIGIN comme RPATH a l'executable "shadercross" pour que les .so soient trouvées dans le même dossier
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND ${PATCHELF_EXECUTABLE} --set-rpath "\$ORIGIN" "${SHADER_TOOLS_DIR}/shadercross"
+        COMMENT "Ajout de $ORIGIN comme RPATH à shadercross"
+        VERBATIM
+      )
+    endif()
 
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
       # Link le dossier include de shadercross à la target
@@ -1074,7 +1082,7 @@ function(rc2d_configure_shadercross target_name)
         VERBATIM
       )
     endif()
-  elseif(ANDROID)
+  elseif(ANDROID AND RC2D_BUILD_EXAMPLES)
     # Déduire l'arch hôte en "x64"/"arm64"
     set(_host_proc "${CMAKE_HOST_SYSTEM_PROCESSOR}")
     string(TOLOWER "${_host_proc}" _host_proc_l)
