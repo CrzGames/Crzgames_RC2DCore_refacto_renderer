@@ -59,6 +59,7 @@ if (RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND
      OR (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
      OR RC2D_PLATFORM STREQUAL "STEAMRT4"))
   message(WARNING "Hot reload des shaders désactivé sur Android et iOS (pas encore de librairie shadercross compilé pour ces plateformes)")
+  message(WARNING "Hot reload des shaders désactivé aussi pour SteamRT4, puisque c'est utilisé seulement dans un container Steam, pas pour le developpement local")
   set(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED OFF CACHE BOOL "Disable shader hot reload on Android/iOS" FORCE)
 endif()
 
