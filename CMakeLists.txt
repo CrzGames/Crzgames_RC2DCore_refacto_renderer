@@ -996,29 +996,6 @@ function(rc2d_configure_shadercross target_name)
         VERBATIM
       )
     endif()
-
-    if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
-      target_include_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/steamrt4/include/include_sdl3shadercross"
-      )
-
-      # Récupérer le dossier de la lib shadercross
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}")
-
-      # Link la lib shadercross
-      target_link_libraries(${target_name} PUBLIC
-        SDL3_shadercross
-      )
-
-      if (RC2D_BUILD_EXAMPLES)
-        # Copier aussi les .so dans le répertoire de l'exécutable
-        add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND cp -a ${SHADERCROSS_SO} "$<TARGET_FILE_DIR:${target_name}>/"
-          COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
-          VERBATIM
-        )
-      endif()
-    endif()
   elseif(UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.
     if(RC2D_BUILD_EXAMPLES)    
       # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
@@ -1082,7 +1059,7 @@ function(rc2d_configure_shadercross target_name)
 
       # Link la lib shadercross
       target_link_libraries(${target_name} PUBLIC
-        SDL3_shadercross
+        "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/libSDL3_shadercross.so"
       )
 
       if (RC2D_BUILD_EXAMPLES)
