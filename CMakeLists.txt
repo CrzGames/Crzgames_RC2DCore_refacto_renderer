@@ -802,8 +802,6 @@ endfunction()
 #    - lier SDL3_shadercross
 #    - copier les libs runtime à côté de la target
 # ============================================================
-message(STATUS "RC2D: CRZGAMES_LIBRARIES='${CRZGAMES_LIBRARIES}'")
-message(STATUS "RC2D: Looking for shadercross in '${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross'")
 function(rc2d_configure_shadercross target_name)
   if (APPLE)
     if(RC2D_BUILD_EXAMPLES)
