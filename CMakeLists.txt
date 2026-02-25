@@ -802,6 +802,8 @@ endfunction()
 #    - lier SDL3_shadercross
 #    - copier les libs runtime à côté de la target
 # ============================================================
+message(STATUS "RC2D: CRZGAMES_LIBRARIES='${CRZGAMES_LIBRARIES}'")
+message(STATUS "RC2D: Looking for shadercross in '${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross'")
 function(rc2d_configure_shadercross target_name)
   if (APPLE)
     if(RC2D_BUILD_EXAMPLES)
@@ -872,18 +874,20 @@ function(rc2d_configure_shadercross target_name)
         SDL3_shadercross
       )
 
-      # Copier aussi les DLLs dans le répertoire de l'exécutable
-      file(GLOB_RECURSE SHADERCROSS_DLLS
-        "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross/*.dylib"
-      )
-      foreach(FILE IN LISTS SHADERCROSS_DLLS)
-        get_filename_component(FILE_NAME "${FILE}" NAME)
-        add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                  "${FILE}"
-                  "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+      if (RC2D_BUILD_EXAMPLES)
+        # Copier aussi les DLLs dans le répertoire de l'exécutable
+        file(GLOB_RECURSE SHADERCROSS_DLLS
+          "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross/*.dylib"
         )
-      endforeach()
+        foreach(FILE IN LISTS SHADERCROSS_DLLS)
+          get_filename_component(FILE_NAME "${FILE}" NAME)
+          add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${FILE}"
+                    "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+          )
+        endforeach()
+      endif()
     endif()
   elseif(WIN32) # Windows
     if(RC2D_BUILD_EXAMPLES)
@@ -928,18 +932,20 @@ function(rc2d_configure_shadercross target_name)
         SDL3_shadercross
       )
 
-      # Copier aussi les DLLs dans le répertoire de l'exécutable
-      file(GLOB_RECURSE SHADERCROSS_DLLS
-        "${CRZGAMES_LIBRARIES}/windows/bin/SDL3_shadercross/${RC2D_ARCH}/*.dll"
-      )
-      foreach(FILE IN LISTS SHADERCROSS_DLLS)
-        get_filename_component(FILE_NAME "${FILE}" NAME)
-        add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                  "${FILE}"
-                  "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+      if (RC2D_BUILD_EXAMPLES)
+        # Copier aussi les DLLs dans le répertoire de l'exécutable
+        file(GLOB_RECURSE SHADERCROSS_DLLS
+          "${CRZGAMES_LIBRARIES}/windows/bin/SDL3_shadercross/${RC2D_ARCH}/*.dll"
         )
-      endforeach()
+        foreach(FILE IN LISTS SHADERCROSS_DLLS)
+          get_filename_component(FILE_NAME "${FILE}" NAME)
+          add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${FILE}"
+                    "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+          )
+        endforeach()
+      endif()
     endif()
   elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
     if(RC2D_BUILD_EXAMPLES)
@@ -1006,12 +1012,14 @@ function(rc2d_configure_shadercross target_name)
         SDL3_shadercross
       )
 
-      # Copier aussi les .so dans le répertoire de l'exécutable
-      add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND cp -a ${SHADERCROSS_SO} "$<TARGET_FILE_DIR:${target_name}>/"
-        COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
-        VERBATIM
-      )
+      if (RC2D_BUILD_EXAMPLES)
+        # Copier aussi les .so dans le répertoire de l'exécutable
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND cp -a ${SHADERCROSS_SO} "$<TARGET_FILE_DIR:${target_name}>/"
+          COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
+          VERBATIM
+        )
+      endif()
     endif()
   elseif(UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.
     if(RC2D_BUILD_EXAMPLES)    
@@ -1079,12 +1087,14 @@ function(rc2d_configure_shadercross target_name)
         SDL3_shadercross
       )
 
-      # Copier aussi les .so dans le répertoire de l'exécutable
-      add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND cp -a ${SHADERCROSS_SO} "$<TARGET_FILE_DIR:${target_name}>/"
-        COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
-        VERBATIM
-      )
+      if (RC2D_BUILD_EXAMPLES)
+        # Copier aussi les .so dans le répertoire de l'exécutable
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND cp -a ${SHADERCROSS_SO} "$<TARGET_FILE_DIR:${target_name}>/"
+          COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
+          VERBATIM
+        )
+      endif()
     endif()
   elseif(ANDROID AND RC2D_BUILD_EXAMPLES)
     # Déduire l'arch hôte en "x64"/"arm64"
