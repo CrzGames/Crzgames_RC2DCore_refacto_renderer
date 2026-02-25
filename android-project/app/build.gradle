@@ -15,17 +15,32 @@ android {
         targetSdkVersion 36
         versionCode 1
         versionName "1.0"
-        externalNativeBuild {
-            cmake {
-                arguments "-DANDROID_PLATFORM=android-28", "-DANDROID_STL=c++_static"
-                abiFilters 'armeabi-v7a', 'arm64-v8a'
-            }
-        }
     }
     buildTypes {
+        debug {
+            externalNativeBuild {
+                cmake {
+                    arguments "-DANDROID_PLATFORM=android-28",
+                              "-DANDROID_STL=c++_static",
+                              "-DRC2D_GPU_SHADER_HOT_RELOAD_ENABLED=OFF"
+                    abiFilters 'armeabi-v7a', 'arm64-v8a'
+                }
+            }
+        }
+
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            externalNativeBuild {
+                cmake {
+                    arguments "-DANDROID_PLATFORM=android-28",
+                              "-DANDROID_STL=c++_static",
+                              "-DRC2D_GPU_SHADER_HOT_RELOAD_ENABLED=OFF",
+                              "-DRC2D_MEMORY_DEBUG_ENABLED=OFF"
+                    abiFilters 'armeabi-v7a', 'arm64-v8a'
+                }
+            }
         }
     }
     applicationVariants.all { variant ->
