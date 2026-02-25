@@ -277,9 +277,9 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
      */
     else if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_METALLIB)
     {
-    #ifdef RC2D_PLATFORM_IOS
+    #if defined(RC2D_PLATFORM_IOS)
         SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/metallib/ios/%s.metallib", root_shaders, base);
-    #else
+    #elif defined(RC2D_PLATFORM_MACOS)
         SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/metallib/macos/%s.metallib", root_shaders, base);
     #endif
         format = SDL_GPU_SHADERFORMAT_METALLIB;
@@ -435,6 +435,10 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
     SDL_SetBooleanProperty(shaderProps, SDL_SHADERCROSS_PROP_SHADER_DEBUG_ENABLE_BOOLEAN, true);
     SDL_SetStringProperty(shaderProps, SDL_SHADERCROSS_PROP_SHADER_DEBUG_NAME_STRING, storage_path);
     SDL_SetBooleanProperty(shaderProps, SDL_SHADERCROSS_PROP_SHADER_CULL_UNUSED_BINDINGS_BOOLEAN, true);
+#if defined(RC2D_PLATFORM_APPLE)
+    SDL_SetStringProperty(shaderProps, SDL_SHADERCROSS_PROP_SPIRV_MSL_VERSION_STRING, "3.2.0");
+#endif
+
     SDL_ShaderCross_HLSL_Info hlslInfo = {
         .source = codeHLSLSource,
         .entrypoint = "main",
