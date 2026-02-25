@@ -2,6 +2,10 @@ plugins {
      id 'com.android.application'
 }
 
+def ksPass = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def ksAlias = System.getenv("ANDROID_KEYSTORE_ALIAS_NAME")
+def ksKeyPass = System.getenv("ANDROID_KEYSTORE_KEY_PASSWORD")
+
 def buildWithCMake = project.hasProperty('BUILD_WITH_CMAKE');
 
 android {
@@ -13,12 +17,22 @@ android {
         applicationId "com.crzgames.testexe"
         minSdkVersion 28
         targetSdkVersion 36
-        versionCode 1
-        versionName "1.0"
+        versionCode = System.getenv("ANDROID_VERSION_CODE")?.toInteger() ?: 1
+        versionName (System.getenv("ANDROID_VERSION_NAME") ?: "1.0.0")
         externalNativeBuild {
             cmake {
-                arguments "-DANDROID_PLATFORM=android-28", "-DANDROID_STL=c++_static", "-DRC2D_GPU_SHADER_HOT_RELOAD_ENABLED=OFF",
+                arguments "-DANDROID_PLATFORM=android-28", "-DANDROID_STL=c++_static", "-DRC2D_GPU_SHADER_HOT_RELOAD_ENABLED=OFF"
                 abiFilters 'armeabi-v7a', 'arm64-v8a'
+            }
+        }
+    }
+    signingConfigs {
+        release {
+            if (ksPass && ksAlias && ksKeyPass) {
+                storeFile rootProject.file("../my-release-key.keystore")
+                storePassword ksPass
+                keyAlias ksAlias
+                keyPassword ksKeyPass
             }
         }
     }
