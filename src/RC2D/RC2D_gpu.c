@@ -484,8 +484,8 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
     SDL_GPUShader* graphicsShader = SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(
         rc2d_gpu_getDevice(),
         &spirvInfo,
-        metadata,
-        0
+        &metadata->resource_info,
+        shaderProps
     );
 
     // Libérer les ressources allouées pour les métadonnées et le code SPIR-V
