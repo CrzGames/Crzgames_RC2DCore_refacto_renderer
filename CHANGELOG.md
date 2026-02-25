@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.1.0](https://github.com/CrzGames/Crzgames_RC2D/compare/v1.0.0...v1.1.0) (2026-02-25)
+
+
+### Features
+
+* change appimage cmake ([e9c5300](https://github.com/CrzGames/Crzgames_RC2D/commit/e9c5300f0004e93d4552eb6056dc98b58060c3b7))
+* test ([4b2cb9a](https://github.com/CrzGames/Crzgames_RC2D/commit/4b2cb9ae04c5fa4c5700138f5ea6ddcd42f2ed27))
+
+
+### Bug Fixes
+
+* fixed new api sdlshadercross ([88edb64](https://github.com/CrzGames/Crzgames_RC2D/commit/88edb6420bfd5d58d09f212c49559c3beb44de31))
+* fixed rc2d_gpu.c for new version sdlshadercross ([bbf8905](https://github.com/CrzGames/Crzgames_RC2D/commit/bbf8905e38035842ab59d60cf625762e33a395bb))
+
+
+### Performance Improvements
+
+* improvement build release and debug for android ([1f8388e](https://github.com/CrzGames/Crzgames_RC2D/commit/1f8388ec35de0082e7678ce66d4f0d1ec3834630))
+
 ## 1.0.0 (2026-02-24)
 
 
