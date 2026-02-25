@@ -6,7 +6,7 @@ TODO 1 :
 
 
 TODO 2 :
-- Dans Crzgames_Builder_Libraries, certaines libraries dynamique (.so) casse les symlink, parce qu'il faut que ce sois déployer sur les release github via .tar.gz ou flag de .zip pour conserver les symlink.
+- Dans Crzgames_Builder_Libraries, certaines libraries dynamique (.so) casse les symlink, parce qu'il faut que ce sois déployer sur les release github via .tar.gz ou flag de .zip pour conserver les symlink. (notamment onnxruntime pour macos et SDL3_shadercross pour SteamRT4 et Linux)
 
 
 
