@@ -576,7 +576,7 @@ Pour que le script `ios.sh` fonctionne, il faut que :
 
 #### 💻 Sur le Mac
 - ✅ Certificat Apple Development installé sur le Mac
-- ✅ Provisioning Profile valide installé sur le Mac
+- ✅ Provisioning Profile de type Developpement valide installé sur le Mac
 - ✅ La valeur de la variable `BUNDLE_ID` du script (`ios.sh`) corresponde exactement à celui signé (donc l'identifier exemple : com.crzgames.testexe)
 - ✅ La valeur de la variable `PATTERN` du script (`ios.sh`) corresponde exactement à la target CMake donc au nom du `project()` dans le `CMakelists.txt`.
 
@@ -594,6 +594,21 @@ Pour que le script `ios.sh` fonctionne, il faut que :
 # macOS Apple Silicon arm64
 chmod +x ./build-scripts/build-deploy-mobile/ios.sh
 ./build-scripts/build-deploy-mobile/ios.sh
+```
+
+<br /><br />
+
+## Project Example - Shaders
+Pour la compilation hors ligne des shaders, il faut utilisé les scripts à disposition via :
+```bash
+# Unix
+chmod +x ./examples/shaders/scripts/compile-shaders-unix.sh
+cd ./examples/shaders/scripts/ # Il faut executer obligatoirement le script de compilation de shaders à partir du dossier "scripts"
+./compile-shaders-unix.sh
+
+# Windows
+cd .\examples\shaders\scripts\ # Il faut executer obligatoirement le script de compilation de shaders à partir du dossier "scripts"
+.\compile-shaders-windows.bat
 ```
 
 <br /><br />
