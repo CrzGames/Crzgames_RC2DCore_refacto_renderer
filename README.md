@@ -307,6 +307,7 @@
      source $HOME/.cargo/env
   9. Installer Tauri CLI (for Icons) :
      cargo install tauri-cli
+  10. Download and Install (pour le script de compilation des shaders hors ligne, notamment pour la compilation de metal / metallib : xcodebuild -downloadComponent MetalToolchain
 
 
 
@@ -352,6 +353,7 @@
      xcrun --sdk macosx --show-sdk-version
   8. Lister tous les certificats installés sur ton Mac (si besoin) :
      security find-identity -v -p codesigning
+  9. Download and Install (pour le script de compilation des shaders hors ligne, notamment pour la compilation de metal / metallib : xcodebuild -downloadComponent MetalToolchain
   ```
   
 3. Avant toute compilation, exécute le script suivant :
