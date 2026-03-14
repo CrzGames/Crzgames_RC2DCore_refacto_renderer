@@ -168,6 +168,15 @@ else()
 endif()
 
 # ============================================================
+# Paths — Dépendances précompilées (Crzgames_Libraries)
+# ============================================================
+# DEPENDENCIES_PATH : racine de ton dossier dependencies/
+# CRZGAMES_LIBRARIES_PATH: dossier où on ranges les libs précompilées (ffmpeg, openssl, rcenet, onnxruntime, sdl3shadercross, etc.) pour chaque plateforme.
+# ============================================================
+set(DEPENDENCIES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
+set(CRZGAMES_LIBRARIES_PATH "${DEPENDENCIES_PATH}/Crzgames_Libraries")
+
+# ============================================================
 # Linux Tools Prerequisites
 # ============================================================
 # Linux / Android / SteamRT4 / Raspberry Pi, etc. :
@@ -336,7 +345,7 @@ set(ENABLE_CJSON_UTILS  OFF CACHE BOOL "" FORCE) # Désactiver les outils
 # ============================================================
 # libwebsockets - Configuration build
 # ============================================================
-if (RC2D_NET_MODULE_ENABLED)
+if(RC2D_NET_MODULE_ENABLED)
   # --- LWS: on veut OpenSSL ---
   set(LWS_WITH_SSL ON  CACHE BOOL "" FORCE)
 
@@ -406,7 +415,7 @@ endif()
 # On inclut SDL + modules, et cJSON depuis dependencies/.
 # EXCLUDE_FROM_ALL : évite de builder ces targets si aucune target ne les référence.
 # ============================================================
-if (RC2D_NET_MODULE_ENABLED)
+if(RC2D_NET_MODULE_ENABLED)
   add_subdirectory(dependencies/libwebsockets EXCLUDE_FROM_ALL)
 endif()
 add_subdirectory(dependencies/SDL        EXCLUDE_FROM_ALL)
@@ -414,15 +423,6 @@ add_subdirectory(dependencies/SDL_ttf    EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_image  EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_mixer  EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/cJSON      EXCLUDE_FROM_ALL)
-
-# ============================================================
-# Paths — Dépendances précompilées (Crzgames_Libraries)
-# ============================================================
-# DEPENDENCIES_PATH : racine de ton dossier dependencies/
-# CRZGAMES_LIBRARIES_PATH: dossier où on ranges les libs précompilées (ffmpeg, openssl, rcenet, onnxruntime, sdl3shadercross, etc.) pour chaque plateforme.
-# ============================================================
-set(DEPENDENCIES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
-set(CRZGAMES_LIBRARIES_PATH "${DEPENDENCIES_PATH}/Crzgames_Libraries")
 
 # ============================================================
 # rc2d_configure_cpphttplib
