@@ -25,7 +25,9 @@
 │   └── 📄 setup_dependencies.cmake   # Script CMake chargé de lire `dependencies.txt` et cloner/configurer les dépendances dans `/dependencies`
 ├── 📁 dependencies (git ignored)     # Répertoire local contenant les dépendances clonées (ignoré par Git pour ne pas polluer le repo)
 │   ├── 📁 cJSON                      # Libraire JSON
-│   ├── 📁 Crzgames_Libraries         # Librairies précompilées (OpenSSL, ONNX Runtime, Crzgames_RCENet, ffmpeg et SDL_shadercross) propres à Crzgames
+│   ├── 📁 cpp-httplib                # HTTP
+│   ├── 📁 Crzgames_Libraries         # Librairies précompilées (OpenSSL, libsodium, ONNX Runtime, RCENet, ffmpeg et SDL_shadercross) propres à Crzgames
+│   ├── 📁 libwebsockets              # Websockets
 │   ├── 📁 SDL                        # SDL3 (dépendance principale du moteur)
 │   ├── 📁 SDL_image                  # Extension SDL3 pour le support des images (PNG, JPEG, etc.)
 │   ├── 📁 SDL_ttf                    # Extension SDL3 pour le rendu de polices TrueType
@@ -190,13 +192,16 @@
 | Librairie | Version / Commit SHA utilisé par RC2D | Rôle dans RC2D | Statut / Intégration | Impact si désactivé |
 |------------|----------------------------------------|----------------|----------------------|----------------------|
 | **LZ4** | v1.10.0 | Compression ultra-rapide utilisée par `RC2D_data` | ⭐ Obligatoire (intégré statiquement) |  |
-| **SDL3** | commit `550394eecdc250c7ce542a99f0c2b55683521656` | Gestion fenêtre, entrées, rendu GPU | ⭐ Obligatoire |  |
-| **SDL3_image** | commit `8bd9f3d7f2d2bb59ce4331f13b77d65254cd8c7b` | Chargement d’images (PNG, SVG, APNG…) | ⭐ Obligatoire |  |
+| **SDL3** | commit `8bf3b7215ad9fc3deb583c6a3a37c6c67f2e24e4` | Gestion fenêtre, entrées, rendu GPU | ⭐ Obligatoire |  |
+| **SDL3_image** | commit `19cc7cdb1e30554d3bf4f4526a21a8f57b861279` | Chargement d’images (PNG, SVG, APNG…) | ⭐ Obligatoire |  |
 | **SDL3_ttf** | commit `053bbc89517471427748a082583c9eada55c07b5` | Rendu de polices TrueType | ⭐ Obligatoire |  |
-| **SDL3_mixer** | commit `8f7790334a7d8b680d90968ce2e211129b892492` | Gestion audio (WAV, OGG, OPUS…) | ⭐ Obligatoire | |
+| **SDL3_mixer** | commit `f6c763326a8bea55688e628641d5cf28521ddb82` | Gestion audio (WAV, OGG, OPUS…) | ⭐ Obligatoire | |
 | **cJSON** | v1.7.19 | Parsing JSON léger | ⭐ Obligatoire (intégré statiquement) |  |
 | **SDL3_shadercross** | commit `7b7365a86611b2a7b6462e521cf1c43a037d0970` | Transpilation shaders (HLSL → MSL / SPIR-V / DXIL / METALLIB…) | 🟡 Optionnel (Dev uniquement, marche uniquement pour Windows/macOS/Linux) – `RC2D_GPU_SHADER_HOT_RELOAD_ENABLED` (ON par défaut) | Si désactivé : pas de hot-reload / compilation runtime des shaders, il faudras utiliser la compilation hors ligne des shaders via les scripts des shaders |
-| **RCENet** | v1.4.6 | Communication réseau UDP (fork ENet) | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : module réseau indisponible (`RC2D_net.h`) |
+| **RCENet** | v1.6.1 | Communication réseau UDP (fork ENet) | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : module réseau indisponible (`RC2D_net.h`) |
+| **cpp-httplib** | v0.37.2 | Client HTTP | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé :  |
+| **libsodium** | v1.0.21 | Exchange key, crypto..etc | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : |
+| **libwebsockets** | v1.6.1 | Websocket client | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : |
 | **OpenSSL** | v3.6.1 | Hashing, chiffrement, crypto | 🟡 Optionnel – `RC2D_DATA_MODULE_ENABLED` (ON par défaut) | Si désactivé : module data/crypto indisponible (`RC2D_data.h`) |
 | **ONNX Runtime** | v1.24.1 | Inférence IA (modèles ONNX) | 🟡 Optionnel – `RC2D_ONNX_MODULE_ENABLED` (ON par défaut) | Si désactivé : module IA indisponible (`RC2D_onnx.h`) |
 | **FFmpeg** | v8.0.0 | Lecture vidéo (MP4, etc.) | 🟡 Optionnel – `RC2D_VIDEO_MODULE_ENABLED` (ON par défaut) | Si désactivé : module vidéo indisponible (`RC2D_video.h`) |

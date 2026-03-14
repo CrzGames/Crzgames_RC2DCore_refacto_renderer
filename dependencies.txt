@@ -1,8 +1,10 @@
 # Format: library=repository:tag ou library=repository:commit_sha
 
-SDL=https://github.com/libsdl-org/SDL.git:f600c74c80360eaaf8675da7d4ec69dc1670ac57
-SDL_image=https://github.com/libsdl-org/SDL_image.git:8bd9f3d7f2d2bb59ce4331f13b77d65254cd8c7b
+SDL=https://github.com/libsdl-org/SDL.git:8bf3b7215ad9fc3deb583c6a3a37c6c67f2e24e4
+SDL_image=https://github.com/libsdl-org/SDL_image.git:19cc7cdb1e30554d3bf4f4526a21a8f57b861279
 SDL_ttf=https://github.com/libsdl-org/SDL_ttf.git:053bbc89517471427748a082583c9eada55c07b5
-SDL_mixer=https://github.com/libsdl-org/SDL_mixer.git:3a4efc8c8efa448939fbbcde2c11ecd7ccc4ec51
-Crzgames_Libraries=https://github.com/CrzGames/Crzgames_Libraries.git:a16a9b8cd548d4a62c7da1f3c3432184103c139e
+SDL_mixer=https://github.com/libsdl-org/SDL_mixer.git:f6c763326a8bea55688e628641d5cf28521ddb82
+Crzgames_Libraries=https://github.com/CrzGames/Crzgames_Libraries.git:8c8e223780a46b97be843615d4e8c1edc0cf1711
 cJSON=https://github.com/DaveGamble/cJSON:v1.7.19
+libwebsockets=https://github.com/warmcat/libwebsockets.git:v4.5.5
+cpp-httplib=https://github.com/yhirose/cpp-httplib.git:v0.37.2

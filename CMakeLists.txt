@@ -68,8 +68,9 @@ option(RC2D_VIDEO_MODULE_ENABLED "Enable RC2D_video (FFmpeg-based)" ON)
 # Option pour activer le module RC2D_data (basé sur OpenSSL)
 option(RC2D_DATA_MODULE_ENABLED "Enable RC2D_data (OpenSSL-based)" ON)
 
-# Option pour activer le module RC2D_net (basé sur RCEnet, qui est lui même basé sur ENet)
-option(RC2D_NET_MODULE_ENABLED "Enable RC2D_net (ENet-based)" ON)
+# Option pour activer plusieurs librairies (RCENet, libwebsockets, libsodium et cpp-httplib)
+# Egalement dans RC2D on ajoute du multi threading pour le networking, et ces librairies sont utilisées pour ça (ex: libwebsockets pour le websocket client, libsodium pour le chiffrement, cpp-httplib pour les requêtes HTTP, etc.)
+option(RC2D_NET_MODULE_ENABLED "Link multiple networking libraries (RCENet, libwebsockets, libsodium, cpp-httplib)" ON)
 
 # Option pour activer le module RC2D_onnx (basé sur ONNX Runtime)
 option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" ON)
@@ -333,11 +334,81 @@ set(ENABLE_CJSON_TEST   OFF CACHE BOOL "" FORCE) # Désactiver les tests
 set(ENABLE_CJSON_UTILS  OFF CACHE BOOL "" FORCE) # Désactiver les outils
 
 # ============================================================
+# libwebsockets - Configuration build
+# ============================================================
+if (RC2D_NET_MODULE_ENABLED)
+  # --- LWS: on veut OpenSSL ---
+  set(LWS_WITH_SSL ON  CACHE BOOL "" FORCE)
+
+  # Autres options importantes :
+  set(LWS_WITH_EXPORT_LWSTARGETS OFF CACHE BOOL "" FORCE)
+
+  # Empêcher les backends alternatifs à OpenSSL
+  set(LWS_WITH_MBEDTLS   OFF CACHE BOOL "" FORCE)
+  set(LWS_WITH_BORINGSSL OFF CACHE BOOL "" FORCE)
+  set(LWS_WITH_GNUTLS    OFF CACHE BOOL "" FORCE)
+  set(LWS_WITH_WOLFSSL   OFF CACHE BOOL "" FORCE)
+  set(LWS_WITH_CYASSL    OFF CACHE BOOL "" FORCE)
+  set(LWS_WITH_SCHANNEL  OFF CACHE BOOL "" FORCE)
+
+  # Désactiver les exemples et tests (inutile dans un framework)
+  set(LWS_WITHOUT_TESTAPPS ON  CACHE BOOL "" FORCE)
+  set(LWS_WITH_MINIMAL_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(LWS_WITH_LWSWS OFF CACHE BOOL "" FORCE)
+
+  # On veut la lib statique, pas besoin de la dynamique
+  set(LWS_WITH_SHARED OFF  CACHE BOOL "" FORCE)
+  set(LWS_WITH_STATIC ON CACHE BOOL "" FORCE)
+
+  # libwebsockets à besoin des : OPENSSL_INCLUDE_DIR, OPENSSL_ROOT_DIR, OPENSSL_CRYPTO_LIBRARY
+  if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
+    # ATTENTION pour macOS : 
+    # On utilise l'include de Linux pour macOS aussi, parce que libwebsocket demande un "openssl/.." 
+    # et pas OpenSSL/.., et que l'include de Linux est déjà organisé comme ça.
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL/libssl.a" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL/libcrypto.a" CACHE FILEPATH "" FORCE)
+  elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS
+    # ATTENTION pour iOS :
+    # On utilise aussi l'include de Linux pour iOS, parce que libwebsocket demande un "openssl/.."
+    # et pas OpenSSL/.., et que l'include de Linux est déjà organisé comme ça.
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos/libssl.a" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos/libcrypto.a" CACHE FILEPATH "" FORCE)
+  elseif(WIN32) # Windows
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/windows/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}/libssl.lib" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}/libcrypto.lib" CACHE FILEPATH "" FORCE)
+  elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/steamrt4/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}/libssl.a" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}/libcrypto.a" CACHE FILEPATH "" FORCE)
+  elseif (UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4")) # Linux, Raspberry PI 5 etc.
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}/libssl.a" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}/libcrypto.a" CACHE FILEPATH "" FORCE)
+  elseif(ANDROID) # Android
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/android/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}/libssl.a" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}/libcrypto.a" CACHE FILEPATH "" FORCE)
+  endif()
+endif()
+
+# ============================================================
 # Dépendances vendored — add_subdirectory
 # ============================================================
 # On inclut SDL + modules, et cJSON depuis dependencies/.
 # EXCLUDE_FROM_ALL : évite de builder ces targets si aucune target ne les référence.
 # ============================================================
+if (RC2D_NET_MODULE_ENABLED)
+  add_subdirectory(dependencies/libwebsockets EXCLUDE_FROM_ALL)
+endif()
 add_subdirectory(dependencies/SDL        EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_ttf    EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_image  EXCLUDE_FROM_ALL)
@@ -348,10 +419,102 @@ add_subdirectory(dependencies/cJSON      EXCLUDE_FROM_ALL)
 # Paths — Dépendances précompilées (Crzgames_Libraries)
 # ============================================================
 # DEPENDENCIES_PATH : racine de ton dossier dependencies/
-# CRZGAMES_LIBRARIES: dossier où on ranges les libs précompilées (ffmpeg, openssl, rcenet, onnxruntime, sdl3shadercross, etc.) pour chaque plateforme.
+# CRZGAMES_LIBRARIES_PATH: dossier où on ranges les libs précompilées (ffmpeg, openssl, rcenet, onnxruntime, sdl3shadercross, etc.) pour chaque plateforme.
 # ============================================================
 set(DEPENDENCIES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
-set(CRZGAMES_LIBRARIES "${DEPENDENCIES_PATH}/Crzgames_Libraries")
+set(CRZGAMES_LIBRARIES_PATH "${DEPENDENCIES_PATH}/Crzgames_Libraries")
+
+# ============================================================
+# rc2d_configure_cpphttplib
+# ============================================================
+function(rc2d_configure_cpphttplib target_name)
+  if(RC2D_NET_MODULE_ENABLED)
+    target_include_directories(${target_name} PUBLIC
+      "${DEPENDENCIES_PATH}/cpp-httplib"
+    )
+  endif()
+endfunction()
+
+# ============================================================
+# rc2d_configure_libsodium
+# ============================================================
+function(rc2d_configure_libsodium target_name)
+  if (RC2D_NET_MODULE_ENABLED)
+    if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
+      target_include_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/macos/include/include_libsodium"
+      )
+
+      target_link_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/macos/lib/libsodium"
+      )
+
+      target_link_libraries(${target_name} PUBLIC
+        sodium
+      )
+    elseif (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS
+      target_include_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/ios/include/include_libsodium"
+      )
+
+      target_link_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/ios/lib/libsodium/arm64-iphoneos"
+      )
+
+      target_link_libraries(${target_name} PUBLIC 
+        sodium
+      )
+    elseif(WIN32) # Windows
+      target_include_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/windows/include/include_libsodium"
+      )
+
+      target_link_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/windows/lib/libsodium/${RC2D_ARCH}"
+      )
+
+      target_link_libraries(${target_name} PUBLIC
+        libsodium
+      )
+    elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
+      target_include_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/steamrt4/include/include_libsodium"
+      )
+
+      target_link_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/libsodium/${RC2D_ARCH}"
+      )
+
+      target_link_libraries(${target_name} PUBLIC 
+        sodium
+      )
+    elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4")) # Linux, Raspberry PI 5 etc.
+      target_include_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_libsodium"
+      )
+
+      target_link_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/linux/lib/libsodium/${RC2D_ARCH}"
+      )
+
+      target_link_libraries(${target_name} PUBLIC 
+        sodium
+      )
+    elseif(ANDROID) # Android
+      target_include_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/android/include/include_libsodium"
+      )
+
+      target_link_directories(${target_name} PUBLIC
+        "${CRZGAMES_LIBRARIES_PATH}/android/lib/libsodium/${ANDROID_ABI}"
+      )
+
+      target_link_libraries(${target_name} PUBLIC 
+        sodium
+      )
+    endif()
+  endif()
+endfunction()
 
 # ============================================================
 # rc2d_configure_cjson
@@ -393,10 +556,10 @@ function(rc2d_configure_ffmpeg target_name)
   if (RC2D_VIDEO_MODULE_ENABLED)
     if (WIN32) # Windows
       # Link le dossier include de FFmpeg à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/include_ffmpeg/ffmpeg")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/windows/include/include_ffmpeg/ffmpeg")
 
       # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/ffmpeg/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/windows/lib/ffmpeg/${RC2D_ARCH}")
 
       # Link les librairies FFmpeg
       target_link_libraries(${target_name} PUBLIC
@@ -411,7 +574,7 @@ function(rc2d_configure_ffmpeg target_name)
 
       # Copier aussi les DLLs dans le répertoire de l'exécutable
       file(GLOB_RECURSE FFMPEG_DLLS
-        "${CRZGAMES_LIBRARIES}/windows/bin/ffmpeg/${RC2D_ARCH}/*.dll"
+        "${CRZGAMES_LIBRARIES_PATH}/windows/bin/ffmpeg/${RC2D_ARCH}/*.dll"
       )
       foreach(FILE IN LISTS FFMPEG_DLLS)
         get_filename_component(FILE_NAME "${FILE}" NAME)
@@ -423,11 +586,11 @@ function(rc2d_configure_ffmpeg target_name)
       endforeach()
     elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
       # Link le dossier include de FFmpeg à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/include_ffmpeg/ffmpeg")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/macos/include/include_ffmpeg/ffmpeg")
 
       # Ajouter explicitement la lib .dylib à linker
       target_link_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/macos/lib/ffmpeg"
+        "${CRZGAMES_LIBRARIES_PATH}/macos/lib/ffmpeg"
       )
 
       # Link la librairies FFmpeg
@@ -455,11 +618,11 @@ function(rc2d_configure_ffmpeg target_name)
       )
     elseif (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
       # Link le dossier include de FFmpeg à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/include_ffmpeg/ffmpeg")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/ios/include/include_ffmpeg/ffmpeg")
 
       # Ajouter explicitement la lib .a à linker
       target_link_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/ios/lib/ffmpeg/arm64-iphoneos"
+        "${CRZGAMES_LIBRARIES_PATH}/ios/lib/ffmpeg/arm64-iphoneos"
       )
 
       # Link la librairies FFmpeg
@@ -492,17 +655,17 @@ function(rc2d_configure_ffmpeg target_name)
         # ==================================
         # TODO:
         # Dès qu'ont auras la librairie pour SteamRT4, il faudra juste changer 
-        # ce path pour "${CRZGAMES_LIBRARIES}/steamrt4/include/include_ffmpeg/ffmpeg"
+        # ce path pour "${CRZGAMES_LIBRARIES_PATH}/steamrt4/include/include_ffmpeg/ffmpeg"
         # ==================================
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_ffmpeg/ffmpeg")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_ffmpeg/ffmpeg")
 
         # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
         # ==================================
         # TODO:
         # Dès qu'ont auras la librairie pour SteamRT4, il faudra juste changer 
-        # ce path pour "${CRZGAMES_LIBRARIES}/steamrt4/lib/ffmpeg/${RC2D_ARCH}"
+        # ce path pour "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/ffmpeg/${RC2D_ARCH}"
         # ==================================
-        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/ffmpeg/${RC2D_ARCH}")
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/lib/ffmpeg/${RC2D_ARCH}")
 
         # Link les librairies FFmpeg
         target_link_libraries(${target_name} PUBLIC
@@ -516,10 +679,10 @@ function(rc2d_configure_ffmpeg target_name)
         )
       else() # Linux, Raspberry PI 5 etc.
         # Link le dossier include de FFmpeg à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_ffmpeg/ffmpeg")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_ffmpeg/ffmpeg")
 
         # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
-        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/ffmpeg/${RC2D_ARCH}")
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/lib/ffmpeg/${RC2D_ARCH}")
 
         # Link les librairies FFmpeg
         target_link_libraries(${target_name} PUBLIC
@@ -534,10 +697,10 @@ function(rc2d_configure_ffmpeg target_name)
       endif()
     elseif (ANDROID)
       # Link le dossier include de FFmpeg à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/include_ffmpeg/ffmpeg")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/android/include/include_ffmpeg/ffmpeg")
 
       # Rajouter le répertoire de la lib FFmpeg, pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/ffmpeg/${ANDROID_ABI}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/android/lib/ffmpeg/${ANDROID_ABI}")
 
       # Link les librairies FFmpeg
       target_link_libraries(${target_name} PUBLIC
@@ -570,10 +733,10 @@ function(rc2d_configure_rcenet target_name)
   if (RC2D_NET_MODULE_ENABLED)
     if (WIN32) # Windows
       # Link le dossier include de RCEnet à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/include_rcenet")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/windows/include/include_rcenet")
 
       # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/rcenet/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/windows/lib/rcenet/${RC2D_ARCH}")
 
       # Link les librairies RCEnet
       target_link_libraries(${target_name} PUBLIC
@@ -584,11 +747,11 @@ function(rc2d_configure_rcenet target_name)
 
     elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
       # Link le dossier include de RCEnet à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/include_rcenet")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/macos/include/include_rcenet")
 
       # Ajouter explicitement la lib .dylib à linker
       target_link_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/macos/lib/rcenet"
+        "${CRZGAMES_LIBRARIES_PATH}/macos/lib/rcenet"
       )
 
       # Link la librairies RCEnet
@@ -598,11 +761,11 @@ function(rc2d_configure_rcenet target_name)
 
     elseif (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
       # Link le dossier include de RCEnet à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/include_rcenet")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/ios/include/include_rcenet")
 
       # Ajouter explicitement la lib .a à linker
       target_link_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/ios/lib/rcenet/arm64-iphoneos"
+        "${CRZGAMES_LIBRARIES_PATH}/ios/lib/rcenet/arm64-iphoneos"
       )
 
       # Link la librairies RCEnet
@@ -613,10 +776,10 @@ function(rc2d_configure_rcenet target_name)
     elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, SteamRT4, Raspberry PI 5 etc.
       if (RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
         # Link le dossier include de RCEnet à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_rcenet")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/steamrt4/include/include_rcenet")
 
         # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
-        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/rcenet/${RC2D_ARCH}")
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/rcenet/${RC2D_ARCH}")
 
         # Link les librairies RCEnet
         target_link_libraries(${target_name} PUBLIC
@@ -624,10 +787,10 @@ function(rc2d_configure_rcenet target_name)
         )
       else() # Linux, Raspberry PI 5 etc.
         # Link le dossier include de RCEnet à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_rcenet")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_rcenet")
 
         # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
-        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/rcenet/${RC2D_ARCH}")
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/lib/rcenet/${RC2D_ARCH}")
 
         # Link les librairies RCEnet
         target_link_libraries(${target_name} PUBLIC
@@ -636,10 +799,10 @@ function(rc2d_configure_rcenet target_name)
       endif()
     elseif (ANDROID)
       # Link le dossier include de RCEnet à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/include_rcenet")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/android/include/include_rcenet")
 
       # Rajouter le répertoire de la lib RCEnet, pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/rcenet/${ANDROID_ABI}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/android/lib/rcenet/${ANDROID_ABI}")
 
       # Link les librairies RCEnet
       target_link_libraries(${target_name} PUBLIC
@@ -667,10 +830,10 @@ function(rc2d_configure_onnxruntime target_name)
   if(RC2D_ONNX_MODULE_ENABLED)
     if(WIN32) # Windows
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/include_onnxruntime/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/windows/include/include_onnxruntime/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/onnxruntime/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/windows/lib/onnxruntime/${RC2D_ARCH}")
 
       # Link les librairies ONNX Runtime
       target_link_libraries(${target_name} PUBLIC
@@ -679,7 +842,7 @@ function(rc2d_configure_onnxruntime target_name)
 
       # Copier aussi les DLLs dans le répertoire de l'exécutable
       file(GLOB_RECURSE ONNX_DLLS
-        "${CRZGAMES_LIBRARIES}/windows/bin/onnxruntime/${RC2D_ARCH}/*.dll"
+        "${CRZGAMES_LIBRARIES_PATH}/windows/bin/onnxruntime/${RC2D_ARCH}/*.dll"
       )
       foreach(FILE IN LISTS ONNX_DLLS)
         get_filename_component(FILE_NAME "${FILE}" NAME)
@@ -691,10 +854,10 @@ function(rc2d_configure_onnxruntime target_name)
       endforeach()
     elseif (ANDROID) # Android
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/include_onnxruntime/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/android/include/include_onnxruntime/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime, pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/onnxruntime/${ANDROID_ABI}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/android/lib/onnxruntime/${ANDROID_ABI}")
 
       # Link les librairies ONNX Runtime
       target_link_libraries(${target_name} PUBLIC
@@ -703,11 +866,11 @@ function(rc2d_configure_onnxruntime target_name)
     elseif (APPLE) # Apple (macOS, iOS)
       if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
         # Link le dossier include de ONNX Runtime à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/include_onnxruntime/onnxruntime")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/macos/include/include_onnxruntime/onnxruntime")
 
         # Ajouter explicitement la lib .dylib à linker
         target_link_directories(${target_name} PUBLIC
-          "${CRZGAMES_LIBRARIES}/macos/lib/onnxruntime"
+          "${CRZGAMES_LIBRARIES_PATH}/macos/lib/onnxruntime"
         )
 
         # Link la librairies ONNX Runtime
@@ -718,7 +881,7 @@ function(rc2d_configure_onnxruntime target_name)
 
         # Copier aussi les libraries dynamique dans le répertoire de l'exécutable
         file(GLOB_RECURSE ONNX_DYLIBS
-          "${CRZGAMES_LIBRARIES}/macos/lib/onnxruntime/*.dylib"
+          "${CRZGAMES_LIBRARIES_PATH}/macos/lib/onnxruntime/*.dylib"
         )
         foreach(FILE IN LISTS ONNX_DYLIBS)
           get_filename_component(FILE_NAME "${FILE}" NAME)
@@ -730,11 +893,11 @@ function(rc2d_configure_onnxruntime target_name)
         endforeach()
       elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
         # Link le dossier include de ONNX Runtime à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/include_onnxruntime/onnxruntime")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/ios/include/include_onnxruntime/onnxruntime")
 
         # Ajouter explicitement la lib .a à linker
         target_link_directories(${target_name} PUBLIC
-          "${CRZGAMES_LIBRARIES}/ios/lib/onnxruntime/arm64-iphoneos"
+          "${CRZGAMES_LIBRARIES_PATH}/ios/lib/onnxruntime/arm64-iphoneos"
         )
 
         # Link la librairies ONNX Runtime
@@ -745,10 +908,10 @@ function(rc2d_configure_onnxruntime target_name)
       endif()
     elseif (RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
       # Link le dossier include de ONNX Runtime à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_onnxruntime/onnxruntime")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/steamrt4/include/include_onnxruntime/onnxruntime")
 
       # Rajouter le répertoire de la lib ONNX Runtime (onnxruntime_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/onnxruntime/${RC2D_ARCH}")
 
       # Link les librairies ONNX Runtime
       target_link_libraries(${target_name} PUBLIC
@@ -757,8 +920,8 @@ function(rc2d_configure_onnxruntime target_name)
 
       # Copier aussi les libraries dynamique dans le répertoire de l'exécutable
       file(GLOB_RECURSE ONNX_SO
-        "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so"
-        "${CRZGAMES_LIBRARIES}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
+        "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so"
+        "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
       )
       add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND cp -a ${ONNX_SO} "$<TARGET_FILE_DIR:${target_name}>/"
@@ -767,10 +930,10 @@ function(rc2d_configure_onnxruntime target_name)
       )
     elseif (UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4")) # Linux, Raspberry PI 5 etc.
         # Link le dossier include de ONNX Runtime à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_onnxruntime/onnxruntime")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_onnxruntime/onnxruntime")
 
         # Rajouter le répertoire de la lib ONNX Runtime, pour le linker ensuite
-        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}")
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/lib/onnxruntime/${RC2D_ARCH}")
 
         # Link les librairies ONNX Runtime
         target_link_libraries(${target_name} PUBLIC
@@ -779,8 +942,8 @@ function(rc2d_configure_onnxruntime target_name)
 
         # Copier aussi les libraries dynamique dans le répertoire de l'exécutable
         file(GLOB_RECURSE ONNX_SO
-          "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}/*.so"
-          "${CRZGAMES_LIBRARIES}/linux/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
+          "${CRZGAMES_LIBRARIES_PATH}/linux/lib/onnxruntime/${RC2D_ARCH}/*.so"
+          "${CRZGAMES_LIBRARIES_PATH}/linux/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
         )
         add_custom_command(TARGET ${target_name} POST_BUILD
           COMMAND cp -a ${ONNX_SO} "$<TARGET_FILE_DIR:${target_name}>/"
@@ -809,7 +972,7 @@ function(rc2d_configure_shadercross target_name)
   if (APPLE)
     if(RC2D_BUILD_EXAMPLES)
       # Repertoire cible des binaires de shadercross pour "examples/shaders/tools"
-      set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/macos/bin/SDL3_shadercross")
+      set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES_PATH}/macos/bin/SDL3_shadercross")
 
       # Répertoire cible pour les outils de shaders, pour la compilation hors ligne des shaders
       set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
@@ -834,7 +997,7 @@ function(rc2d_configure_shadercross target_name)
 
       # Copier aussi les librarieis dynamique (.dylib) dans le répertoire "examples/shaders/tools"
       file(GLOB_RECURSE SHADERCROSS_DYLIB
-        "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross/*.dylib"
+        "${CRZGAMES_LIBRARIES_PATH}/macos/lib/SDL3_shadercross/*.dylib"
       )
       foreach(FILE IN LISTS SHADERCROSS_DYLIB)
         get_filename_component(FILE_NAME "${FILE}" NAME)
@@ -864,11 +1027,11 @@ function(rc2d_configure_shadercross target_name)
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED AND CMAKE_SYSTEM_NAME STREQUAL "Darwin")
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/macos/include/include_sdl3shadercross"
+        "${CRZGAMES_LIBRARIES_PATH}/macos/include/include_sdl3shadercross"
       )
 
       # Récupérer le dossier de la lib shadercross
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/macos/lib/SDL3_shadercross")
 
       # Link la lib shadercross
       target_link_libraries(${target_name} PUBLIC
@@ -878,7 +1041,7 @@ function(rc2d_configure_shadercross target_name)
       if (RC2D_BUILD_EXAMPLES)
         # Copier aussi les DLLs dans le répertoire de l'exécutable
         file(GLOB_RECURSE SHADERCROSS_DLLS
-          "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross/*.dylib"
+          "${CRZGAMES_LIBRARIES_PATH}/macos/lib/SDL3_shadercross/*.dylib"
         )
         foreach(FILE IN LISTS SHADERCROSS_DLLS)
           get_filename_component(FILE_NAME "${FILE}" NAME)
@@ -893,7 +1056,7 @@ function(rc2d_configure_shadercross target_name)
   elseif(WIN32) # Windows
     if(RC2D_BUILD_EXAMPLES)
       # Repertoire cible des dll + binaire de shadercross pour "examples/shaders/tools"
-      set(SHADERCROSS_DLL_BINARY_DIR "${CRZGAMES_LIBRARIES}/windows/bin/SDL3_shadercross/${RC2D_ARCH}")
+      set(SHADERCROSS_DLL_BINARY_DIR "${CRZGAMES_LIBRARIES_PATH}/windows/bin/SDL3_shadercross/${RC2D_ARCH}")
 
       # Répertoire cible pour les outils de shaders, pour la compilation hors ligne des shaders
       set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
@@ -922,11 +1085,11 @@ function(rc2d_configure_shadercross target_name)
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/windows/include/include_sdl3shadercross"
+        "${CRZGAMES_LIBRARIES_PATH}/windows/include/include_sdl3shadercross"
       )
 
       # Récupérer le dossier de la lib shadercross
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/SDL3_shadercross/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/windows/lib/SDL3_shadercross/${RC2D_ARCH}")
 
       # Link la lib shadercross
       target_link_libraries(${target_name} PUBLIC
@@ -936,7 +1099,7 @@ function(rc2d_configure_shadercross target_name)
       if (RC2D_BUILD_EXAMPLES)
         # Copier aussi les DLLs dans le répertoire de l'exécutable
         file(GLOB_RECURSE SHADERCROSS_DLLS
-          "${CRZGAMES_LIBRARIES}/windows/bin/SDL3_shadercross/${RC2D_ARCH}/*.dll"
+          "${CRZGAMES_LIBRARIES_PATH}/windows/bin/SDL3_shadercross/${RC2D_ARCH}/*.dll"
         )
         foreach(FILE IN LISTS SHADERCROSS_DLLS)
           get_filename_component(FILE_NAME "${FILE}" NAME)
@@ -951,7 +1114,7 @@ function(rc2d_configure_shadercross target_name)
   elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
     if(RC2D_BUILD_EXAMPLES)
       # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
-      set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/steamrt4/bin/SDL3_shadercross/${RC2D_ARCH}")
+      set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES_PATH}/steamrt4/bin/SDL3_shadercross/${RC2D_ARCH}")
       
       # Repertoire cible des .so + binaire de shadercross pour "examples/shaders/tools"
       set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
@@ -976,8 +1139,8 @@ function(rc2d_configure_shadercross target_name)
 
       # Copier aussi les .so dans le répertoire "examples/shaders/tools"
       file(GLOB_RECURSE SHADERCROSS_SO
-        "${CRZGAMES_LIBRARIES}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
-        "${CRZGAMES_LIBRARIES}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
+        "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
+        "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
       )
       add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND cp -a ${SHADERCROSS_SO} "${SHADER_TOOLS_DIR}/"
@@ -1002,7 +1165,7 @@ function(rc2d_configure_shadercross target_name)
   elseif(UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.
     if(RC2D_BUILD_EXAMPLES)    
       # Repertoire cible du binaire de shadercross pour "examples/shaders/tools"
-      set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES}/linux/bin/SDL3_shadercross/${RC2D_ARCH}")
+      set(SHADERCROSS_BINARY_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/bin/SDL3_shadercross/${RC2D_ARCH}")
 
       # Repertoire cible des .so + binaire de shadercross pour "examples/shaders/tools"
       set(SHADER_TOOLS_DIR "${PROJECT_SOURCE_DIR}/examples/shaders/tools")
@@ -1027,8 +1190,8 @@ function(rc2d_configure_shadercross target_name)
 
       # Copier aussi les .so dans le répertoire "examples/shaders/tools"
       file(GLOB_RECURSE SHADERCROSS_SO
-        "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
-        "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
+        "${CRZGAMES_LIBRARIES_PATH}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
+        "${CRZGAMES_LIBRARIES_PATH}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
       )
       add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND cp -a ${SHADERCROSS_SO} "${SHADER_TOOLS_DIR}/"
@@ -1054,11 +1217,11 @@ function(rc2d_configure_shadercross target_name)
     if(RC2D_GPU_SHADER_HOT_RELOAD_ENABLED)
       # Link le dossier include de shadercross à la target
       target_include_directories(${target_name} PUBLIC
-        "${CRZGAMES_LIBRARIES}/linux/include/include_sdl3shadercross"
+        "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_sdl3shadercross"
       )
 
       # Récupérer le dossier de la lib shadercross
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/lib/SDL3_shadercross/${RC2D_ARCH}")
 
       # Link la lib shadercross
       target_link_libraries(${target_name} PUBLIC
@@ -1094,7 +1257,7 @@ function(rc2d_configure_shadercross target_name)
 
     # --- Choix des chemins selon l'OS HÔTE ---
     if(CMAKE_HOST_WIN32) # host Windows
-      set(SHADERCROSS_BIN_DIR "${CRZGAMES_LIBRARIES}/windows/bin/SDL3_shadercross/${HOST_ARCH}")
+      set(SHADERCROSS_BIN_DIR "${CRZGAMES_LIBRARIES_PATH}/windows/bin/SDL3_shadercross/${HOST_ARCH}")
       file(GLOB _files
         "${SHADERCROSS_BIN_DIR}/*.exe"
         "${SHADERCROSS_BIN_DIR}/*.dll"
@@ -1107,7 +1270,7 @@ function(rc2d_configure_shadercross target_name)
       endforeach()
 
     elseif(CMAKE_HOST_APPLE) # host macOS
-      set(SHADERCROSS_BIN_DIR "${CRZGAMES_LIBRARIES}/macos/bin/SDL3_shadercross")
+      set(SHADERCROSS_BIN_DIR "${CRZGAMES_LIBRARIES_PATH}/macos/bin/SDL3_shadercross")
       file(GLOB _bins "${SHADERCROSS_BIN_DIR}/*")
       foreach(f IN LISTS _bins)
         get_filename_component(n "${f}" NAME)
@@ -1116,7 +1279,7 @@ function(rc2d_configure_shadercross target_name)
         )
       endforeach()
 
-      file(GLOB _dylibs "${CRZGAMES_LIBRARIES}/macos/lib/SDL3_shadercross/*.dylib")
+      file(GLOB _dylibs "${CRZGAMES_LIBRARIES_PATH}/macos/lib/SDL3_shadercross/*.dylib")
       foreach(f IN LISTS _dylibs)
         get_filename_component(n "${f}" NAME)
         add_custom_command(TARGET ${target_name} POST_BUILD
@@ -1132,7 +1295,7 @@ function(rc2d_configure_shadercross target_name)
       )
 
     elseif(CMAKE_HOST_UNIX) # host Linux
-      set(SHADERCROSS_BIN_DIR "${CRZGAMES_LIBRARIES}/linux/bin/SDL3_shadercross/${HOST_ARCH}")
+      set(SHADERCROSS_BIN_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/bin/SDL3_shadercross/${HOST_ARCH}")
 
       file(GLOB _bins "${SHADERCROSS_BIN_DIR}/*")
       foreach(f IN LISTS _bins)
@@ -1143,8 +1306,8 @@ function(rc2d_configure_shadercross target_name)
       endforeach()
 
       file(GLOB _sos
-        "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${HOST_ARCH}/*.so"
-        "${CRZGAMES_LIBRARIES}/linux/lib/SDL3_shadercross/${HOST_ARCH}/*.so.*"
+        "${CRZGAMES_LIBRARIES_PATH}/linux/lib/SDL3_shadercross/${HOST_ARCH}/*.so"
+        "${CRZGAMES_LIBRARIES_PATH}/linux/lib/SDL3_shadercross/${HOST_ARCH}/*.so.*"
       )
       add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND cp -a ${_sos} "${SHADER_TOOLS_DIR}/"
@@ -1168,10 +1331,10 @@ function(rc2d_configure_openssl target_name)
     if(APPLE) # Apple (macOS, iOS)
       if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
         # Link le dossier include de OpenSSL à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/include/include_openssl")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/macos/include/include_openssl")
 
         # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/macos/lib/OpenSSL")
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL")
 
         # Link les librairies OpenSSL
         target_link_libraries(${target_name} PUBLIC
@@ -1180,10 +1343,10 @@ function(rc2d_configure_openssl target_name)
         )
       elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
         # Link le dossier include de OpenSSL à la target
-        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/include/include_openssl")
+        target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/ios/include/include_openssl")
 
         # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/ios/lib/OpenSSL/arm64-iphoneos")
+        target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos")
 
         # Link les librairies OpenSSL
         target_link_libraries(${target_name} PUBLIC
@@ -1193,10 +1356,10 @@ function(rc2d_configure_openssl target_name)
       endif()
     elseif (ANDROID) # Android
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/include/include_openssl")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/android/include/include_openssl")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/android/lib/openssl/${ANDROID_ABI}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}")
 
       # Link les librairies OpenSSL
       target_link_libraries(${target_name} PUBLIC
@@ -1205,10 +1368,10 @@ function(rc2d_configure_openssl target_name)
       )
     elseif(WIN32) # Windows
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/include/include_openssl")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/windows/include/include_openssl")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/windows/lib/OpenSSL/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}")
 
       # Link les librairies OpenSSL
       target_link_libraries(${target_name} PUBLIC
@@ -1219,10 +1382,10 @@ function(rc2d_configure_openssl target_name)
       )
     elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/include/include_openssl")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/steamrt4/include/include_openssl")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamrt4/lib/OpenSSL/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}")
 
       # Link les librairies OpenSSL
       target_link_libraries(${target_name} PUBLIC
@@ -1231,10 +1394,10 @@ function(rc2d_configure_openssl target_name)
       )
     elseif (UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.
       # Link le dossier include de OpenSSL à la target
-      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/include/include_openssl")
+      target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl")
 
       # Rajouter le répertoire de la lib OpenSSL (libssl_static et libcrypto_static), pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/linux/lib/OpenSSL/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}")
 
       # Link les librairies OpenSSL
       target_link_libraries(${target_name} PUBLIC
@@ -1249,11 +1412,11 @@ endfunction()
 function(rc2d_configure_steamworks target_name)
   if(RC2D_STEAMWORKS_SDK_ENABLED)
     # Link le dossier include du SDK Steamworks à la target
-    target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamworks-sdk/include")
+    target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/steamworks-sdk/include")
 
     if(WIN32) # Windows
       # Rajouter le répertoire de la lib Steamworks, pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/steamworks-sdk/lib/windows/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/steamworks-sdk/lib/windows/${RC2D_ARCH}")
 
       # Link la librairie Steamworks
       target_link_libraries(${target_name} PUBLIC
@@ -1262,7 +1425,7 @@ function(rc2d_configure_steamworks target_name)
 
       # Copier aussi les DLLs dans le répertoire de l'exécutable
       file(GLOB_RECURSE STEAMWORKS_DLLS
-        "${CRZGAMES_LIBRARIES}/steamworks-sdk/bin/windows/${RC2D_ARCH}/*.dll"
+        "${CRZGAMES_LIBRARIES_PATH}/steamworks-sdk/bin/windows/${RC2D_ARCH}/*.dll"
       )
 
       foreach(FILE IN LISTS STEAMWORKS_DLLS)
@@ -1281,11 +1444,11 @@ endfunction()
 function(rc2d_configure_eos_sdk target_name)
   if(RC2D_EOS_SDK_ENABLED)
     # Link le dossier include du SDK EOS à la target
-    target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/eos-sdk/include")
+    target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/eos-sdk/include")
 
     if(WIN32) # Windows
       # Rajouter le répertoire de la lib EOS, pour le linker ensuite
-      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES}/eos-sdk/lib/windows/${RC2D_ARCH}")
+      target_link_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/eos-sdk/lib/windows/${RC2D_ARCH}")
 
       # Link la librairie EOS
       target_link_libraries(${target_name} PUBLIC
@@ -1294,7 +1457,7 @@ function(rc2d_configure_eos_sdk target_name)
 
       # Copier aussi les DLLs dans le répertoire de l'exécutable
       file(GLOB_RECURSE EOS_DLLS
-        "${CRZGAMES_LIBRARIES}/eos-sdk/bin/windows/${RC2D_ARCH}/*.dll"
+        "${CRZGAMES_LIBRARIES_PATH}/eos-sdk/bin/windows/${RC2D_ARCH}/*.dll"
       )
 
       foreach(FILE IN LISTS EOS_DLLS)
@@ -1576,6 +1739,12 @@ rc2d_link_apple_frameworks(${PROJECT_NAME})
 
 # cJSON (parsing JSON léger côté runtime)
 rc2d_configure_cjson(${PROJECT_NAME})
+
+# cpp-httplib (client HTTP léger côté runtime)
+rc2d_configure_cpphttplib(${PROJECT_NAME})
+
+# libsodium (chiffrement, hashing, etc. côté runtime)
+rc2d_configure_libsodium(${PROJECT_NAME})
 
 # Steamworks SDK (module RC2D_steamworks, optionnel)
 rc2d_configure_steamworks(${PROJECT_NAME})
