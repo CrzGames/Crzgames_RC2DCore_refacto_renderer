@@ -1621,6 +1621,13 @@ function(rc2d_target_compile_definitions target_name)
 
   if(RC2D_NET_MODULE_ENABLED)
     target_compile_definitions(${target_name} PUBLIC RC2D_NET_MODULE_ENABLED=1)
+
+    # Pour libsodium avec MSVC, on doit définir SODIUM_STATIC pour indiquer qu'on utilise la version statique de la librairie.
+    if(MSVC)
+      target_compile_definitions(${target_name} PUBLIC 
+        SODIUM_STATIC
+      )
+    endif()
   else()
     target_compile_definitions(${target_name} PUBLIC RC2D_NET_MODULE_ENABLED=0)
   endif()
