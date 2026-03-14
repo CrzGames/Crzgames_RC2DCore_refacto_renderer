@@ -26,6 +26,7 @@
 
 #if RC2D_NET_MODULE_ENABLED
 #include <rcenet/RCENET_enet.h>
+#include <sodium.h>
 #endif // RC2D_NET_MODULE_ENABLED
 
 // Internal headers
@@ -351,6 +352,38 @@ static bool rc2d_engine_init_rcenet(void)
         return true;
     }
 #endif
+
+    // Si le module RC2D_net n'est pas activé, on retourne true par défaut
+    return true;
+}
+
+/**
+ * \brief Initialise la bibliothèque libsodium pour le module réseau.
+ * 
+ * Cette fonction initialise la bibliothèque libsodium si le module RC2D_net est activé.
+ * Elle doit être appelée avant d'utiliser les fonctionnalités de cryptographie réseau.
+ * 
+ * \return true si l'initialisation a réussi, false sinon.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+static bool rc2d_engine_init_libsodium(void)
+{
+#if RC2D_NET_MODULE_ENABLED
+    // Initialise libsodium.
+    if (sodium_init() < 0)
+    {
+        // Log erreur en cas d'échec.
+        RC2D_log(RC2D_LOG_ERROR, "Erreur lors de l initialisation de libsodium.");
+        return false;
+    }
+    else
+    {
+        RC2D_log(RC2D_LOG_INFO, "Libsodium initialiser avec succes.");
+        return true;
+    }
+#endif
+
     // Si le module RC2D_net n'est pas activé, on retourne true par défaut
     return true;
 }
@@ -1962,6 +1995,14 @@ static bool rc2d_engine(void)
      * Initialiser la librairie RCENet
      */
     if (!rc2d_engine_init_rcenet())
+    {
+        return false;
+    }
+
+    /**
+     * Initialiser la librairie libsodium
+     */
+    if (!rc2d_engine_init_libsodium())
     {
         return false;
     }
