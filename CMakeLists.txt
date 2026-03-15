@@ -67,9 +67,9 @@ option(RC2D_VIDEO_MODULE_ENABLED "Enable RC2D_video (FFmpeg-based)" ON)
 # Option pour activer le module RC2D_data (basé sur OpenSSL)
 option(RC2D_DATA_MODULE_ENABLED "Enable RC2D_data (OpenSSL-based)" ON)
 
-# Option pour activer plusieurs librairies (RCENet, libwebsockets, libsodium et cpp-httplib)
-# Egalement dans RC2D on ajoute du multi threading pour le networking, et ces librairies sont utilisées pour ça (ex: libwebsockets pour le websocket client, libsodium pour le chiffrement, cpp-httplib pour les requêtes HTTP, etc.)
-option(RC2D_NET_MODULE_ENABLED "Link multiple networking libraries (RCENet, libwebsockets, libsodium, cpp-httplib)" ON)
+# Option pour activer plusieurs librairies (RCENet, libwebsockets, libsodium et curl) pour le networking.
+# Egalement dans RC2D on ajoute du multi threading pour le networking, et ces librairies sont utilisées pour ça (ex: libwebsockets pour le websocket client, libsodium pour le chiffrement, curl pour les requêtes HTTP, etc.)
+option(RC2D_NET_MODULE_ENABLED "Link multiple networking libraries (RCENet, libwebsockets, libsodium, curl)" ON)
 
 # Option pour activer le module RC2D_onnx (basé sur ONNX Runtime)
 option(RC2D_ONNX_MODULE_ENABLED "Enable RC2D_onnx (ONNX Runtime-based)" ON)
