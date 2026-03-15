@@ -25,7 +25,7 @@
 │   └── 📄 setup_dependencies.cmake   # Script CMake chargé de lire `dependencies.txt` et cloner/configurer les dépendances dans `/dependencies`
 ├── 📁 dependencies (git ignored)     # Répertoire local contenant les dépendances clonées (ignoré par Git pour ne pas polluer le repo)
 │   ├── 📁 cJSON                      # Libraire JSON
-│   ├── 📁 cpp-httplib                # HTTP
+│   ├── 📁 curl                       # HTTP
 │   ├── 📁 Crzgames_Libraries         # Librairies précompilées (OpenSSL, libsodium, ONNX Runtime, RCENet, ffmpeg et SDL_shadercross) propres à Crzgames
 │   ├── 📁 libwebsockets              # Websockets
 │   ├── 📁 SDL                        # SDL3 (dépendance principale du moteur)
@@ -199,7 +199,7 @@
 | **cJSON** | v1.7.19 | Parsing JSON léger | ⭐ Obligatoire (intégré statiquement) |  |
 | **SDL3_shadercross** | commit `7b7365a86611b2a7b6462e521cf1c43a037d0970` | Transpilation shaders (HLSL → MSL / SPIR-V / DXIL / METALLIB…) | 🟡 Optionnel (Dev uniquement, marche uniquement pour Windows/macOS/Linux) – `RC2D_GPU_SHADER_HOT_RELOAD_ENABLED` (ON par défaut) | Si désactivé : pas de hot-reload / compilation runtime des shaders, il faudras utiliser la compilation hors ligne des shaders via les scripts des shaders |
 | **RCENet** | v1.6.1 | Communication réseau UDP (fork ENet) | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : module réseau indisponible (`RC2D_net.h`) |
-| **cpp-httplib** | v0.37.2 | Client HTTP | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé :  |
+| **curl** | v8.19.0 | Client HTTP | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé :  |
 | **libsodium** | v1.0.21 | Exchange key, crypto..etc | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : |
 | **libwebsockets** | v1.6.1 | Websocket client | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : |
 | **OpenSSL** | v3.6.1 | Hashing, chiffrement, crypto | 🟡 Optionnel – `RC2D_DATA_MODULE_ENABLED` (ON par défaut) | Si désactivé : module data/crypto indisponible (`RC2D_data.h`) |

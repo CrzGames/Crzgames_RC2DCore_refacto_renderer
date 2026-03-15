@@ -1,0 +1,236 @@
+name: Build project for librc2d static and example
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  discussions: write
+
+env:
+  ANDROID_NDK_VERSION: "29.0.14206865"
+  ANDROID_PLATFORM_VERSION: "android-36"
+  ANDROID_BUILD_TOOLS_VERSION: "36.1.0"
+  ANDROID_CMAKE_VERSION: "3.30.3"
+  ANDROID_CMDLINE_TOOLS_VERSION: "20.0"
+  JAVA_DISTRIBUTION: "temurin"
+  JAVA_VERSION: "17"
+  XCODE_VERSION: "26.3.0"
+
+jobs:
+  build_librc2d:
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - { runner: ubuntu-latest,    platform: steamrt4, arch: x64,   container: "registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk:4.0.20260119.200228" }
+        - { runner: ubuntu-24.04-arm, platform: steamrt4, arch: arm64, container: "registry.gitlab.steamos.cloud/steamrt/steamrt4/sdk/arm64:4.0.20260119.200228" }
+        - { runner: windows-2025,     platform: windows,  arch: x64 }
+        - { runner: windows-11-arm,   platform: windows,  arch: arm64 }
+        - { runner: ubuntu-22.04,     platform: linux,    arch: x64 }
+        - { runner: ubuntu-22.04-arm, platform: linux,    arch: arm64 }
+        - { runner: ubuntu-latest,    platform: android,  arch: "armeabi-v7a,arm64-v8a" }
+        - { runner: macos-26,         platform: macos,    arch: arm64, sdk: macosx } 
+        - { runner: macos-26,         platform: ios,      arch: arm64, sdk: iphoneos }
+    name: ${{ matrix.config.platform }}-${{ matrix.config.arch }}-${{ matrix.config.sdk }}
+    runs-on: ${{ matrix.config.runner }}
+    container: ${{ matrix.config.platform == 'steamrt4' && matrix.config.container || '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Java JDK LTS - Android
+        if: matrix.config.platform == 'android'
+        uses: actions/setup-java@v5
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Android SDK (Platform + Build Tools + NDK + CMake + CLI) - Android
+        if: matrix.config.platform == 'android'
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: >
+            platform-tools
+            platforms;${{ env.ANDROID_PLATFORM_VERSION }}
+            build-tools;${{ env.ANDROID_BUILD_TOOLS_VERSION }}
+            ndk;${{ env.ANDROID_NDK_VERSION }}
+            cmake;${{ env.ANDROID_CMAKE_VERSION }}
+            cmdline-tools;${{ env.ANDROID_CMDLINE_TOOLS_VERSION }}
+
+      - name: Setup Xcode and Setup Command Line Tools - macOS / iOS
+        if: matrix.config.platform == 'ios' || matrix.config.platform == 'macos'
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Determine SDK Path and set SDKROOT - macOS / iOS
+        if: matrix.config.platform == 'macos' || matrix.config.platform == 'ios'
+        run: |
+          sdk="${{ matrix.config.sdk }}"
+          SDKROOT=$(xcrun --sdk "$sdk" --show-sdk-path)
+          SDKVERSION=$(xcrun --sdk "$sdk" --show-sdk-version)
+          echo "SDKROOT=$SDKROOT" >> $GITHUB_ENV
+          echo "Using SDK: $sdk"
+          echo "SDK Path: $SDKROOT"
+          echo "SDK Version: $SDKVERSION"
+        shell: bash
+
+      - name: Install dev dependencies (for SDL3) - Linux (x64/arm64) / SteamRT4 (x64/arm64)
+        if: matrix.config.platform == 'linux' || matrix.config.platform == 'steamrt4'
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install build-essential git make \
+          pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev \
+          libaudio-dev libfribidi-dev libjack-dev libsndio-dev libx11-dev libxext-dev \
+          libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+          libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
+          libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev libthai-dev \
+          libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
+      
+      - name: Install patchelf - Linux (x64/arm64) / SteamRT4 (x64/arm64)
+        if: matrix.config.platform == 'linux' || matrix.config.platform == 'steamrt4' || matrix.config.platform == 'android'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf
+
+      - name: Install fuse for .AppImage generation - Linux (x64/arm64)
+        if: matrix.config.platform == 'linux'
+        run: |
+          sudo apt update
+          sudo apt -y install libfuse2
+
+      - name: Get dependencies with CMake - All platforms
+        run: cmake -P cmake/setup_dependencies.cmake
+
+      - name: Build RC2D (scripts) - Linux (x64/arm64)
+        if: matrix.config.platform == 'linux'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ "${{ matrix.config.arch }}" = "x64" ]; then
+            chmod +x ./build-scripts/generate-project/linux-x64.sh
+            ./build-scripts/generate-project/linux-x64.sh
+          else
+            chmod +x ./build-scripts/generate-project/linux-arm64.sh
+            ./build-scripts/generate-project/linux-arm64.sh
+          fi
+
+      - name: Build RC2D (scripts) - Windows (x64/arm64)
+        if: matrix.config.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if ("${{ matrix.config.arch }}" -eq "x64") {
+            .\build-scripts\generate-project\windows-x64.bat
+          } else {
+            .\build-scripts\generate-project\windows-arm64.bat
+          }
+
+      - name: Build RC2D (scripts) - macOS (arm64)
+        if: matrix.config.platform == 'macos'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x ./build-scripts/generate-project/macos-arm64-nosignedbundleapp.sh
+          ./build-scripts/generate-project/macos-arm64-nosignedbundleapp.sh
+
+      - name: Build RC2D (scripts) - iOS (arm64 for iphoneos)
+        if: matrix.config.platform == 'ios'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
+          ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
+
+      - name: Build RC2D (scripts) - Android (armeabi-v7a / arm64-v8a)
+        if: matrix.config.platform == 'android'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x ./build-scripts/generate-project/android-unix.sh
+          ./build-scripts/generate-project/android-unix.sh
+
+      - name: Build RC2D (scripts) - SteamRT4 (x64 / arm64)
+        if: matrix.config.platform == 'steamrt4'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ "${{ matrix.config.arch }}" = "x64" ] && [ -f "./build-scripts/generate-project/steamrt4-x64.sh" ]; then
+            chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
+            ./build-scripts/generate-project/steamrt4-x64.sh
+          else
+            chmod +x ./build-scripts/generate-project/steamrt4-arm64.sh
+            ./build-scripts/generate-project/steamrt4-arm64.sh
+          fi
+
+      - name: Inspect APK (Debug) - Android
+        if: matrix.config.platform == 'android'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APK="android-project/app/build/outputs/apk/debug/app-debug.apk"
+
+          if [ ! -f "$APK" ]; then
+            echo "❌ app-debug.apk not found"
+            exit 1
+          fi
+
+          echo "✅ Inspecting $APK"
+          unzip -l "$APK"
+  
+# build_deploy_website:
+#   needs: build_librc2d
+#   runs-on: ubuntu-latest
+#   steps:
+#
+#     - name: Checkout repository
+#       uses: actions/checkout@v6
+#
+#     - name: Get latest release tag
+#       id: previoustag
+#       uses: WyriHaximus/github-action-get-previous-tag@v2
+#
+#     - name: Login to DockerHub
+#       uses: docker/login-action@v3
+#       with:
+#         username: ${{ secrets.DOCKER_HUB_USERNAME }}
+#         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+#
+#     - name: Build and push Docker image - Production version latest
+#       uses: docker/build-push-action@v6
+#       with:
+#         context: .
+#         file: ./docker/production/Dockerfile
+#         push: true
+#         tags: corentin35/librc2d-website-frontend:latest
+#
+#     - name: Build and push Docker image - Production version x.x.x
+#       uses: docker/build-push-action@v6
+#       with:
+#         context: .
+#         file: ./docker/production/Dockerfile
+#         push: true
+#         tags: corentin35/librc2d-website-frontend:${{ steps.previoustag.outputs.tag }}
+#
+#     - name: Replace image tag in deployment.yaml for Kubernetes
+#       run: |
+#         sed -i 's/\${TAG_VERSION}/'${{ steps.previoustag.outputs.tag }}'/g' k8s/production/deployment.yaml
+#
+#     - name: Connect to the cluster K3S for deploy
+#       uses: actions-hub/kubectl@master
+#       env:
+#         # TODO: à changer pour le cluster de production
+#         KUBE_CONFIG: ${{ secrets.KUBECONFIG_CLUSTER_STAGING_CRZGAMES_BASE64 }}
+#       with:
+#         args: |
+#           apply -f k8s/production/namespace.yaml
+#           -f k8s/production/docker-registry-secret.yaml
+#           -f k8s/production/deployment.yaml
+#           -f k8s/production/ingress.yaml
+#           -f k8s/production/service.yaml

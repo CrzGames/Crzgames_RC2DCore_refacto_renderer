@@ -16,7 +16,6 @@ cmake_minimum_required(VERSION 3.28.0)
 # Même si RC2D est majoritairement en C, le support C++ est
 # nécessaire pour certaines intégrations et pour les exemples.
 #
-# Version actuelle : 1.0.0
 # ============================================================
 project(rc2d
   LANGUAGES C CXX
@@ -330,6 +329,51 @@ if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
 endif()
 
 # ============================================================
+# OpenSSL — Préparation pour find_package
+# Utiliser pour les librairies : libwebsockets et curl.
+# ============================================================
+function(rc2d_prepare_openssl_for_find_package)
+  set(OPENSSL_USE_STATIC_LIBS TRUE CACHE BOOL "" FORCE)
+
+  if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL/libssl.a" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL/libcrypto.a" CACHE FILEPATH "" FORCE)
+
+  elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos/libssl.a" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos/libcrypto.a" CACHE FILEPATH "" FORCE)
+
+  elseif(WIN32) # Windows
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/windows/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}/libssl.lib" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}/libcrypto.lib" CACHE FILEPATH "" FORCE)
+
+  elseif(RC2D_PLATFORM STREQUAL "STEAMRT4")
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/steamrt4/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}/libssl.a" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}/libcrypto.a" CACHE FILEPATH "" FORCE)
+
+  elseif(UNIX AND NOT APPLE AND NOT ANDROID)
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}/libssl.a" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}/libcrypto.a" CACHE FILEPATH "" FORCE)
+
+  elseif(ANDROID)
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/android/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}" CACHE PATH "" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}/libssl.a" CACHE FILEPATH "" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}/libcrypto.a" CACHE FILEPATH "" FORCE)
+  endif()
+endfunction()
+
+# ============================================================
 # cJSON — Configuration build
 # ============================================================
 # Objectif :
@@ -346,6 +390,9 @@ set(ENABLE_CJSON_UTILS  OFF CACHE BOOL "" FORCE) # Désactiver les outils
 # libwebsockets - Configuration build
 # ============================================================
 if(RC2D_NET_MODULE_ENABLED)
+  # libwebsockets à besoin des : OPENSSL_INCLUDE_DIR, OPENSSL_ROOT_DIR, OPENSSL_CRYPTO_LIBRARY, OPENSSL_SSL_LIBRARY
+  rc2d_prepare_openssl_for_find_package()
+
   # --- LWS: on veut OpenSSL ---
   set(LWS_WITH_SSL ON  CACHE BOOL "" FORCE)
 
@@ -368,45 +415,54 @@ if(RC2D_NET_MODULE_ENABLED)
   # On veut la lib statique, pas besoin de la dynamique
   set(LWS_WITH_SHARED OFF  CACHE BOOL "" FORCE)
   set(LWS_WITH_STATIC ON CACHE BOOL "" FORCE)
+endif()
 
-  # libwebsockets à besoin des : OPENSSL_INCLUDE_DIR, OPENSSL_ROOT_DIR, OPENSSL_CRYPTO_LIBRARY
-  if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
-    # ATTENTION pour macOS : 
-    # On utilise l'include de Linux pour macOS aussi, parce que libwebsocket demande un "openssl/.." 
-    # et pas OpenSSL/.., et que l'include de Linux est déjà organisé comme ça.
-    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
-    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL" CACHE PATH "" FORCE)
-    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL/libssl.a" CACHE FILEPATH "" FORCE)
-    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL/libcrypto.a" CACHE FILEPATH "" FORCE)
-  elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS
-    # ATTENTION pour iOS :
-    # On utilise aussi l'include de Linux pour iOS, parce que libwebsocket demande un "openssl/.."
-    # et pas OpenSSL/.., et que l'include de Linux est déjà organisé comme ça.
-    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
-    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos" CACHE PATH "" FORCE)
-    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos/libssl.a" CACHE FILEPATH "" FORCE)
-    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos/libcrypto.a" CACHE FILEPATH "" FORCE)
-  elseif(WIN32) # Windows
-    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/windows/include/include_openssl" CACHE PATH "" FORCE)
-    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
-    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}/libssl.lib" CACHE FILEPATH "" FORCE)
-    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}/libcrypto.lib" CACHE FILEPATH "" FORCE)
-  elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
-    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/steamrt4/include/include_openssl" CACHE PATH "" FORCE)
-    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
-    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}/libssl.a" CACHE FILEPATH "" FORCE)
-    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}/libcrypto.a" CACHE FILEPATH "" FORCE)
-  elseif (UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4")) # Linux, Raspberry PI 5 etc.
-    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
-    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
-    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}/libssl.a" CACHE FILEPATH "" FORCE)
-    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}/libcrypto.a" CACHE FILEPATH "" FORCE)
-  elseif(ANDROID) # Android
-    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/android/include/include_openssl" CACHE PATH "" FORCE)
-    set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}" CACHE PATH "" FORCE)
-    set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}/libssl.a" CACHE FILEPATH "" FORCE)
-    set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}/libcrypto.a" CACHE FILEPATH "" FORCE)
-  endif()
+# ============================================================
+# curl — Configuration build
+# ============================================================
+if(RC2D_NET_MODULE_ENABLED)
+  # curl à besoin des : OPENSSL_INCLUDE_DIR, OPENSSL_ROOT_DIR, OPENSSL_CRYPTO_LIBRARY, OPENSSL_SSL_LIBRARY
+  rc2d_prepare_openssl_for_find_package()
+
+  # Désactiver les composants inutiles de curl, pour réduire le temps de compilation et les dépendances.
+  set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
+  set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+  set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+  # 
+  set(CURL_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
+
+  # Forcer la lib statique.
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
+
+  # Forcer le backend OpenSSL, et désactiver les autres (schannel, mbedtls, etc.)
+  set(CURL_USE_OPENSSL ON CACHE BOOL "" FORCE)
+  set(CURL_USE_SCHANNEL OFF CACHE BOOL "" FORCE) # utile surtout sur Windows
+  set(CURL_USE_MBEDTLS OFF CACHE BOOL "" FORCE)
+  set(CURL_USE_GNUTLS OFF CACHE BOOL "" FORCE)
+  set(CURL_USE_WOLFSSL OFF CACHE BOOL "" FORCE)
+  set(CURL_USE_RUSTLS OFF CACHE BOOL "" FORCE)
+
+  # si on veux juste le protocole HTTP, on peut désactiver les autres (FTP, SMTP, etc.) pour réduire le temps de compilation et les dépendances.
+  set(HTTP_ONLY ON CACHE BOOL "" FORCE)
+
+  # Désactiver dépendances/features optionnelles inutiles
+  set(CURL_USE_LIBPSL OFF CACHE BOOL "" FORCE)
+  set(CURL_USE_LIBSSH2 OFF CACHE BOOL "" FORCE)
+  set(CURL_USE_LIBSSH OFF CACHE BOOL "" FORCE)
+  set(CURL_USE_GSASL OFF CACHE BOOL "" FORCE)
+  set(CURL_USE_GSSAPI OFF CACHE BOOL "" FORCE)
+  set(CURL_USE_LIBBACKTRACE OFF CACHE BOOL "" FORCE)
+
+  # LDAP / proxy / auth réseau avancée inutiles pour un backend jeu
+  set(CURL_DISABLE_LDAP ON CACHE BOOL "" FORCE)
+  set(CURL_DISABLE_LDAPS ON CACHE BOOL "" FORCE)
+
+  # Docs inutiles en dépendance embarquée
+  set(BUILD_LIBCURL_DOCS OFF CACHE BOOL "" FORCE)
+  set(BUILD_MISC_DOCS OFF CACHE BOOL "" FORCE)
+  set(ENABLE_CURL_MANUAL OFF CACHE BOOL "" FORCE)
 endif()
 
 # ============================================================
@@ -416,6 +472,7 @@ endif()
 # EXCLUDE_FROM_ALL : évite de builder ces targets si aucune target ne les référence.
 # ============================================================
 if(RC2D_NET_MODULE_ENABLED)
+  add_subdirectory(dependencies/curl EXCLUDE_FROM_ALL)
   add_subdirectory(dependencies/libwebsockets EXCLUDE_FROM_ALL)
 endif()
 add_subdirectory(dependencies/SDL        EXCLUDE_FROM_ALL)
@@ -423,17 +480,6 @@ add_subdirectory(dependencies/SDL_ttf    EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_image  EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/SDL_mixer  EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/cJSON      EXCLUDE_FROM_ALL)
-
-# ============================================================
-# rc2d_configure_cpphttplib
-# ============================================================
-function(rc2d_configure_cpphttplib target_name)
-  if(RC2D_NET_MODULE_ENABLED)
-    target_include_directories(${target_name} PUBLIC
-      "${DEPENDENCIES_PATH}/cpp-httplib"
-    )
-  endif()
-endfunction()
 
 # ============================================================
 # rc2d_configure_libsodium
@@ -1622,11 +1668,11 @@ function(rc2d_target_compile_definitions target_name)
   if(RC2D_NET_MODULE_ENABLED)
     target_compile_definitions(${target_name} PUBLIC RC2D_NET_MODULE_ENABLED=1)
 
-    # Pour libsodium avec MSVC, on doit définir SODIUM_STATIC pour indiquer qu'on utilise la version statique de la librairie.
     if(MSVC)
-      target_compile_definitions(${target_name} PUBLIC 
-        SODIUM_STATIC
-      )
+      target_compile_definitions(${target_name} PUBLIC SODIUM_STATIC)
+    endif()
+    if(WIN32)
+      target_compile_definitions(${PROJECT_NAME} PUBLIC CURL_STATICLIB)
     endif()
   else()
     target_compile_definitions(${target_name} PUBLIC RC2D_NET_MODULE_ENABLED=0)
@@ -1706,11 +1752,13 @@ rc2d_target_compile_definitions(${PROJECT_NAME})
 rc2d_include_headers(${PROJECT_NAME})
 
 # ============================================================
-# Common Dependencies (SDL3, SDL3_image, SDL3_mixer, SDL3_ttf)
+# Common Dependencies
 # ============================================================
 # Dépendances communes à toutes les plateformes :
 # - SDL3
 # - SDL3_image / SDL3_ttf / SDL3_mixer
+# - curl
+# - libwebsockets
 #
 # PUBLIC :
 # - Toute target qui link RC2D récupère aussi ces dépendances,
@@ -1722,6 +1770,12 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   SDL3_ttf::SDL3_ttf
   SDL3::SDL3
 )
+if(RC2D_NET_MODULE_ENABLED)
+  target_link_libraries(${PROJECT_NAME} PUBLIC
+    libcurl_static
+    websockets
+  )
+endif()
 
 # FFmpeg (module RC2D_video, optionnel)
 rc2d_configure_ffmpeg(${PROJECT_NAME})
@@ -1746,9 +1800,6 @@ rc2d_link_apple_frameworks(${PROJECT_NAME})
 
 # cJSON (parsing JSON léger côté runtime)
 rc2d_configure_cjson(${PROJECT_NAME})
-
-# cpp-httplib (client HTTP léger côté runtime)
-rc2d_configure_cpphttplib(${PROJECT_NAME})
 
 # libsodium (chiffrement, hashing, etc. côté runtime)
 rc2d_configure_libsodium(${PROJECT_NAME})

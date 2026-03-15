@@ -24,7 +24,6 @@
 #include <RC2D/RC2D_memory.h>
 #include <RC2D/RC2D_messagebox.h>
 #include <RC2D/RC2D_mouse.h>
-#include <RC2D/RC2D_net.h>
 #include <RC2D/RC2D_onnx.h>
 #include <RC2D/RC2D_pixels.h>
 #include <RC2D/RC2D_platform.h>

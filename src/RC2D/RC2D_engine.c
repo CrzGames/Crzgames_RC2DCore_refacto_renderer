@@ -27,6 +27,7 @@
 #if RC2D_NET_MODULE_ENABLED
 #include <rcenet/RCENET_enet.h>
 #include <sodium.h>
+#include <curl/curl.h>
 #endif // RC2D_NET_MODULE_ENABLED
 
 // Internal headers
@@ -358,6 +359,22 @@ static bool rc2d_engine_init_rcenet(void)
 }
 
 /**
+ * \brief Libère les ressources RCNet.
+ * 
+ * Cette fonction libère les ressources allouées par RCENet.
+ * Elle doit être appelée avant de quitter l'application pour éviter les fuites de mémoire.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+static void rc2d_engine_cleanup_rcenet(void)
+{
+#if RC2D_NET_MODULE_ENABLED
+    enet_deinitialize();
+    RC2D_log(RC2D_LOG_INFO, "RCENet nettoyer avec succes.");
+#endif
+}
+
+/**
  * \brief Initialise la bibliothèque libsodium pour le module réseau.
  * 
  * Cette fonction initialise la bibliothèque libsodium si le module RC2D_net est activé.
@@ -389,18 +406,49 @@ static bool rc2d_engine_init_libsodium(void)
 }
 
 /**
- * \brief Libère les ressources RCNet.
+ * \brief Initialise la bibliothèque libcurl pour le module réseau.
  * 
- * Cette fonction libère les ressources allouées par RCENet.
+ * Cette fonction initialise la bibliothèque libcurl si le module RC2D_net est activé.
+ * Elle doit être appelée avant d'utiliser les fonctionnalités de requêtes HTTP ou de WebSockets.
+ * 
+ * \return true si l'initialisation a réussi, false sinon.
+ * 
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+static bool rc2d_engine_init_curl(void)
+{
+#if RC2D_NET_MODULE_ENABLED
+    // Initialise libcurl.
+    CURLcode res = curl_global_init(CURL_GLOBAL_DEFAULT);
+    if (res != CURLE_OK)
+    {
+        RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de l initialisation de libcurl : %s", curl_easy_strerror(res));
+        return false;
+    }
+    else
+    {
+        RC2D_log(RC2D_LOG_INFO, "libcurl initialiser avec succes.");
+        return true;
+    }
+#endif
+
+    // Si le module RC2D_net n'est pas activé, on retourne true par défaut
+    return true;
+}
+
+/**
+ * \brief Libère les ressources libcurl.
+ * 
+ * Cette fonction libère les ressources allouées par libcurl.
  * Elle doit être appelée avant de quitter l'application pour éviter les fuites de mémoire.
  * 
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
-static void rc2d_engine_cleanup_rcenet(void)
+static void rc2d_engine_cleanup_curl(void)
 {
 #if RC2D_NET_MODULE_ENABLED
-    enet_deinitialize();
-    RC2D_log(RC2D_LOG_INFO, "RCENet nettoyer avec succes.");
+    curl_global_cleanup();
+    RC2D_log(RC2D_LOG_INFO, "libcurl nettoyer avec succes.");
 #endif
 }
 
@@ -2008,6 +2056,14 @@ static bool rc2d_engine(void)
     }
 
     /**
+     * Initialiser la librairie curl
+     */
+    if (!rc2d_engine_init_curl())
+    {
+        return false;
+    }
+
+    /**
      * Vérifier si le GPU de l'utilisateur est supporté par l'API SDL3_GPU.
      * 
      * Cela permet de s'assurer que le GPU est compatible avec au 
@@ -2225,6 +2281,9 @@ void rc2d_engine_quit(void)
 
     // Lib RCENet Deinitialize
     rc2d_engine_cleanup_rcenet();
+
+    // lib curl Deinitialize
+    rc2d_engine_cleanup_curl();
 
 #if RC2D_STEAMWORKS_SDK_ENABLED
     // Lib Steamworks Deinitialize
