@@ -393,13 +393,11 @@ if(RC2D_NET_MODULE_ENABLED)
   # libwebsockets à besoin des : OPENSSL_INCLUDE_DIR, OPENSSL_ROOT_DIR, OPENSSL_CRYPTO_LIBRARY, OPENSSL_SSL_LIBRARY
   rc2d_prepare_openssl_for_find_package()
 
-  # --- LWS: on veut OpenSSL ---
-  set(LWS_WITH_SSL ON  CACHE BOOL "" FORCE)
-
-  # Autres options importantes :
+  # Autres options importantes pour libwebsockets :
   set(LWS_WITH_EXPORT_LWSTARGETS OFF CACHE BOOL "" FORCE)
 
   # Empêcher les backends alternatifs à OpenSSL
+  set(LWS_WITH_SSL ON  CACHE BOOL "" FORCE) # OpenSSL
   set(LWS_WITH_MBEDTLS   OFF CACHE BOOL "" FORCE)
   set(LWS_WITH_BORINGSSL OFF CACHE BOOL "" FORCE)
   set(LWS_WITH_GNUTLS    OFF CACHE BOOL "" FORCE)
@@ -407,8 +405,19 @@ if(RC2D_NET_MODULE_ENABLED)
   set(LWS_WITH_CYASSL    OFF CACHE BOOL "" FORCE)
   set(LWS_WITH_SCHANNEL  OFF CACHE BOOL "" FORCE)
 
-  # Désactiver les exemples et tests (inutile dans un framework)
+  # Android-specific options
+  if(ANDROID)
+    set(LWS_PLAT_ANDROID ON CACHE BOOL "" FORCE)
+  endif()
+
+  # On veut juste le client WebSocket, pas besoin du serveur.
+  set(LWS_WITHOUT_CLIENT OFF CACHE BOOL "" FORCE)
+  set(LWS_WITHOUT_SERVER ON CACHE BOOL "" FORCE)
+
+  # Désactiver les exemples et tests
   set(LWS_WITHOUT_TESTAPPS ON  CACHE BOOL "" FORCE)
+  set(LWS_WITHOUT_TEST_SERVER ON  CACHE BOOL "" FORCE)
+  set(LWS_WITHOUT_TEST_SERVER_EXTPOLL ON  CACHE BOOL "" FORCE)
   set(LWS_WITH_MINIMAL_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(LWS_WITH_LWSWS OFF CACHE BOOL "" FORCE)
 
