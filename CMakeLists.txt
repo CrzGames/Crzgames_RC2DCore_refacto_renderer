@@ -447,6 +447,19 @@ if(RC2D_NET_MODULE_ENABLED)
   # Désactiver l'installation de curl, puisque c'est une dépendance vendored (on ne veut pas que les utilisateurs de RC2D aient à faire find_package(curl) ou à installer curl eux-mêmes).
   set(CURL_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
 
+  # Sauvegarde de l'état précédent
+  set(_rc2d_had_BUILD_SHARED_LIBS FALSE)
+  if(DEFINED BUILD_SHARED_LIBS)
+    set(_rc2d_had_BUILD_SHARED_LIBS TRUE)
+    set(_rc2d_old_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}")
+  endif()
+
+  set(_rc2d_had_BUILD_STATIC_LIBS FALSE)
+  if(DEFINED BUILD_STATIC_LIBS)
+    set(_rc2d_had_BUILD_STATIC_LIBS TRUE)
+    set(_rc2d_old_BUILD_STATIC_LIBS "${BUILD_STATIC_LIBS}")
+  endif()
+
   # Forcer la lib statique.
   set(BUILD_SHARED_LIBS OFF)
   set(BUILD_STATIC_LIBS ON)
@@ -489,8 +502,17 @@ if(RC2D_NET_MODULE_ENABLED)
     # Parce que la librairie curl utilise ces variables globales pour décider si elle doit se 
     # construire en statique ou dynamique, et on veut que les autres dépendances (ex: libwebsockets,..etc)
     # puissent les utiliser aussi.
-    set(BUILD_SHARED_LIBS ON)
-    set(BUILD_STATIC_LIBS OFF)
+    if(_rc2d_had_BUILD_SHARED_LIBS)
+      set(BUILD_SHARED_LIBS "${_rc2d_old_BUILD_SHARED_LIBS}")
+    else()
+      unset(BUILD_SHARED_LIBS)
+    endif()
+
+    if(_rc2d_had_BUILD_STATIC_LIBS)
+      set(BUILD_STATIC_LIBS "${_rc2d_old_BUILD_STATIC_LIBS}")
+    else()
+      unset(BUILD_STATIC_LIBS)
+    endif()
   endif()
 
   add_subdirectory(dependencies/libwebsockets EXCLUDE_FROM_ALL)
