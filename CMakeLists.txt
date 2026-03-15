@@ -405,6 +405,7 @@ if(RC2D_NET_MODULE_ENABLED)
 
   # Unix-specific options
   if(UNIX)
+    # Ne pas traiter les warnings comme des erreurs, car libwebsockets a quelques warnings sur Unix.
     set(DISABLE_WERROR ON CACHE BOOL "" FORCE)
   endif()
 
