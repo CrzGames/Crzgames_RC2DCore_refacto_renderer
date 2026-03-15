@@ -317,13 +317,14 @@ endif()
 set(SDL_HAPTIC ON CACHE BOOL "Enable haptic (rumble/force feedback) support" FORCE)
 
 # ============================================================
-# iOS — Forcer les libs SDL en statique
+# iOS — Forcer les libs en statique
 # ============================================================
 # iOS : les .dylib sont interdites sur l'App Store.
 # On force donc SDL3 + SDL3_image + SDL3_mixer + SDL3_ttf à être statiques.
 # ============================================================
 if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
   set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
   set(SDL_SHARED OFF CACHE BOOL "" FORCE)
   set(SDL_STATIC ON CACHE BOOL "" FORCE)
 endif()
@@ -447,8 +448,8 @@ if(RC2D_NET_MODULE_ENABLED)
   set(CURL_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
 
   # Forcer la lib statique.
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-  set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
+  set(BUILD_SHARED_LIBS OFF)
+  set(BUILD_STATIC_LIBS ON)
 
   # Forcer le backend OpenSSL, et désactiver les autres (schannel, mbedtls, etc.)
   set(CURL_USE_OPENSSL ON CACHE BOOL "" FORCE)
@@ -483,6 +484,15 @@ endif()
 # ============================================================
 if(RC2D_NET_MODULE_ENABLED)
   add_subdirectory(dependencies/curl EXCLUDE_FROM_ALL)
+  if(NOT (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS"))
+    # Restaurer les valeurs de BUILD_SHARED_LIBS et BUILD_STATIC_LIBS.
+    # Parce que la librairie curl utilise ces variables globales pour décider si elle doit se 
+    # construire en statique ou dynamique, et on veut que les autres dépendances (ex: libwebsockets,..etc)
+    # puissent les utiliser aussi.
+    set(BUILD_SHARED_LIBS ON)
+    set(BUILD_STATIC_LIBS OFF)
+  endif()
+
   add_subdirectory(dependencies/libwebsockets EXCLUDE_FROM_ALL)
 endif()
 add_subdirectory(dependencies/SDL        EXCLUDE_FROM_ALL)
