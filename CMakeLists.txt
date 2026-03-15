@@ -400,14 +400,18 @@ if(RC2D_NET_MODULE_ENABLED)
   set(LWS_WITH_SSL ON  CACHE BOOL "" FORCE) # OpenSSL
   set(LWS_WITH_MBEDTLS   OFF CACHE BOOL "" FORCE)
   set(LWS_WITH_BORINGSSL OFF CACHE BOOL "" FORCE)
-  set(LWS_WITH_GNUTLS    OFF CACHE BOOL "" FORCE)
   set(LWS_WITH_WOLFSSL   OFF CACHE BOOL "" FORCE)
   set(LWS_WITH_CYASSL    OFF CACHE BOOL "" FORCE)
-  set(LWS_WITH_SCHANNEL  OFF CACHE BOOL "" FORCE)
+
+  # Unix-specific options
+  if(UNIX)
+    set(DISABLE_WERROR ON CACHE BOOL "" FORCE)
+  endif()
 
   # Android-specific options
   if(ANDROID)
     set(LWS_PLAT_ANDROID ON CACHE BOOL "" FORCE)
+    set(LWS_AVOID_SIGPIPE_IGN ON CACHE BOOL "" FORCE) # Pour Android 7+
   endif()
 
   # On veut juste le client WebSocket, pas besoin du serveur.
@@ -438,7 +442,7 @@ if(RC2D_NET_MODULE_ENABLED)
   set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
   set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-  # 
+  # Désactiver l'installation de curl, puisque c'est une dépendance vendored (on ne veut pas que les utilisateurs de RC2D aient à faire find_package(curl) ou à installer curl eux-mêmes).
   set(CURL_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
 
   # Forcer la lib statique.
@@ -447,7 +451,7 @@ if(RC2D_NET_MODULE_ENABLED)
 
   # Forcer le backend OpenSSL, et désactiver les autres (schannel, mbedtls, etc.)
   set(CURL_USE_OPENSSL ON CACHE BOOL "" FORCE)
-  set(CURL_USE_SCHANNEL OFF CACHE BOOL "" FORCE) # utile surtout sur Windows
+  set(CURL_USE_SCHANNEL OFF CACHE BOOL "" FORCE)
   set(CURL_USE_MBEDTLS OFF CACHE BOOL "" FORCE)
   set(CURL_USE_GNUTLS OFF CACHE BOOL "" FORCE)
   set(CURL_USE_WOLFSSL OFF CACHE BOOL "" FORCE)
@@ -463,10 +467,6 @@ if(RC2D_NET_MODULE_ENABLED)
   set(CURL_USE_GSASL OFF CACHE BOOL "" FORCE)
   set(CURL_USE_GSSAPI OFF CACHE BOOL "" FORCE)
   set(CURL_USE_LIBBACKTRACE OFF CACHE BOOL "" FORCE)
-
-  # LDAP / proxy / auth réseau avancée inutiles pour un backend jeu
-  set(CURL_DISABLE_LDAP ON CACHE BOOL "" FORCE)
-  set(CURL_DISABLE_LDAPS ON CACHE BOOL "" FORCE)
 
   # Docs inutiles en dépendance embarquée
   set(BUILD_LIBCURL_DOCS OFF CACHE BOOL "" FORCE)
