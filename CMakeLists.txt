@@ -1608,7 +1608,6 @@ function(rc2d_link_apple_frameworks target_name)
       "-framework GameController"
       "-framework Metal"
       "-framework Foundation"
-      "-framework OpenGLES"
       "-framework QuartzCore"
     )
   endif()
@@ -1616,6 +1615,7 @@ function(rc2d_link_apple_frameworks target_name)
   # Spécifique iOS
   if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS" AND NOT BUILD_SHARED_LIBS)
     target_link_libraries(${target_name} PUBLIC
+      "-framework OpenGLES"
       "-framework UIKit"
     )
   endif()
