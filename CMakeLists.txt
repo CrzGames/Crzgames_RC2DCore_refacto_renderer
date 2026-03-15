@@ -1603,7 +1603,6 @@ function(rc2d_link_apple_frameworks target_name)
       "-framework AudioToolbox"
       "-framework CoreBluetooth" 
       "-framework CoreMotion"
-      "-framework CoreGraphics"
       "-framework CoreHaptics"
       "-framework GameController"
       "-framework Metal"
