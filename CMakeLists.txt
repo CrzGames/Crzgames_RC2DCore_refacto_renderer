@@ -336,13 +336,13 @@ function(rc2d_prepare_openssl_for_find_package)
   set(OPENSSL_USE_STATIC_LIBS TRUE CACHE BOOL "" FORCE)
 
   if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin") # macOS
-    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/macos/include/include_openssl" CACHE PATH "" FORCE)
     set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL" CACHE PATH "" FORCE)
     set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL/libssl.a" CACHE FILEPATH "" FORCE)
     set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/macos/lib/OpenSSL/libcrypto.a" CACHE FILEPATH "" FORCE)
 
   elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS
-    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
+    set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/ios/include/include_openssl" CACHE PATH "" FORCE)
     set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos" CACHE PATH "" FORCE)
     set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos/libssl.a" CACHE FILEPATH "" FORCE)
     set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/ios/lib/OpenSSL/arm64-iphoneos/libcrypto.a" CACHE FILEPATH "" FORCE)
@@ -353,19 +353,19 @@ function(rc2d_prepare_openssl_for_find_package)
     set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}/libssl.lib" CACHE FILEPATH "" FORCE)
     set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/windows/lib/OpenSSL/${RC2D_ARCH}/libcrypto.lib" CACHE FILEPATH "" FORCE)
 
-  elseif(RC2D_PLATFORM STREQUAL "STEAMRT4")
+  elseif(RC2D_PLATFORM STREQUAL "STEAMRT4") # Steam Deck / Steam Linux
     set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/steamrt4/include/include_openssl" CACHE PATH "" FORCE)
     set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
     set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}/libssl.a" CACHE FILEPATH "" FORCE)
     set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/OpenSSL/${RC2D_ARCH}/libcrypto.a" CACHE FILEPATH "" FORCE)
 
-  elseif(UNIX AND NOT APPLE AND NOT ANDROID)
+  elseif(UNIX AND NOT APPLE AND NOT ANDROID) # Linux, Raspberry PI 5 etc.
     set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_openssl" CACHE PATH "" FORCE)
     set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}" CACHE PATH "" FORCE)
     set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}/libssl.a" CACHE FILEPATH "" FORCE)
     set(OPENSSL_CRYPTO_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/linux/lib/OpenSSL/${RC2D_ARCH}/libcrypto.a" CACHE FILEPATH "" FORCE)
 
-  elseif(ANDROID)
+  elseif(ANDROID) # Android
     set(OPENSSL_INCLUDE_DIR "${CRZGAMES_LIBRARIES_PATH}/android/include/include_openssl" CACHE PATH "" FORCE)
     set(OPENSSL_ROOT_DIR "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}" CACHE PATH "" FORCE)
     set(OPENSSL_SSL_LIBRARY "${CRZGAMES_LIBRARIES_PATH}/android/lib/openssl/${ANDROID_ABI}/libssl.a" CACHE FILEPATH "" FORCE)
@@ -1591,9 +1591,7 @@ endfunction()
 #   automatiquement résolus.
 # ============================================================
 function(rc2d_link_apple_frameworks target_name)
-  # SDL_Image bug: https://github.com/libsdl-org/SDL_image/issues/506
-  # + Notamment pour iOS les libs ci-dessous sont nécessaires
-  # vu qu'on utilise les libs static de SDL3, SDL3_image, SDL3_mixer et SDL3_ttf
+  # Commun Apple : macOS + iOS
   if (APPLE AND NOT BUILD_SHARED_LIBS)
     target_link_libraries(${target_name} PUBLIC 
       "-framework ImageIO"
@@ -1609,10 +1607,16 @@ function(rc2d_link_apple_frameworks target_name)
       "-framework CoreHaptics"
       "-framework GameController"
       "-framework Metal"
-      "-framework UIKit"
       "-framework Foundation"
       "-framework OpenGLES"
       "-framework QuartzCore"
+    )
+  endif()
+
+  # Spécifique iOS
+  if (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS" AND NOT BUILD_SHARED_LIBS)
+    target_link_libraries(${target_name} PUBLIC
+      "-framework UIKit"
     )
   endif()
 endfunction()
