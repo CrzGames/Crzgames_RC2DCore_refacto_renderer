@@ -201,8 +201,8 @@
 | **RCENet** | v1.6.1 | Communication réseau UDP (fork ENet) | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : module réseau indisponible (`RC2D_net.h`) |
 | **curl** | v8.19.0 | Client HTTP | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé :  |
 | **libsodium** | v1.0.21 | Exchange key, crypto..etc | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : |
-| **libwebsockets** | v1.6.1 | Websocket client | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : |
-| **OpenSSL** | v3.6.1 | Hashing, chiffrement, crypto | 🟡 Optionnel – `RC2D_DATA_MODULE_ENABLED` (ON par défaut) | Si désactivé : module data/crypto indisponible (`RC2D_data.h`) |
+| **libwebsockets** | v4.5.5 | Websocket client | 🟡 Optionnel – `RC2D_NET_MODULE_ENABLED` (ON par défaut) | Si désactivé : |
+| **OpenSSL** | v3.6.1 | Hashing, chiffrement, crypto. ATTENTION : libwebsokets / curl à besoin de OpenSSL. | 🟡 Optionnel – `RC2D_DATA_MODULE_ENABLED` (ON par défaut) | Si désactivé : module data/crypto indisponible (`RC2D_data.h`) |
 | **ONNX Runtime** | v1.24.1 | Inférence IA (modèles ONNX) | 🟡 Optionnel – `RC2D_ONNX_MODULE_ENABLED` (ON par défaut) | Si désactivé : module IA indisponible (`RC2D_onnx.h`) |
 | **FFmpeg** | v8.0.0 | Lecture vidéo (MP4, etc.) | 🟡 Optionnel – `RC2D_VIDEO_MODULE_ENABLED` (ON par défaut) | Si désactivé : module vidéo indisponible (`RC2D_video.h`) |
 
