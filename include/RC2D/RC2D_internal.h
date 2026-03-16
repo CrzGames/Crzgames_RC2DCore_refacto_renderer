@@ -4,6 +4,8 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_mutex.h>
+#include <SDL3/SDL_atomic.h>
+#include <SDL3/SDL_thread.h>
 #include <SDL3/SDL_gpu.h>
 #include <SDL3/SDL_render.h>
 
@@ -15,6 +17,10 @@
 #include <RC2D/RC2D_math.h>
 #include <RC2D/RC2D_gpu.h>
 #include <RC2D/RC2D_cmdline.h>
+
+#if RC2D_NET_MODULE_ENABLED
+#include <rcenet/RCENET_enet.h>
+#endif
 
 /**
  * IMPORTANT: 
@@ -202,6 +208,35 @@ typedef struct RC2D_EngineState {
     double delta_time;
     bool game_is_running;
     Uint64 last_frame_time;
+
+#if RC2D_NET_MODULE_ENABLED
+    // Controle global des threads workers (1 = actif, 0 = stop demande).
+    SDL_AtomicInt worker_threads_should_run;
+
+    // Thread simulation dedie (optionnel selon callback).
+    SDL_Thread* simulation_thread;
+
+    // Thread HTTP dedie (optionnel selon callback).
+    SDL_Thread* http_thread;
+
+    // Thread WebSocket dedie (optionnel selon callback).
+    SDL_Thread* websocket_thread;
+
+    // Tick logique courant du thread simulation client.
+    uint64_t simulation_tick_id;
+
+    // Thread reseau dedie (incoming + outgoing ENet).
+    SDL_Thread* network_thread;
+
+    // Host ENet client.
+    ENetHost* network_client_host;
+
+    // Peer ENet serveur actuellement cible.
+    ENetPeer* network_server_peer;
+
+    // Indique si le client est connecte au serveur ENet.
+    bool network_is_connected;
+#endif
 } RC2D_EngineState;
 
 /**
@@ -338,6 +373,24 @@ void rc2d_engine_deltatime_end(void);
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
 void rc2d_engine_configure(const RC2D_EngineConfig* config);
+
+#if RC2D_NET_MODULE_ENABLED
+/**
+ * \brief Demarre les threads workers optionnels (simulation/net/http/websocket).
+ *
+ * Cette fonction est idempotente et doit etre appelee apres `rc2d_load()`.
+ *
+ * \return true si les threads requis ont ete lances correctement.
+ */
+bool rc2d_engine_start_worker_threads(void);
+
+/**
+ * \brief Demande l'arret puis attend la fin des threads workers.
+ *
+ * Cette fonction est idempotente.
+ */
+void rc2d_engine_stop_worker_threads(void);
+#endif
 
 /**
  * \brief Initialisation de l'assertion RC2D.

@@ -39,3 +39,33 @@ void rc2d_mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SD
 {
     sceneManager.mousepressed(x, y, button, clicks, mouseID);
 }
+
+#if RC2D_NET_MODULE_ENABLED
+void rc2d_simulation_update(uint64_t currentTick, uint64_t dtNs, double dt)
+{
+    // ...
+}
+
+void rc2d_network_incoming_update(ENetHost* host, const ENetEvent* event)
+{
+    if (event->type == ENET_EVENT_TYPE_CONNECT)
+    {
+        RC2D_log(RC2D_LOG_INFO, "Client connecter au serveur");
+    }
+}
+
+void rc2d_network_outgoing_update(ENetHost* host)
+{
+    // ...
+}
+
+void rc2d_http_update(void)
+{
+    // ...
+}
+
+void rc2d_websocket_update(void)
+{
+    // ...
+}
+#endif

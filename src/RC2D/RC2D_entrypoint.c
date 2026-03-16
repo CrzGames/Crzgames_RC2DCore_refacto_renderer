@@ -220,6 +220,18 @@ SDL_AppResult SDL_AppIterate(void *appstate)
             RC2D_log(RC2D_LOG_WARN, "No rc2d_load() function defined, skipping load step.");
         }
 
+#if RC2D_NET_MODULE_ENABLED
+        /**
+         * Lance les workers reseau optionnels (simulation/net/http/websocket)
+         * apres rc2d_load().
+         */
+        if (!rc2d_engine_start_worker_threads())
+        {
+            RC2D_log(RC2D_LOG_CRITICAL, "Failed to start RC2D worker threads.");
+            return SDL_APP_FAILURE;
+        }
+#endif
+
         // Indique que rc2d_load() a été appelé pour ne pas le rappeler
         rc2d_load_has_been_called = true;
 
@@ -296,6 +308,14 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
  */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) 
 {
+#if RC2D_NET_MODULE_ENABLED
+    /**
+     * Stoppe les workers optionnels avant d'appeler rc2d_unload()
+     * pour eviter tout acces concurrent aux ressources du jeu.
+     */
+    rc2d_engine_stop_worker_threads();
+#endif
+
     /**
      * La boucle de jeu est terminée, appelez la fonction de déchargement si elle est définie
      * Cela peut être utilisé pour libérer des ressources ou effectuer d'autres tâches de nettoyage 

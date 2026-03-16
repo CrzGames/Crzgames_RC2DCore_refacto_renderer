@@ -1,6 +1,8 @@
 #ifndef RC2D_ENGINE_H
 #define RC2D_ENGINE_H
 
+#include <stdint.h> // uint64_t
+
 #include <SDL3/SDL_video.h>
 #include <SDL3/SDL_sensor.h>
 #include <SDL3/SDL_keyboard.h>
@@ -11,6 +13,10 @@
 #include <RC2D/RC2D_touch.h>
 #include <RC2D/RC2D_camera.h>
 #include <RC2D/RC2D_mouse.h>
+
+#if RC2D_NET_MODULE_ENABLED
+#include <rcenet/RCENET_enet.h>
+#endif
 
 /* Configuration pour les définitions de fonctions C, même lors de l'utilisation de C++ */
 #ifdef __cplusplus
@@ -326,6 +332,54 @@ typedef struct RC2D_Callbacks {
      */
     void (*rc2d_draw)(void);
 
+#if RC2D_NET_MODULE_ENABLED
+    /**
+     * \brief Appelee a cadence fixe sur un thread simulation dedie.
+     *
+     * \param currentTick Identifiant du tick simulation client courant (1, 2, 3...).
+     * \param dtNs Duree logique du tick en nanosecondes.
+     * \param dt Duree logique du tick en secondes (double).
+     *
+     * \since Cette fonction est disponible depuis RC2D 1.0.0.
+     */
+    void (*rc2d_simulation_update)(uint64_t currentTick, uint64_t dtNs, double dt);
+
+    /**
+     * \brief Appelee par le thread reseau lors de la reception d'un evenement ENet.
+     *
+     * \param host Host ENet client courant.
+     * \param event Evenement ENet recu (CONNECT/RECEIVE/DISCONNECT...).
+     *
+     * \note Si `event->type == ENET_EVENT_TYPE_RECEIVE`, le packet est detruit
+     * automatiquement par RC2D apres l'appel de cette callback.
+     *
+     * \since Cette fonction est disponible depuis RC2D 1.0.0.
+     */
+    void (*rc2d_network_incoming_update)(ENetHost* host, const ENetEvent* event);
+
+    /**
+     * \brief Appelee a cadence fixe par le thread reseau pour l'envoi sortant.
+     *
+     * \param host Host ENet client courant.
+     *
+     * \since Cette fonction est disponible depuis RC2D 1.0.0.
+     */
+    void (*rc2d_network_outgoing_update)(ENetHost* host);
+
+    /**
+     * \brief Appelee en boucle sur un thread HTTP dedie.
+     *
+     * \since Cette fonction est disponible depuis RC2D 1.0.0.
+     */
+    void (*rc2d_http_update)(void);
+
+    /**
+     * \brief Appelee en boucle sur un thread WebSocket dedie.
+     *
+     * \since Cette fonction est disponible depuis RC2D 1.0.0.
+     */
+    void (*rc2d_websocket_update)(void);
+#endif
 
     // ------------- Keyboard Callbacks ------------- //
     /**
@@ -1051,6 +1105,75 @@ typedef struct RC2D_AppInfo {
     const char* identifier;
 } RC2D_AppInfo;
 
+#if RC2D_NET_MODULE_ENABLED
+/**
+ * \brief Configuration reseau client ENet.
+ *
+ * Cette structure decrit la cible reseau du client (adresse/port/channels)
+ * et la cadence de travail des threads workers orientes reseau.
+ *
+ * \since Cette structure est disponible depuis RC2D 1.0.0.
+ */
+typedef struct RC2D_NetworkClientConfig {
+    /**
+     * Adresse du serveur UDP ENet.
+     *
+     * Exemples:
+     * - "127.0.0.1"
+     * - "localhost"
+     * - "gameserver.my-domain.com"
+     */
+    const char* serverAddress;
+
+    /**
+     * Port UDP du serveur ENet.
+     */
+    uint16_t serverPort;
+
+    /**
+     * Nombre de channels ENet a utiliser pour la connexion client -> serveur.
+     */
+    uint32_t channelCount;
+
+    /**
+     * Nombre maximal de connexions sortantes gerees par ce host client.
+     *
+     * Dans la majorite des cas: 1.
+     */
+    uint32_t maxConnections;
+
+    /**
+     * Bande passante entrante ENet (0 = illimitee).
+     */
+    uint32_t incomingBandwidth;
+
+    /**
+     * Bande passante sortante ENet (0 = illimitee).
+     */
+    uint32_t outgoingBandwidth;
+
+    /**
+     * Timeout (ms) pour `enet_host_service` cote incoming, pour la callback `rc2d_network_incoming_update`.
+     */
+    uint32_t incomingPollTimeoutMs;
+
+    /**
+     * Cadence (Hz) pour la callback `rc2d_simulation_update`.
+     */
+    uint32_t simulationTickRateHz;
+
+    /**
+     * Cadence (Hz) pour la callback `rc2d_network_outgoing_update`.
+     */
+    uint32_t outgoingTickRateHz;
+
+    /**
+     * Timeout de connexion initiale au serveur (ms).
+     */
+    uint32_t connectTimeoutMs;
+} RC2D_NetworkClientConfig;
+#endif
+
 /**
  * \brief Configuration de l'application RC2D.
  * 
@@ -1067,6 +1190,25 @@ typedef struct RC2D_EngineConfig {
      * Par défaut : NULL.
      */
     RC2D_EngineCallbacks* callbacks;
+
+#if RC2D_NET_MODULE_ENABLED
+    /**
+     * Configuration reseau client ENet.
+     *
+     * Par defaut :
+     * - serverAddress : "127.0.0.1"
+     * - serverPort : 12345
+     * - channelCount : 4
+     * - simulationTickRateHz : 128
+     * - maxConnections : 1
+     * - incomingBandwidth : 0
+     * - outgoingBandwidth : 0
+     * - incomingPollTimeoutMs : 1
+     * - outgoingTickRateHz : 128
+     * - connectTimeoutMs : 5000
+     */
+    RC2D_NetworkClientConfig* networkClientConfig;
+#endif
 
     /**
      * Largeur initiale de la fenêtre (pixels).

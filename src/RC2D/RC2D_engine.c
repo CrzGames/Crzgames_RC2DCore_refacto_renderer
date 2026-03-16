@@ -9,6 +9,9 @@
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_gpu.h>
 #include <SDL3/SDL_render.h>
+#include <SDL3/SDL_timer.h>
+#include <SDL3/SDL_thread.h>
+#include <SDL3/SDL_atomic.h>
 
 #include <SDL3_ttf/SDL_ttf.h>
 
@@ -84,6 +87,18 @@ static void rc2d_engine_stateInit(void) {
     rc2d_engine_state.delta_time = 0.0;
     rc2d_engine_state.game_is_running = true;
     rc2d_engine_state.last_frame_time = 0;
+
+#if RC2D_NET_MODULE_ENABLED
+    SDL_SetAtomicInt(&rc2d_engine_state.worker_threads_should_run, 0);
+    rc2d_engine_state.simulation_thread = NULL;
+    rc2d_engine_state.http_thread = NULL;
+    rc2d_engine_state.websocket_thread = NULL;
+    rc2d_engine_state.simulation_tick_id = 0;
+    rc2d_engine_state.network_thread = NULL;
+    rc2d_engine_state.network_client_host = NULL;
+    rc2d_engine_state.network_server_peer = NULL;
+    rc2d_engine_state.network_is_connected = false;
+#endif
 }
 
 RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void)
@@ -104,8 +119,26 @@ RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void)
 
     static RC2D_EngineCallbacks default_callbacks = {0};
 
+#if RC2D_NET_MODULE_ENABLED
+    static RC2D_NetworkClientConfig default_network_client_config = {
+        .serverAddress = "127.0.0.1",
+        .serverPort = 12345,
+        .channelCount = 4,
+        .simulationTickRateHz = 128,
+        .maxConnections = 1,
+        .incomingBandwidth = 0,
+        .outgoingBandwidth = 0,
+        .incomingPollTimeoutMs = 1,
+        .outgoingTickRateHz = 128,
+        .connectTimeoutMs = 5000
+    };
+#endif
+
     static RC2D_EngineConfig default_config = {
         .callbacks = &default_callbacks,
+#if RC2D_NET_MODULE_ENABLED
+        .networkClientConfig = &default_network_client_config,
+#endif
         .windowWidth = 800,
         .windowHeight = 600,
         .logicalWidth = 1920,
@@ -994,6 +1027,650 @@ void rc2d_engine_deltatime_end(void)
         } 
     }
 }
+
+#if RC2D_NET_MODULE_ENABLED
+/**
+ * \brief Retourne true si les threads workers doivent continuer a tourner.
+ */
+static bool rc2d_engine_workerThreadsShouldRun(void)
+{
+    // 1 = actif ; 0 = stop demande.
+    return SDL_GetAtomicInt(&rc2d_engine_state.worker_threads_should_run) != 0;
+}
+
+/**
+ * \brief Retourne la duree de base d'un tick en nanosecondes.
+ */
+static uint64_t rc2d_engine_getTickBaseDurationNs(uint32_t tickRateHz)
+{
+    // Si tickRateHz est invalide, on force 1 pour eviter la division par zero.
+    const uint32_t effectiveTickRateHz = (tickRateHz > 0) ? tickRateHz : 1;
+
+    // Conversion Hz -> duree de base d'un tick.
+    return 1000000000ull / (uint64_t)effectiveTickRateHz;
+}
+
+/**
+ * \brief Consomme un pas de temps exact (base + redistribution du reste).
+ */
+static uint64_t rc2d_engine_consumeTickStepNs(
+    uint32_t tickRateHz,
+    uint64_t tickBaseNs,
+    uint64_t tickRemainderNs,
+    uint64_t* tickRemainderAccumulator)
+{
+    // Si tickRateHz est invalide, on force 1 pour eviter la division par zero.
+    const uint32_t effectiveTickRateHz = (tickRateHz > 0) ? tickRateHz : 1;
+
+    // On part de la duree de base.
+    uint64_t stepNs = tickBaseNs;
+
+    // On accumule le reste pour conserver une cadence exacte dans le temps.
+    *tickRemainderAccumulator += tickRemainderNs;
+
+    // Si assez de reste est accumule, on ajoute 1ns et on retire un quantum.
+    if (*tickRemainderAccumulator >= (uint64_t)effectiveTickRateHz)
+    {
+        *tickRemainderAccumulator -= (uint64_t)effectiveTickRateHz;
+        stepNs += 1ull;
+    }
+
+    // Duree exacte du tick courant.
+    return stepNs;
+}
+
+/**
+ * \brief Attends jusqu'a une deadline monotone (ns) avec stop thread-safe.
+ */
+static void rc2d_engine_sleepUntilNs(uint64_t targetTimeNs)
+{
+    // Tant que les workers sont autorises a tourner.
+    while (rc2d_engine_workerThreadsShouldRun())
+    {
+        // Lire l'horloge monotone courante.
+        const uint64_t nowNs = SDL_GetTicksNS();
+
+        // Sortie immediate si la deadline est atteinte.
+        if (nowNs >= targetTimeNs)
+        {
+            return;
+        }
+
+        // Temps restant avant la deadline.
+        const uint64_t remainingNs = targetTimeNs - nowNs;
+
+        // Sur gros restant: on dort avec SDL_DelayPrecise pour viser une cadence plus stable.
+        if (remainingNs > 2000000ull)
+        {
+            const Uint64 coarseSleepNs = remainingNs - 1000000ull;
+            SDL_DelayPrecise((coarseSleepNs > 0ull) ? coarseSleepNs : 1ull);
+        }
+        else
+        {
+            // Sur la fin: on reste egalement en SDL_DelayPrecise.
+            SDL_DelayPrecise(remainingNs);
+        }
+    }
+}
+
+/**
+ * \brief Point d'entree du thread simulation client.
+ */
+static int rc2d_engine_simulationThreadMain(void* userData)
+{
+    // Argument de thread SDL non utilise.
+    (void)userData;
+
+    // Gardes de securite: configuration/callbacks obligatoires.
+    if (rc2d_engine_state.config == NULL ||
+        rc2d_engine_state.config->callbacks == NULL ||
+        rc2d_engine_state.config->networkClientConfig == NULL ||
+        rc2d_engine_state.config->callbacks->rc2d_simulation_update == NULL)
+    {
+        return 0;
+    }
+
+    // Raccourci sur la config reseau/simulation.
+    const RC2D_NetworkClientConfig* networkClientConfig =
+        rc2d_engine_state.config->networkClientConfig;
+
+    // Frequence cible de simulation.
+    const uint32_t simulationTickRateHz =
+        (networkClientConfig->simulationTickRateHz > 0)
+            ? networkClientConfig->simulationTickRateHz
+            : 60u;
+
+    // Parametres de pas de temps exact sans drift.
+    const uint64_t tickBaseNs = rc2d_engine_getTickBaseDurationNs(simulationTickRateHz);
+    const uint64_t tickRemainderNs = 1000000000ull % (uint64_t)simulationTickRateHz;
+    uint64_t tickRemainderAccumulator = 0;
+
+    // Limite anti spirale de la mort.
+    const uint32_t maxCatchUpTicks = 5u;
+
+    // Planifier la premiere echeance.
+    uint64_t nextStepNs = rc2d_engine_consumeTickStepNs(
+        simulationTickRateHz,
+        tickBaseNs,
+        tickRemainderNs,
+        &tickRemainderAccumulator);
+    uint64_t nextTickDeadlineNs = SDL_GetTicksNS() + nextStepNs;
+
+    RC2D_log(RC2D_LOG_INFO, "Simulation thread started (tickRate=%u Hz).", simulationTickRateHz);
+
+    // Boucle principale du thread simulation.
+    while (rc2d_engine_workerThreadsShouldRun())
+    {
+        // Horloge courante.
+        uint64_t nowNs = SDL_GetTicksNS();
+        uint32_t catchUpCount = 0;
+
+        // Rattrapage tant qu'on est en retard, borne par maxCatchUpTicks.
+        while (nowNs >= nextTickDeadlineNs &&
+               catchUpCount < maxCatchUpTicks &&
+               rc2d_engine_workerThreadsShouldRun())
+        {
+            // Incremente le tick logique de simulation.
+            rc2d_engine_state.simulation_tick_id += 1ull;
+
+            // Appel du callback utilisateur.
+            rc2d_engine_state.config->callbacks->rc2d_simulation_update(
+                rc2d_engine_state.simulation_tick_id,
+                nextStepNs,
+                (double)nextStepNs / 1000000000.0);
+
+            // Planifier le tick suivant.
+            nextStepNs = rc2d_engine_consumeTickStepNs(
+                simulationTickRateHz,
+                tickBaseNs,
+                tickRemainderNs,
+                &tickRemainderAccumulator);
+            nextTickDeadlineNs += nextStepNs;
+            catchUpCount += 1u;
+            nowNs = SDL_GetTicksNS();
+        }
+
+        // Si encore en retard apres la limite, on rebaseline.
+        if (nowNs >= nextTickDeadlineNs)
+        {
+            nextStepNs = rc2d_engine_consumeTickStepNs(
+                simulationTickRateHz,
+                tickBaseNs,
+                tickRemainderNs,
+                &tickRemainderAccumulator);
+            nextTickDeadlineNs = nowNs + nextStepNs;
+        }
+
+        // Attendre proprement la prochaine deadline.
+        rc2d_engine_sleepUntilNs(nextTickDeadlineNs);
+    }
+
+    RC2D_log(RC2D_LOG_INFO, "Simulation thread stopped.");
+    return 0;
+}
+
+/**
+ * \brief Point d'entree du thread HTTP client.
+ */
+static int rc2d_engine_httpThreadMain(void* userData)
+{
+    // Argument de thread SDL non utilise.
+    (void)userData;
+
+    // Gardes de securite: config + callback HTTP.
+    if (rc2d_engine_state.config == NULL ||
+        rc2d_engine_state.config->callbacks == NULL ||
+        rc2d_engine_state.config->callbacks->rc2d_http_update == NULL)
+    {
+        return 0;
+    }
+
+    RC2D_log(RC2D_LOG_INFO, "HTTP thread started.");
+
+    // Boucle principale HTTP.
+    while (rc2d_engine_workerThreadsShouldRun())
+    {
+        // Le contenu HTTP est pilote par l'utilisateur.
+        rc2d_engine_state.config->callbacks->rc2d_http_update();
+    }
+
+    RC2D_log(RC2D_LOG_INFO, "HTTP thread stopped.");
+    return 0;
+}
+
+/**
+ * \brief Point d'entree du thread WebSocket client.
+ */
+static int rc2d_engine_websocketThreadMain(void* userData)
+{
+    // Argument de thread SDL non utilise.
+    (void)userData;
+
+    // Gardes de securite: config + callback WebSocket.
+    if (rc2d_engine_state.config == NULL ||
+        rc2d_engine_state.config->callbacks == NULL ||
+        rc2d_engine_state.config->callbacks->rc2d_websocket_update == NULL)
+    {
+        return 0;
+    }
+
+    RC2D_log(RC2D_LOG_INFO, "WebSocket thread started.");
+
+    // Boucle principale WebSocket.
+    while (rc2d_engine_workerThreadsShouldRun())
+    {
+        // Le contenu WebSocket est pilote par l'utilisateur.
+        rc2d_engine_state.config->callbacks->rc2d_websocket_update();
+    }
+
+    RC2D_log(RC2D_LOG_INFO, "WebSocket thread stopped.");
+    return 0;
+}
+
+/**
+ * \brief Dispatch un evenement ENet a la callback utilisateur incoming.
+ *
+ * Cette fonction centralise:
+ * - l'appel de la callback utilisateur (si definie),
+ * - la destruction automatique des packets RECEIVE apres callback.
+ */
+static void rc2d_engine_networkDispatchIncomingEvent(ENetHost* host, ENetEvent* event)
+{
+    // Gardes de securite: event obligatoires.
+    if (event == NULL)
+    {
+        return;
+    }
+
+    // Appel de la callback utilisateur si elle existe.
+    if (rc2d_engine_state.config != NULL &&
+        rc2d_engine_state.config->callbacks != NULL &&
+        rc2d_engine_state.config->callbacks->rc2d_network_incoming_update != NULL)
+    {
+        rc2d_engine_state.config->callbacks->rc2d_network_incoming_update(host, event);
+    }
+
+    // Destruction automatique des packets RECEIVE apres callback pour eviter les fuites de memoire.
+    if (event->type == ENET_EVENT_TYPE_RECEIVE && event->packet != NULL)
+    {
+        enet_packet_destroy(event->packet);
+        event->packet = NULL;
+    }
+}
+
+/**
+ * \brief Coupe la connexion ENet puis detruit le host client.
+ */
+static void rc2d_engine_networkDisconnectAndDestroy(void)
+{
+    // Si aucun host client n'existe, reset des etats reseau puis sortie.
+    if (rc2d_engine_state.network_client_host == NULL)
+    {
+        rc2d_engine_state.network_server_peer = NULL;
+        rc2d_engine_state.network_is_connected = false;
+        return;
+    }
+
+    // Si un peer serveur existe, tenter une deconnexion propre.
+    if (rc2d_engine_state.network_server_peer != NULL)
+    {
+        enet_peer_disconnect(rc2d_engine_state.network_server_peer, 0);
+
+        ENetEvent event;
+        while (enet_host_service(rc2d_engine_state.network_client_host, &event, 100) > 0)
+        {
+            rc2d_engine_networkDispatchIncomingEvent(
+                rc2d_engine_state.network_client_host,
+                &event);
+
+            if (event.type == ENET_EVENT_TYPE_DISCONNECT ||
+                event.type == ENET_EVENT_TYPE_DISCONNECT_TIMEOUT)
+            {
+                break;
+            }
+        }
+
+        // Forcer la remise a zero du peer.
+        enet_peer_reset(rc2d_engine_state.network_server_peer);
+        rc2d_engine_state.network_server_peer = NULL;
+    }
+
+    // Flush + destruction du host client.
+    enet_host_flush(rc2d_engine_state.network_client_host);
+    enet_host_destroy(rc2d_engine_state.network_client_host);
+    rc2d_engine_state.network_client_host = NULL;
+    rc2d_engine_state.network_is_connected = false;
+}
+
+/**
+ * \brief Tente une connexion ENet client -> serveur avec timeout.
+ */
+static bool rc2d_engine_networkTryConnect(void)
+{
+    // Config reseau obligatoire.
+    if (rc2d_engine_state.config == NULL || rc2d_engine_state.config->networkClientConfig == NULL)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] Missing networkClientConfig.");
+        return false;
+    }
+
+    // Raccourci local sur la config reseau.
+    const RC2D_NetworkClientConfig* networkClientConfig = rc2d_engine_state.config->networkClientConfig;
+
+    // Validation des parametres critiques.
+    if (networkClientConfig->serverAddress == NULL)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] serverAddress is NULL.");
+        return false;
+    }
+    if (networkClientConfig->channelCount == 0)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] channelCount must be > 0.");
+        return false;
+    }
+
+    // Construire l'adresse serveur.
+    ENetAddress serverAddress;
+    SDL_memset(&serverAddress, 0, sizeof(serverAddress));
+    enet_address_set_host(&serverAddress, ENET_ADDRESS_TYPE_ANY, networkClientConfig->serverAddress);
+    serverAddress.port = (enet_uint16)networkClientConfig->serverPort;
+
+    // Nombre max de connexions cote host client.
+    const uint32_t maxConnections =
+        (networkClientConfig->maxConnections > 0) ? networkClientConfig->maxConnections : 1u;
+
+    // Creer le host client ENet.
+    rc2d_engine_state.network_client_host = enet_host_create(
+        serverAddress.type,
+        NULL,
+        (size_t)maxConnections,
+        (size_t)networkClientConfig->channelCount,
+        (enet_uint32)networkClientConfig->incomingBandwidth,
+        (enet_uint32)networkClientConfig->outgoingBandwidth);
+
+    // Echec creation host.
+    if (rc2d_engine_state.network_client_host == NULL)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] Failed to create ENet client host.");
+        return false;
+    }
+
+    // Demarrer la connexion vers le serveur.
+    rc2d_engine_state.network_server_peer = enet_host_connect(
+        rc2d_engine_state.network_client_host,
+        &serverAddress,
+        (size_t)networkClientConfig->channelCount,
+        0);
+
+    // Echec creation peer.
+    if (rc2d_engine_state.network_server_peer == NULL)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] Failed to connect ENet peer.");
+        enet_host_destroy(rc2d_engine_state.network_client_host);
+        rc2d_engine_state.network_client_host = NULL;
+        return false;
+    }
+
+    // Calcul de la deadline de connexion.
+    const uint32_t connectTimeoutMs =
+        (networkClientConfig->connectTimeoutMs > 0) ? networkClientConfig->connectTimeoutMs : 5000u;
+    const uint64_t connectDeadlineNs =
+        SDL_GetTicksNS() + ((uint64_t)connectTimeoutMs * 1000000ull);
+
+    ENetEvent event;
+    while (rc2d_engine_workerThreadsShouldRun() && SDL_GetTicksNS() < connectDeadlineNs)
+    {
+        // Poll ENet pendant la phase de connexion.
+        const int serviceResult = enet_host_service(rc2d_engine_state.network_client_host, &event, 1);
+        if (serviceResult < 0)
+        {
+            RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] enet_host_service failed during connect.");
+            rc2d_engine_networkDisconnectAndDestroy();
+            return false;
+        }
+        if (serviceResult == 0)
+        {
+            continue;
+        }
+
+        if (event.type == ENET_EVENT_TYPE_CONNECT)
+        {
+            rc2d_engine_state.network_is_connected = true;
+        }
+
+        rc2d_engine_networkDispatchIncomingEvent(
+            rc2d_engine_state.network_client_host,
+            &event);
+
+        // Connexion validee.
+        if (event.type == ENET_EVENT_TYPE_CONNECT)
+        {
+            RC2D_log(
+                RC2D_LOG_INFO,
+                "[RC2D][NET] Connected to server %s:%u.",
+                networkClientConfig->serverAddress,
+                (unsigned)networkClientConfig->serverPort);
+            return true;
+        }
+
+        if (event.type == ENET_EVENT_TYPE_DISCONNECT ||
+            event.type == ENET_EVENT_TYPE_DISCONNECT_TIMEOUT)
+        {
+            RC2D_log(
+                RC2D_LOG_WARN,
+                "[RC2D][NET] Disconnected during connect to %s:%u.",
+                networkClientConfig->serverAddress,
+                (unsigned)networkClientConfig->serverPort);
+            rc2d_engine_networkDisconnectAndDestroy();
+            return false;
+        }
+    }
+
+    // Timeout de connexion.
+    RC2D_log(
+        RC2D_LOG_WARN,
+        "[RC2D][NET] Connection timeout to %s:%u.",
+        networkClientConfig->serverAddress,
+        (unsigned)networkClientConfig->serverPort);
+    rc2d_engine_networkDisconnectAndDestroy();
+    return false;
+}
+
+/**
+ * \brief Point d'entree du thread reseau client (incoming + outgoing).
+ */
+static int rc2d_engine_networkThreadMain(void* userData)
+{
+    // Argument de thread SDL non utilise.
+    (void)userData;
+
+    // Config reseau obligatoire.
+    if (rc2d_engine_state.config == NULL || rc2d_engine_state.config->networkClientConfig == NULL)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] Missing config, network thread stopped.");
+        return 0;
+    }
+
+    // Raccourci local sur la config reseau.
+    const RC2D_NetworkClientConfig* networkClientConfig = rc2d_engine_state.config->networkClientConfig;
+
+    // Parametres de cadence reseau incoming/outgoing.
+    const uint32_t incomingPollTimeoutMs =
+        (networkClientConfig->incomingPollTimeoutMs > 0) ? networkClientConfig->incomingPollTimeoutMs : 1u;
+    const uint32_t outgoingTickRateHz =
+        (networkClientConfig->outgoingTickRateHz > 0) ? networkClientConfig->outgoingTickRateHz : 32u;
+
+    // Parametres de pas de temps outgoing exact.
+    const uint64_t tickBaseNs = rc2d_engine_getTickBaseDurationNs(outgoingTickRateHz);
+    const uint64_t tickRemainderNs = 1000000000ull % (uint64_t)outgoingTickRateHz;
+    uint64_t tickRemainderAccumulator = 0;
+
+    uint64_t nextStepNs = rc2d_engine_consumeTickStepNs(
+        outgoingTickRateHz,
+        tickBaseNs,
+        tickRemainderNs,
+        &tickRemainderAccumulator);
+    uint64_t nextOutgoingDeadlineNs = SDL_GetTicksNS() + nextStepNs;
+    uint64_t nextReconnectAttemptNs = 0;
+
+    // Marge finale avant la deadline outgoing.
+    const uint64_t finalOutMarginNs = 200000ull; // 200 us
+
+    // Budget maximum de travail incoming par iteration.
+    const uint64_t maxIncomingWorkBudgetNs = 500000ull; // 500 us
+
+    RC2D_log(RC2D_LOG_INFO, "Network thread started.");
+
+    // Boucle principale du thread reseau.
+    while (rc2d_engine_workerThreadsShouldRun())
+    {
+        // Si pas connecte, tenter une reconnexion periodique.
+        if (!rc2d_engine_state.network_is_connected ||
+            rc2d_engine_state.network_client_host == NULL ||
+            rc2d_engine_state.network_server_peer == NULL)
+        {
+            const uint64_t nowNs = SDL_GetTicksNS();
+            if (nowNs >= nextReconnectAttemptNs)
+            {
+                if (rc2d_engine_networkTryConnect())
+                {
+                    nextOutgoingDeadlineNs = nowNs + nextStepNs;
+                    nextReconnectAttemptNs = 0;
+                }
+                else
+                {
+                    nextReconnectAttemptNs = nowNs + 3000000000ull;
+                }
+            }
+
+            // Petit backoff de reconnexion (1 ms) avec attente precise.
+            SDL_DelayPrecise(1000000ull);
+            continue;
+        }
+
+        // Calculer un timeout incoming borne par la prochaine deadline outgoing.
+        uint32_t timeoutMs = incomingPollTimeoutMs;
+        const uint64_t nowBeforePollNs = SDL_GetTicksNS();
+        const uint64_t outRemainingBeforePollNs =
+            (nowBeforePollNs < nextOutgoingDeadlineNs)
+                ? (nextOutgoingDeadlineNs - nowBeforePollNs)
+                : 0ull;
+
+        if (outRemainingBeforePollNs <= finalOutMarginNs)
+        {
+            timeoutMs = 0u;
+        }
+        else
+        {
+            const uint64_t safeWaitNs = outRemainingBeforePollNs - finalOutMarginNs;
+            const uint32_t safeWaitMs = (uint32_t)(safeWaitNs / 1000000ull);
+
+            if (safeWaitMs < timeoutMs)
+            {
+                timeoutMs = safeWaitMs;
+            }
+
+            if (safeWaitMs == 0u)
+            {
+                timeoutMs = 0u;
+            }
+        }
+
+        // Poll incoming ENet.
+        ENetEvent event;
+        int serviceResult = enet_host_service(
+            rc2d_engine_state.network_client_host,
+            &event,
+            (enet_uint32)timeoutMs);
+
+        // Erreur ENet incoming.
+        if (serviceResult < 0)
+        {
+            RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] enet_host_service failed.");
+            rc2d_engine_networkDisconnectAndDestroy();
+            continue;
+        }
+
+        // Drain des evenements disponibles avec budget temps incoming.
+        while (serviceResult > 0)
+        {
+            rc2d_engine_networkDispatchIncomingEvent(
+                rc2d_engine_state.network_client_host,
+                &event);
+
+            if (event.type == ENET_EVENT_TYPE_DISCONNECT ||
+                event.type == ENET_EVENT_TYPE_DISCONNECT_TIMEOUT)
+            {
+                RC2D_log(RC2D_LOG_WARN, "[RC2D][NET] Disconnected from server.");
+                rc2d_engine_networkDisconnectAndDestroy();
+                break;
+            }
+
+            const uint64_t nowDuringDrainNs = SDL_GetTicksNS();
+            const uint64_t incomingBudgetUsedNs = nowDuringDrainNs - nowBeforePollNs;
+
+            // Stop drain si budget incoming consomme.
+            if (incomingBudgetUsedNs >= maxIncomingWorkBudgetNs)
+            {
+                break;
+            }
+
+            // Stop drain si on entre dans la marge finale outgoing.
+            const uint64_t outRemainingDuringDrainNs =
+                (nowDuringDrainNs < nextOutgoingDeadlineNs)
+                    ? (nextOutgoingDeadlineNs - nowDuringDrainNs)
+                    : 0ull;
+            if (outRemainingDuringDrainNs <= finalOutMarginNs)
+            {
+                break;
+            }
+
+            serviceResult = enet_host_service(rc2d_engine_state.network_client_host, &event, 0);
+        }
+
+        // Cadence outgoing avec rattrapage borne.
+        uint64_t nowNs = SDL_GetTicksNS();
+        uint32_t catchUpCount = 0;
+        while (nowNs >= nextOutgoingDeadlineNs &&
+               catchUpCount < 5u &&
+               rc2d_engine_workerThreadsShouldRun())
+        {
+            if (rc2d_engine_state.config != NULL &&
+                rc2d_engine_state.config->callbacks != NULL &&
+                rc2d_engine_state.config->callbacks->rc2d_network_outgoing_update != NULL)
+            {
+                rc2d_engine_state.config->callbacks->rc2d_network_outgoing_update(
+                    rc2d_engine_state.network_client_host);
+            }
+
+            nextStepNs = rc2d_engine_consumeTickStepNs(
+                outgoingTickRateHz,
+                tickBaseNs,
+                tickRemainderNs,
+                &tickRemainderAccumulator);
+            nextOutgoingDeadlineNs += nextStepNs;
+            catchUpCount += 1u;
+            nowNs = SDL_GetTicksNS();
+        }
+
+        // Si toujours en retard: rebaseline outgoing.
+        if (nowNs >= nextOutgoingDeadlineNs)
+        {
+            nextStepNs = rc2d_engine_consumeTickStepNs(
+                outgoingTickRateHz,
+                tickBaseNs,
+                tickRemainderNs,
+                &tickRemainderAccumulator);
+            nextOutgoingDeadlineNs = nowNs + nextStepNs;
+        }
+    }
+
+    // Nettoyage reseau a la sortie du thread.
+    rc2d_engine_networkDisconnectAndDestroy();
+    RC2D_log(RC2D_LOG_INFO, "Network thread stopped.");
+    return 0;
+}
+#endif
 
 /**
  * \brief Convertit les coordonnées des événements d'entrée en coordonnées de rendu.
@@ -2240,6 +2917,134 @@ static bool rc2d_engine(void)
 	return true;
 }
 
+#if RC2D_NET_MODULE_ENABLED
+bool rc2d_engine_start_worker_threads(void)
+{
+    // Si la config/callbacks est absente, rien a lancer.
+    if (rc2d_engine_state.config == NULL || rc2d_engine_state.config->callbacks == NULL)
+    {
+        return true;
+    }
+
+    // Si deja en cours, la fonction est idempotente.
+    if (rc2d_engine_workerThreadsShouldRun())
+    {
+        return true;
+    }
+
+    // Autoriser les boucles workers a tourner.
+    SDL_SetAtomicInt(&rc2d_engine_state.worker_threads_should_run, 1);
+    bool startedAtLeastOneThread = false;
+
+    // Lancer le thread simulation si callback presente.
+    if (rc2d_engine_state.config->callbacks->rc2d_simulation_update != NULL)
+    {
+        rc2d_engine_state.simulation_thread = SDL_CreateThread(
+            rc2d_engine_simulationThreadMain,
+            "rc2d_simulation_thread",
+            NULL);
+        if (rc2d_engine_state.simulation_thread == NULL)
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to create simulation thread: %s", SDL_GetError());
+            rc2d_engine_stop_worker_threads();
+            return false;
+        }
+        startedAtLeastOneThread = true;
+    }
+
+    // Lancer le thread reseau si incoming/outgoing est utilise.
+    if (rc2d_engine_state.config->callbacks->rc2d_network_incoming_update != NULL ||
+        rc2d_engine_state.config->callbacks->rc2d_network_outgoing_update != NULL)
+    {
+        rc2d_engine_state.network_thread = SDL_CreateThread(
+            rc2d_engine_networkThreadMain,
+            "rc2d_network_thread",
+            NULL);
+        if (rc2d_engine_state.network_thread == NULL)
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to create network thread: %s", SDL_GetError());
+            rc2d_engine_stop_worker_threads();
+            return false;
+        }
+        startedAtLeastOneThread = true;
+    }
+
+    // Lancer le thread HTTP uniquement si callback presente.
+    if (rc2d_engine_state.config->callbacks->rc2d_http_update != NULL)
+    {
+        rc2d_engine_state.http_thread = SDL_CreateThread(
+            rc2d_engine_httpThreadMain,
+            "rc2d_http_thread",
+            NULL);
+        if (rc2d_engine_state.http_thread == NULL)
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to create HTTP thread: %s", SDL_GetError());
+            rc2d_engine_stop_worker_threads();
+            return false;
+        }
+        startedAtLeastOneThread = true;
+    }
+
+    // Lancer le thread WebSocket uniquement si callback presente.
+    if (rc2d_engine_state.config->callbacks->rc2d_websocket_update != NULL)
+    {
+        rc2d_engine_state.websocket_thread = SDL_CreateThread(
+            rc2d_engine_websocketThreadMain,
+            "rc2d_websocket_thread",
+            NULL);
+        if (rc2d_engine_state.websocket_thread == NULL)
+        {
+            RC2D_log(RC2D_LOG_ERROR, "Failed to create WebSocket thread: %s", SDL_GetError());
+            rc2d_engine_stop_worker_threads();
+            return false;
+        }
+        startedAtLeastOneThread = true;
+    }
+
+    // Si aucun worker n'a ete lance, remettre le flag a 0.
+    if (!startedAtLeastOneThread)
+    {
+        SDL_SetAtomicInt(&rc2d_engine_state.worker_threads_should_run, 0);
+    }
+
+    return true;
+}
+
+void rc2d_engine_stop_worker_threads(void)
+{
+    // Demander l'arret de toutes les boucles workers.
+    SDL_SetAtomicInt(&rc2d_engine_state.worker_threads_should_run, 0);
+
+    // Attendre la fin du thread simulation.
+    if (rc2d_engine_state.simulation_thread != NULL)
+    {
+        SDL_WaitThread(rc2d_engine_state.simulation_thread, NULL);
+        rc2d_engine_state.simulation_thread = NULL;
+    }
+
+    // Attendre la fin du thread reseau.
+    if (rc2d_engine_state.network_thread != NULL)
+    {
+        SDL_WaitThread(rc2d_engine_state.network_thread, NULL);
+        rc2d_engine_state.network_thread = NULL;
+    }
+
+    // Attendre la fin du thread HTTP.
+    if (rc2d_engine_state.http_thread != NULL)
+    {
+        SDL_WaitThread(rc2d_engine_state.http_thread, NULL);
+        rc2d_engine_state.http_thread = NULL;
+    }
+
+    // Attendre la fin du thread WebSocket.
+    if (rc2d_engine_state.websocket_thread != NULL)
+    {
+        SDL_WaitThread(rc2d_engine_state.websocket_thread, NULL);
+        rc2d_engine_state.websocket_thread = NULL;
+    }
+}
+#endif
+
 bool rc2d_engine_init(void)
 {
 	// Init GameEngine house
@@ -2253,6 +3058,11 @@ bool rc2d_engine_init(void)
 
 void rc2d_engine_quit(void)
 {
+#if RC2D_NET_MODULE_ENABLED
+    // Demander l'arret des workers avant de liberer les ressources globales.
+    rc2d_engine_stop_worker_threads();
+#endif
+
     // Attendre que le GPU soit inactif avant de libérer les ressources
     SDL_WaitForGPUIdle(rc2d_gpu_getDevice());
 
@@ -2414,6 +3224,22 @@ void rc2d_engine_configure(const RC2D_EngineConfig* config)
         RC2D_log(RC2D_LOG_WARN, "No RC2D_Callbacks provided. Some events may not be handled.\n");
     }
 
+#if RC2D_NET_MODULE_ENABLED
+    /**
+     * Verifie si la structure concernant la configuration reseau client ENet est valide.
+     *
+     * Si la configuration est NULL, on conserve la configuration reseau par defaut.
+     */
+    if (config->networkClientConfig != NULL)
+    {
+        rc2d_engine_state.config->networkClientConfig = config->networkClientConfig;
+    }
+    else
+    {
+        RC2D_log(RC2D_LOG_WARN, "No RC2D_NetworkClientConfig provided. Using default values.\n");
+    }
+#endif
+
     /**
      * Vérifie si la propriété concernant l'enumération du nombre d'images en vol pour le GPU est valide.
      * 
@@ -2537,3 +3363,4 @@ void rc2d_engine_configure(const RC2D_EngineConfig* config)
         rc2d_engine_state.config->pixelartMode = false;
     }
 }
+
