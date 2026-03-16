@@ -236,6 +236,24 @@ typedef struct RC2D_EngineState {
 
     // Indique si le client est connecte au serveur ENet.
     bool network_is_connected;
+
+    // Mutex de protection de la cible runtime (adresse/port) du connect.
+    SDL_Mutex* network_control_mutex;
+
+    // 1 = le thread reseau doit maintenir/tenter une connexion, 0 = mode idle.
+    SDL_AtomicInt network_connect_desired;
+
+    // 1 = demande explicite de deconnexion a traiter par le thread reseau.
+    SDL_AtomicInt network_disconnect_requested;
+
+    // Indique si une cible runtime a ete fournie via rc2d_engine_network_connect().
+    bool network_runtime_endpoint_is_set;
+
+    // Adresse runtime ciblee pour le prochain connect (copie interne).
+    char network_runtime_server_address[256];
+
+    // Port runtime cible pour le prochain connect.
+    uint16_t network_runtime_server_port;
 #endif
 } RC2D_EngineState;
 

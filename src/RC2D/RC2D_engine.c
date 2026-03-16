@@ -98,6 +98,17 @@ static void rc2d_engine_stateInit(void) {
     rc2d_engine_state.network_client_host = NULL;
     rc2d_engine_state.network_server_peer = NULL;
     rc2d_engine_state.network_is_connected = false;
+    rc2d_engine_state.network_control_mutex = SDL_CreateMutex();
+    if (!rc2d_engine_state.network_control_mutex)
+    {
+        RC2D_assert_release(false, RC2D_LOG_CRITICAL, "Erreur lors de la creation du mutex reseau : %s", SDL_GetError());
+        return;
+    }
+    SDL_SetAtomicInt(&rc2d_engine_state.network_connect_desired, 0);
+    SDL_SetAtomicInt(&rc2d_engine_state.network_disconnect_requested, 0);
+    rc2d_engine_state.network_runtime_endpoint_is_set = false;
+    rc2d_engine_state.network_runtime_server_address[0] = '\0';
+    rc2d_engine_state.network_runtime_server_port = 0;
 #endif
 }
 
@@ -130,6 +141,9 @@ RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void)
         .outgoingBandwidth = 0,
         .incomingPollTimeoutMs = 1,
         .outgoingTickRateHz = 128,
+        .autoConnectOnStart = false,
+        .autoReconnectOnDisconnect = false,
+        .maxReconnectAttempts = 5,
         .connectTimeoutMs = 5000
     };
 #endif
@@ -1039,6 +1053,107 @@ static bool rc2d_engine_workerThreadsShouldRun(void)
 }
 
 /**
+ * \brief Copie la cible reseau courante (runtime ou config) dans un buffer local.
+ */
+static bool rc2d_engine_networkTryResolveConnectTarget(
+    char* outServerAddress,
+    size_t outServerAddressCapacity,
+    uint16_t* outServerPort)
+{
+    if (outServerAddress == NULL || outServerAddressCapacity == 0 || outServerPort == NULL)
+    {
+        return false;
+    }
+
+    if (rc2d_engine_state.config == NULL || rc2d_engine_state.config->networkClientConfig == NULL)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] Missing networkClientConfig.");
+        return false;
+    }
+
+    const RC2D_NetworkClientConfig* networkClientConfig = rc2d_engine_state.config->networkClientConfig;
+    const char* serverAddress = networkClientConfig->serverAddress;
+    uint16_t serverPort = networkClientConfig->serverPort;
+
+    if (rc2d_engine_state.network_control_mutex != NULL)
+    {
+        SDL_LockMutex(rc2d_engine_state.network_control_mutex);
+        if (rc2d_engine_state.network_runtime_endpoint_is_set &&
+            rc2d_engine_state.network_runtime_server_address[0] != '\0')
+        {
+            serverAddress = rc2d_engine_state.network_runtime_server_address;
+            serverPort = rc2d_engine_state.network_runtime_server_port;
+        }
+        SDL_UnlockMutex(rc2d_engine_state.network_control_mutex);
+    }
+
+    if (serverAddress == NULL || serverAddress[0] == '\0')
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] serverAddress is NULL or empty.");
+        return false;
+    }
+
+    if (serverPort == 0)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] serverPort must be > 0.");
+        return false;
+    }
+
+    SDL_strlcpy(outServerAddress, serverAddress, outServerAddressCapacity);
+    *outServerPort = serverPort;
+    return true;
+}
+
+bool rc2d_engine_network_connect(const char* serverAddress, uint16_t serverPort)
+{
+    if (serverAddress == NULL || serverAddress[0] == '\0')
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] network_connect failed: serverAddress is NULL or empty.");
+        return false;
+    }
+
+    if (serverPort == 0)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] network_connect failed: serverPort must be > 0.");
+        return false;
+    }
+
+    if (rc2d_engine_state.network_control_mutex == NULL)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] network_connect failed: network_control_mutex is NULL.");
+        return false;
+    }
+
+    SDL_LockMutex(rc2d_engine_state.network_control_mutex);
+    SDL_strlcpy(
+        rc2d_engine_state.network_runtime_server_address,
+        serverAddress,
+        sizeof(rc2d_engine_state.network_runtime_server_address));
+    rc2d_engine_state.network_runtime_server_port = serverPort;
+    rc2d_engine_state.network_runtime_endpoint_is_set = true;
+    SDL_UnlockMutex(rc2d_engine_state.network_control_mutex);
+
+    // Activer le mode connecte puis demander un refresh de session reseau.
+    SDL_SetAtomicInt(&rc2d_engine_state.network_connect_desired, 1);
+    SDL_SetAtomicInt(&rc2d_engine_state.network_disconnect_requested, 1);
+
+    RC2D_log(
+        RC2D_LOG_INFO,
+        "[RC2D][NET] Connect requested to %s:%u.",
+        serverAddress,
+        (unsigned)serverPort);
+
+    return true;
+}
+
+void rc2d_engine_network_disconnect(void)
+{
+    // Passer en mode idle reseau, puis demander une fermeture propre.
+    SDL_SetAtomicInt(&rc2d_engine_state.network_connect_desired, 0);
+    SDL_SetAtomicInt(&rc2d_engine_state.network_disconnect_requested, 1);
+}
+
+/**
  * \brief Retourne la duree de base d'un tick en nanosecondes.
  */
 static uint64_t rc2d_engine_getTickBaseDurationNs(uint32_t tickRateHz)
@@ -1357,23 +1472,28 @@ static bool rc2d_engine_networkTryConnect(void)
     // Raccourci local sur la config reseau.
     const RC2D_NetworkClientConfig* networkClientConfig = rc2d_engine_state.config->networkClientConfig;
 
-    // Validation des parametres critiques.
-    if (networkClientConfig->serverAddress == NULL)
-    {
-        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] serverAddress is NULL.");
-        return false;
-    }
     if (networkClientConfig->channelCount == 0)
     {
         RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] channelCount must be > 0.");
         return false;
     }
 
+    // Cible effective de connexion (runtime prioritaire, sinon config).
+    char serverAddressText[256];
+    uint16_t serverPort = 0;
+    if (!rc2d_engine_networkTryResolveConnectTarget(
+            serverAddressText,
+            sizeof(serverAddressText),
+            &serverPort))
+    {
+        return false;
+    }
+
     // Construire l'adresse serveur.
     ENetAddress serverAddress;
     SDL_memset(&serverAddress, 0, sizeof(serverAddress));
-    enet_address_set_host(&serverAddress, ENET_ADDRESS_TYPE_ANY, networkClientConfig->serverAddress);
-    serverAddress.port = (enet_uint16)networkClientConfig->serverPort;
+    enet_address_set_host(&serverAddress, ENET_ADDRESS_TYPE_ANY, serverAddressText);
+    serverAddress.port = (enet_uint16)serverPort;
 
     // Nombre max de connexions cote host client.
     const uint32_t maxConnections =
@@ -1448,8 +1568,8 @@ static bool rc2d_engine_networkTryConnect(void)
             RC2D_log(
                 RC2D_LOG_INFO,
                 "[RC2D][NET] Connected to server %s:%u.",
-                networkClientConfig->serverAddress,
-                (unsigned)networkClientConfig->serverPort);
+                serverAddressText,
+                (unsigned)serverPort);
             return true;
         }
 
@@ -1459,8 +1579,8 @@ static bool rc2d_engine_networkTryConnect(void)
             RC2D_log(
                 RC2D_LOG_WARN,
                 "[RC2D][NET] Disconnected during connect to %s:%u.",
-                networkClientConfig->serverAddress,
-                (unsigned)networkClientConfig->serverPort);
+                serverAddressText,
+                (unsigned)serverPort);
             rc2d_engine_networkDisconnectAndDestroy();
             return false;
         }
@@ -1470,8 +1590,8 @@ static bool rc2d_engine_networkTryConnect(void)
     RC2D_log(
         RC2D_LOG_WARN,
         "[RC2D][NET] Connection timeout to %s:%u.",
-        networkClientConfig->serverAddress,
-        (unsigned)networkClientConfig->serverPort);
+        serverAddressText,
+        (unsigned)serverPort);
     rc2d_engine_networkDisconnectAndDestroy();
     return false;
 }
@@ -1499,6 +1619,8 @@ static int rc2d_engine_networkThreadMain(void* userData)
         (networkClientConfig->incomingPollTimeoutMs > 0) ? networkClientConfig->incomingPollTimeoutMs : 1u;
     const uint32_t outgoingTickRateHz =
         (networkClientConfig->outgoingTickRateHz > 0) ? networkClientConfig->outgoingTickRateHz : 32u;
+    const bool autoReconnectOnDisconnect = networkClientConfig->autoReconnectOnDisconnect;
+    const uint32_t maxReconnectAttempts = networkClientConfig->maxReconnectAttempts;
 
     // Parametres de pas de temps outgoing exact.
     const uint64_t tickBaseNs = rc2d_engine_getTickBaseDurationNs(outgoingTickRateHz);
@@ -1512,6 +1634,8 @@ static int rc2d_engine_networkThreadMain(void* userData)
         &tickRemainderAccumulator);
     uint64_t nextOutgoingDeadlineNs = SDL_GetTicksNS() + nextStepNs;
     uint64_t nextReconnectAttemptNs = 0;
+    bool reconnectingAfterDisconnect = false;
+    uint32_t reconnectAttemptCount = 0;
 
     // Marge finale avant la deadline outgoing.
     const uint64_t finalOutMarginNs = 200000ull; // 200 us
@@ -1524,6 +1648,23 @@ static int rc2d_engine_networkThreadMain(void* userData)
     // Boucle principale du thread reseau.
     while (rc2d_engine_workerThreadsShouldRun())
     {
+        // Traiter une demande explicite de deconnexion.
+        if (SDL_GetAtomicInt(&rc2d_engine_state.network_disconnect_requested) != 0)
+        {
+            rc2d_engine_networkDisconnectAndDestroy();
+            SDL_SetAtomicInt(&rc2d_engine_state.network_disconnect_requested, 0);
+            nextReconnectAttemptNs = 0;
+            reconnectingAfterDisconnect = false;
+            reconnectAttemptCount = 0;
+        }
+
+        // Si aucune connexion n'est desiree, le thread reseau reste idle.
+        if (SDL_GetAtomicInt(&rc2d_engine_state.network_connect_desired) == 0)
+        {
+            SDL_DelayPrecise(1000000ull);
+            continue;
+        }
+
         // Si pas connecte, tenter une reconnexion periodique.
         if (!rc2d_engine_state.network_is_connected ||
             rc2d_engine_state.network_client_host == NULL ||
@@ -1536,9 +1677,30 @@ static int rc2d_engine_networkThreadMain(void* userData)
                 {
                     nextOutgoingDeadlineNs = nowNs + nextStepNs;
                     nextReconnectAttemptNs = 0;
+                    reconnectingAfterDisconnect = false;
+                    reconnectAttemptCount = 0;
                 }
                 else
                 {
+                    if (reconnectingAfterDisconnect &&
+                        maxReconnectAttempts > 0 &&
+                        reconnectAttemptCount < maxReconnectAttempts)
+                    {
+                        reconnectAttemptCount += 1u;
+                        if (reconnectAttemptCount >= maxReconnectAttempts)
+                        {
+                            RC2D_log(
+                                RC2D_LOG_WARN,
+                                "[RC2D][NET] Max reconnect attempts reached (%u). Switching to idle mode.",
+                                (unsigned)maxReconnectAttempts);
+                            SDL_SetAtomicInt(&rc2d_engine_state.network_connect_desired, 0);
+                            reconnectingAfterDisconnect = false;
+                            reconnectAttemptCount = 0;
+                            nextReconnectAttemptNs = 0;
+                            continue;
+                        }
+                    }
+
                     nextReconnectAttemptNs = nowNs + 3000000000ull;
                 }
             }
@@ -1602,6 +1764,15 @@ static int rc2d_engine_networkThreadMain(void* userData)
                 event.type == ENET_EVENT_TYPE_DISCONNECT_TIMEOUT)
             {
                 RC2D_log(RC2D_LOG_WARN, "[RC2D][NET] Disconnected from server.");
+                if (autoReconnectOnDisconnect)
+                {
+                    reconnectingAfterDisconnect = true;
+                    reconnectAttemptCount = 0;
+                }
+                else
+                {
+                    SDL_SetAtomicInt(&rc2d_engine_state.network_connect_desired, 0);
+                }
                 rc2d_engine_networkDisconnectAndDestroy();
                 break;
             }
@@ -2936,6 +3107,20 @@ bool rc2d_engine_start_worker_threads(void)
     SDL_SetAtomicInt(&rc2d_engine_state.worker_threads_should_run, 1);
     bool startedAtLeastOneThread = false;
 
+    // Politique de connexion auto au demarrage du thread reseau.
+    if (rc2d_engine_state.config->networkClientConfig != NULL &&
+        rc2d_engine_state.config->networkClientConfig->autoConnectOnStart)
+    {
+        rc2d_engine_network_connect(
+            rc2d_engine_state.config->networkClientConfig->serverAddress,
+            rc2d_engine_state.config->networkClientConfig->serverPort);
+    }
+    else
+    {
+        SDL_SetAtomicInt(&rc2d_engine_state.network_connect_desired, 0);
+        SDL_SetAtomicInt(&rc2d_engine_state.network_disconnect_requested, 0);
+    }
+
     // Lancer le thread simulation si callback presente.
     if (rc2d_engine_state.config->callbacks->rc2d_simulation_update != NULL)
     {
@@ -3014,6 +3199,8 @@ void rc2d_engine_stop_worker_threads(void)
 {
     // Demander l'arret de toutes les boucles workers.
     SDL_SetAtomicInt(&rc2d_engine_state.worker_threads_should_run, 0);
+    SDL_SetAtomicInt(&rc2d_engine_state.network_connect_desired, 0);
+    SDL_SetAtomicInt(&rc2d_engine_state.network_disconnect_requested, 1);
 
     // Attendre la fin du thread simulation.
     if (rc2d_engine_state.simulation_thread != NULL)
@@ -3061,6 +3248,13 @@ void rc2d_engine_quit(void)
 #if RC2D_NET_MODULE_ENABLED
     // Demander l'arret des workers avant de liberer les ressources globales.
     rc2d_engine_stop_worker_threads();
+
+    // Liberer le mutex de controle reseau runtime.
+    if (rc2d_engine_state.network_control_mutex != NULL)
+    {
+        SDL_DestroyMutex(rc2d_engine_state.network_control_mutex);
+        rc2d_engine_state.network_control_mutex = NULL;
+    }
 #endif
 
     // Attendre que le GPU soit inactif avant de libérer les ressources

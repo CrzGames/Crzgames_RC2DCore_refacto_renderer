@@ -1168,6 +1168,30 @@ typedef struct RC2D_NetworkClientConfig {
     uint32_t outgoingTickRateHz;
 
     /**
+     * Si true, le thread reseau tente une connexion des son demarrage.
+     *
+     * Si false, aucune connexion reseau n'est tentee tant que
+     * `rc2d_engine_network_connect()` n'a pas ete appelee.
+     */
+    bool autoConnectOnStart;
+
+    /**
+     * Si true, une deconnexion distante (DISCONNECT / DISCONNECT_TIMEOUT)
+     * declenche automatiquement un cycle de reconnexion.
+     *
+     * Si false, le thread passe en idle apres une deconnexion distante.
+     */
+    bool autoReconnectOnDisconnect;
+
+    /**
+     * Nombre maximal de tentatives de reconnexion apres une deconnexion distante.
+     *
+     * - 0 = illimite
+     * - >0 = nombre maximal d'essais avant de passer en idle
+     */
+    uint32_t maxReconnectAttempts;
+
+    /**
      * Timeout de connexion initiale au serveur (ms).
      */
     uint32_t connectTimeoutMs;
@@ -1205,6 +1229,9 @@ typedef struct RC2D_EngineConfig {
      * - outgoingBandwidth : 0
      * - incomingPollTimeoutMs : 1
      * - outgoingTickRateHz : 128
+     * - autoConnectOnStart : false
+     * - autoReconnectOnDisconnect : false
+     * - maxReconnectAttempts : 5
      * - connectTimeoutMs : 5000
      */
     RC2D_NetworkClientConfig* networkClientConfig;
@@ -1326,6 +1353,29 @@ RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void);
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
 SDL_FRect rc2d_engine_getVisibleSafeRectRender(void);
+
+#if RC2D_NET_MODULE_ENABLED
+/**
+ * \brief Demande une connexion ENet vers une cible serveur specifique.
+ *
+ * Cette fonction met a jour l'adresse/port runtime utilises par le thread reseau.
+ * Elle peut etre appelee a tout moment apres l'initialisation du moteur.
+ *
+ * \param serverAddress Adresse du serveur (IPv4/IPv6/hostname), non NULL.
+ * \param serverPort Port UDP du serveur (> 0).
+ *
+ * \return true si la demande est acceptee localement, false sinon.
+ */
+bool rc2d_engine_network_connect(const char* serverAddress, uint16_t serverPort);
+
+/**
+ * \brief Demande une deconnexion ENet explicite cote client.
+ *
+ * Le thread reseau fermera la connexion en cours (si presente) puis repassera idle
+ * jusqu'a une nouvelle demande `rc2d_engine_network_connect()`.
+ */
+void rc2d_engine_network_disconnect(void);
+#endif
 
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */
 #ifdef __cplusplus
