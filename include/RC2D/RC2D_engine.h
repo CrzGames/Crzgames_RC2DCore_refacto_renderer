@@ -1171,7 +1171,7 @@ typedef struct RC2D_NetworkClientConfig {
      * Si true, le thread reseau tente une connexion des son demarrage.
      *
      * Si false, aucune connexion reseau n'est tentee tant que
-     * `rc2d_engine_network_connect()` n'a pas ete appelee.
+     * `rc2d_engine_networkConnectToServer()` n'a pas ete appelee.
      */
     bool autoConnectOnStart;
 
@@ -1228,7 +1228,7 @@ typedef struct RC2D_EngineConfig {
      * - incomingBandwidth : 0
      * - outgoingBandwidth : 0
      * - incomingPollTimeoutMs : 1
-     * - outgoingTickRateHz : 128
+     * - outgoingTickRateHz : 64
      * - autoConnectOnStart : false
      * - autoReconnectOnDisconnect : false
      * - maxReconnectAttempts : 5
@@ -1359,22 +1359,26 @@ SDL_FRect rc2d_engine_getVisibleSafeRectRender(void);
  * \brief Demande une connexion ENet vers une cible serveur specifique.
  *
  * Cette fonction met a jour l'adresse/port runtime utilises par le thread reseau.
- * Elle peut etre appelee a tout moment apres l'initialisation du moteur.
+ * Elle peut etre appelee a tout moment apres l'initialisation du moteur, depuis
+ * n'importe quel thread, et le thread reseau tentera de se connecter a la cible.
  *
  * \param serverAddress Adresse du serveur (IPv4/IPv6/hostname), non NULL.
  * \param serverPort Port UDP du serveur (> 0).
  *
  * \return true si la demande est acceptee localement, false sinon.
  */
-bool rc2d_engine_network_connect(const char* serverAddress, uint16_t serverPort);
+bool rc2d_engine_networkConnectToServer(const char* serverAddress, uint16_t serverPort);
 
 /**
  * \brief Demande une deconnexion ENet explicite cote client.
  *
+ * Cette fonction peut être appelee a tout moment apres l'initialisation du moteur, depuis
+ * n'importe quel thread, et le thread reseau tentera de se deconnecter proprement du serveur.
+ *
  * Le thread reseau fermera la connexion en cours (si presente) puis repassera idle
- * jusqu'a une nouvelle demande `rc2d_engine_network_connect()`.
+ * jusqu'a une nouvelle demande `rc2d_engine_networkConnectToServer()`.
  */
-void rc2d_engine_network_disconnect(void);
+void rc2d_engine_networkDisconnectFromServer(void);
 #endif
 
 /* Termine les définitions de fonctions C lors de l'utilisation de C++ */

@@ -246,7 +246,7 @@ typedef struct RC2D_EngineState {
     // 1 = demande explicite de deconnexion a traiter par le thread reseau.
     SDL_AtomicInt network_disconnect_requested;
 
-    // Indique si une cible runtime a ete fournie via rc2d_engine_network_connect().
+    // Indique si une cible runtime a ete fournie via rc2d_engine_networkConnectToServer().
     bool network_runtime_endpoint_is_set;
 
     // Adresse runtime ciblee pour le prochain connect (copie interne).

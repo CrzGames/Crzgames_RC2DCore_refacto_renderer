@@ -140,7 +140,7 @@ RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void)
         .incomingBandwidth = 0,
         .outgoingBandwidth = 0,
         .incomingPollTimeoutMs = 1,
-        .outgoingTickRateHz = 128,
+        .outgoingTickRateHz = 64,
         .autoConnectOnStart = false,
         .autoReconnectOnDisconnect = false,
         .maxReconnectAttempts = 5,
@@ -1104,23 +1104,23 @@ static bool rc2d_engine_networkTryResolveConnectTarget(
     return true;
 }
 
-bool rc2d_engine_network_connect(const char* serverAddress, uint16_t serverPort)
+bool rc2d_engine_networkConnectToServer(const char* serverAddress, uint16_t serverPort)
 {
     if (serverAddress == NULL || serverAddress[0] == '\0')
     {
-        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] network_connect failed: serverAddress is NULL or empty.");
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] networkConnectToServer failed: serverAddress is NULL or empty.");
         return false;
     }
 
     if (serverPort == 0)
     {
-        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] network_connect failed: serverPort must be > 0.");
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] networkConnectToServer failed: serverPort must be > 0.");
         return false;
     }
 
     if (rc2d_engine_state.network_control_mutex == NULL)
     {
-        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] network_connect failed: network_control_mutex is NULL.");
+        RC2D_log(RC2D_LOG_ERROR, "[RC2D][NET] networkConnectToServer failed: network_control_mutex is NULL.");
         return false;
     }
 
@@ -1146,7 +1146,7 @@ bool rc2d_engine_network_connect(const char* serverAddress, uint16_t serverPort)
     return true;
 }
 
-void rc2d_engine_network_disconnect(void)
+void rc2d_engine_networkDisconnectFromServer(void)
 {
     // Passer en mode idle reseau, puis demander une fermeture propre.
     SDL_SetAtomicInt(&rc2d_engine_state.network_connect_desired, 0);
@@ -3111,7 +3111,7 @@ bool rc2d_engine_start_worker_threads(void)
     if (rc2d_engine_state.config->networkClientConfig != NULL &&
         rc2d_engine_state.config->networkClientConfig->autoConnectOnStart)
     {
-        rc2d_engine_network_connect(
+        rc2d_engine_networkConnectToServer(
             rc2d_engine_state.config->networkClientConfig->serverAddress,
             rc2d_engine_state.config->networkClientConfig->serverPort);
     }
