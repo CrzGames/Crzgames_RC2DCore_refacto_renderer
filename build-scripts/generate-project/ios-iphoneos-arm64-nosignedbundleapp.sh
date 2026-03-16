@@ -9,7 +9,10 @@ cmake -S . -B build/ios/iphoneos \
 
 for cfg in Debug Release; do
   echo -e "\e[32m\nBuilding $cfg (iphoneos/arm64)...\e[0m"
-  cmake --build build/ios/iphoneos --config "$cfg" -- \
+  cmake --build build/ios/iphoneos \
+    --config "$cfg" \
+    --parallel 8 \
+    -- \
     CODE_SIGNING_ALLOWED=NO \
     CODE_SIGNING_REQUIRED=NO
 done

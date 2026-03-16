@@ -10,7 +10,9 @@ cmake -S . -B build/ios/iphoneos \
 
 for cfg in Debug Release; do
   echo -e "\e[32m\nBuilding $cfg (iphoneos/arm64)...\e[0m"
-  cmake --build build/ios/iphoneos --config "$cfg"
+  cmake --build build/ios/iphoneos \
+    --config "$cfg" \
+    --parallel 8
 done
 
 echo -e "\033[32m \n Generate lib RC2D for iOS (iphoneos/arm64) to Release/Debug generated successfully, go to the build/ios/iphoneos directory... \n\033[0m"

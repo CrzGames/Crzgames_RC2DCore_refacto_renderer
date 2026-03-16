@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 echo -e "\e[32m\nGenerating Unix Makefiles project for Linux arm64...\e[0m"
 
@@ -6,15 +7,16 @@ for build_type in Debug Release; do
   echo -e "\e[32m\nBuilding $build_type...\e[0m"
 
   # Configure and build the project
-  cmake -S . -B build/linux/arm64/$build_type \
+  cmake -S . -B "build/linux/arm64/$build_type" \
     -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE=$build_type \
+    -DCMAKE_BUILD_TYPE="$build_type" \
     -DRC2D_ARCH=arm64
-  cmake --build build/linux/arm64/$build_type
+
+  cmake --build "build/linux/arm64/$build_type" --parallel 8
 
   # Generate AppImage
   echo -e "\e[32m\nGenerating AppImage ($build_type)...\e[0m"
-  cmake --install build/linux/arm64/$build_type --component Runtime
+  cmake --install "build/linux/arm64/$build_type" --component Runtime
 done
 
 # Final message
