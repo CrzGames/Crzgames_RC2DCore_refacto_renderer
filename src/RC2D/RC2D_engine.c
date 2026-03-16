@@ -3115,11 +3115,6 @@ bool rc2d_engine_start_worker_threads(void)
             rc2d_engine_state.config->networkClientConfig->serverAddress,
             rc2d_engine_state.config->networkClientConfig->serverPort);
     }
-    else
-    {
-        SDL_SetAtomicInt(&rc2d_engine_state.network_connect_desired, 0);
-        SDL_SetAtomicInt(&rc2d_engine_state.network_disconnect_requested, 0);
-    }
 
     // Lancer le thread simulation si callback presente.
     if (rc2d_engine_state.config->callbacks->rc2d_simulation_update != NULL)
