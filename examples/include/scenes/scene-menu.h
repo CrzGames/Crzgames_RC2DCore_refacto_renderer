@@ -1,11 +1,11 @@
-#ifndef SCENE_GAME_H
-#define SCENE_GAME_H
+#ifndef SCENE_MENU_H
+#define SCENE_MENU_H
 
 #include <RC2D/RC2D.h>
 
-#include <amoredtactics/scenes/scene.h>
+#include "scenes/scene.h"
 
-class GameScene : public Scene {
+class MenuScene : public Scene {
     public:
         void unload(void) override;
         void load(void) override;
@@ -15,4 +15,4 @@ class GameScene : public Scene {
         void mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SDL_MouseID mouseID) override;
 };
 
-#endif // SCENE_GAME_H
+#endif // SCENE_MENU_H

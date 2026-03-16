@@ -1,5 +1,6 @@
-#include <amoredtactics/scenes/scene-editormap.h>
-#include <amoredtactics/scenes/scene-manager.h>
+#include "scenes/scene-editormap.h"
+
+#include "scenes/scene-manager.h"
 
 void EditorMapScene::unload(void) 
 {

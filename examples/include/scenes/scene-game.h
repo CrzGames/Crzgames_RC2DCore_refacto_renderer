@@ -1,11 +1,11 @@
-#ifndef SCENE_EDITORMAP_H
-#define SCENE_EDITORMAP_H
+#ifndef SCENE_GAME_H
+#define SCENE_GAME_H
 
 #include <RC2D/RC2D.h>
 
-#include <amoredtactics/scenes/scene.h>
+#include "scenes/scene.h"
 
-class EditorMapScene : public Scene {
+class GameScene : public Scene {
     public:
         void unload(void) override;
         void load(void) override;
@@ -15,4 +15,4 @@ class EditorMapScene : public Scene {
         void mousepressed(float x, float y, RC2D_MouseButton button, int clicks, SDL_MouseID mouseID) override;
 };
 
-#endif // SCENE_EDITORMAP_H
+#endif // SCENE_GAME_H

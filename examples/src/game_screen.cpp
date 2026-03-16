@@ -1,4 +1,5 @@
-#include <amoredtactics/game_screen.h>
+#include "game_screen.h"
+
 #include <RC2D/RC2D_engine.h> // <- pour rc2d_engine_getVisibleSafeRectRender()
 
 GameScreen::GameScreen() 

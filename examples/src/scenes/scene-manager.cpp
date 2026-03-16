@@ -1,5 +1,5 @@
-#include <amoredtactics/scenes/scene-manager.h>
-#include <amoredtactics/scenes/scene.h>
+#include "scenes/scene-manager.h"
+#include "scenes/scene.h"
 
 SceneManager::SceneManager(void) : currentScene(nullptr) {}
 

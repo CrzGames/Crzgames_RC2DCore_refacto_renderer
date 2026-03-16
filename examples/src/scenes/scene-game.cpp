@@ -1,5 +1,5 @@
-#include <amoredtactics/scenes/scene-game.h>
-#include <amoredtactics/scenes/scene-manager.h>
+#include "scenes/scene-game.h"
+#include "scenes/scene-manager.h"
 
 void GameScene::unload(void) 
 {

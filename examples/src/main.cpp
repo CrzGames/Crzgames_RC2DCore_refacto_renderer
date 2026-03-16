@@ -15,7 +15,7 @@
 
 #include <RC2D/RC2D.h>
 
-#include <amoredtactics/game.h>
+#include "game.h"
 
 /**
  * \brief Fonction de configuration du moteur RC2D.

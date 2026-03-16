@@ -1,7 +1,7 @@
 #include <cstring>  // strcmp
 
-#include <amoredtactics/scenes/scene-menu.h>
-#include <amoredtactics/scenes/scene-manager.h>
+#include "scenes/scene-menu.h"
+#include "scenes/scene-manager.h"
 
 void MenuScene::unload(void) 
 {
