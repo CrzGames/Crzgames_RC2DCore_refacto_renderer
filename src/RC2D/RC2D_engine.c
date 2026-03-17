@@ -1575,33 +1575,18 @@ static bool rc2d_engine_networkTryConnect(void)
         // Connexion validee.
         if (event.type == ENET_EVENT_TYPE_CONNECT)
         {
-            RC2D_log(
-                RC2D_LOG_INFO,
-                "[RC2D][NET] Connected to server %s:%u.",
-                serverAddressText,
-                (unsigned)serverPort);
             return true;
         }
 
         if (event.type == ENET_EVENT_TYPE_DISCONNECT ||
             event.type == ENET_EVENT_TYPE_DISCONNECT_TIMEOUT)
         {
-            RC2D_log(
-                RC2D_LOG_WARN,
-                "[RC2D][NET] Disconnected during connect to %s:%u.",
-                serverAddressText,
-                (unsigned)serverPort);
             rc2d_engine_networkDisconnectAndDestroy();
             return false;
         }
     }
 
     // Timeout de connexion.
-    RC2D_log(
-        RC2D_LOG_WARN,
-        "[RC2D][NET] Connection timeout to %s:%u.",
-        serverAddressText,
-        (unsigned)serverPort);
     rc2d_engine_networkDisconnectAndDestroy();
     return false;
 }
@@ -1773,7 +1758,6 @@ static int rc2d_engine_networkThreadMain(void* userData)
             if (event.type == ENET_EVENT_TYPE_DISCONNECT ||
                 event.type == ENET_EVENT_TYPE_DISCONNECT_TIMEOUT)
             {
-                RC2D_log(RC2D_LOG_WARN, "[RC2D][NET] Disconnected from server.");
                 if (autoReconnectOnDisconnect)
                 {
                     reconnectingAfterDisconnect = true;
