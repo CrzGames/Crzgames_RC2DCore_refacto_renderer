@@ -1515,6 +1515,16 @@ static bool rc2d_engine_networkTryConnect(void)
         return false;
     }
 
+    // Exécuter immédiatement après la création de l'hôte.
+    // Ceci permet au code client d'installer au niveau de l'hôte (enet_host_encrypt / enet_host_compress) 
+    // avant que la connexion ne démarre, et d'avoir une callback de mise à jour outgoing avant le premier enet_host_service().
+    if (rc2d_engine_state.config != NULL &&
+        rc2d_engine_state.config->callbacks != NULL &&
+        rc2d_engine_state.config->callbacks->rc2d_network_outgoing_update != NULL)
+    {
+        rc2d_engine_state.config->callbacks->rc2d_network_outgoing_update(rc2d_engine_state.network_client_host);
+    }
+
     // Demarrer la connexion vers le serveur.
     rc2d_engine_state.network_server_peer = enet_host_connect(
         rc2d_engine_state.network_client_host,
