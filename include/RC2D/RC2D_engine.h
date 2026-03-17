@@ -367,6 +367,19 @@ typedef struct RC2D_Callbacks {
     void (*rc2d_network_outgoing_update)(ENetHost* host);
 
     /**
+     * \brief Appelee une seule fois apres creation du host ENet client.
+     *
+     * Cette callback est executee juste apres `enet_host_create(...)` reussi
+     * et avant `enet_host_connect(...)`. Elle est concue pour installer les
+     * hooks host-level (ex: `enet_host_encrypt`, `enet_host_compress`).
+     *
+     * \param host Host ENet client courant.
+     *
+     * \since Cette fonction est disponible depuis RC2D 1.0.0.
+     */
+    void (*rc2d_network_host_setup)(ENetHost* host);
+
+    /**
      * \brief Appelee en boucle sur un thread HTTP dedie.
      *
      * \since Cette fonction est disponible depuis RC2D 1.0.0.
