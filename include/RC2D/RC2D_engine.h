@@ -392,6 +392,18 @@ typedef struct RC2D_Callbacks {
      * \since Cette fonction est disponible depuis RC2D 1.0.0.
      */
     void (*rc2d_websocket_update)(void);
+
+    /**
+     * \brief Appelee lors du shutdown pour reveiller les threads potentiellement bloques.
+     *
+     * Cette callback est utile quand les callbacks `rc2d_http_update` et
+     * `rc2d_websocket_update` utilisent des attentes bloquantes (ex: queue `waitAndPop`).
+     * Elle doit declencher le reveil/stop de ces attentes pour permettre a
+     * `rc2d_engine_stop_worker_threads()` de joindre proprement les threads.
+     *
+     * \since Cette fonction est disponible depuis RC2D 1.0.0.
+     */
+    void (*rc2d_wake_blocking_threads)(void);
 #endif
 
     // ------------- Keyboard Callbacks ------------- //

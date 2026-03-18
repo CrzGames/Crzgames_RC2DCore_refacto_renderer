@@ -3192,6 +3192,15 @@ void rc2d_engine_stop_worker_threads(void)
     SDL_SetAtomicInt(&rc2d_engine_state.network_connect_desired, 0);
     SDL_SetAtomicInt(&rc2d_engine_state.network_disconnect_requested, 1);
 
+    // Donner une chance a l'application de reveiller les attentes bloquantes
+    // (ex: queues waitAndPop dans les threads HTTP/WebSocket) avant les join.
+    if (rc2d_engine_state.config != NULL &&
+        rc2d_engine_state.config->callbacks != NULL &&
+        rc2d_engine_state.config->callbacks->rc2d_wake_blocking_threads != NULL)
+    {
+        rc2d_engine_state.config->callbacks->rc2d_wake_blocking_threads();
+    }
+
     // Attendre la fin du thread simulation.
     if (rc2d_engine_state.simulation_thread != NULL)
     {
