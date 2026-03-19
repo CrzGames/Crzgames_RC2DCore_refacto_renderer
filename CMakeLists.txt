@@ -264,9 +264,7 @@ if(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
 endif()
 # Formats conservés
 set(SDLIMAGE_PNG ON CACHE BOOL "" FORCE)
-if(NOT DEFINED SDLIMAGE_PNG_LIBPNG) # Pour l'exemple client de RCNET 
-  set(SDLIMAGE_PNG_LIBPNG ON CACHE BOOL "" FORCE) # active APNG par défaut
-endif()
+set(SDLIMAGE_PNG_LIBPNG ON CACHE BOOL "" FORCE) # active APNG
 set(SDLIMAGE_SVG ON CACHE BOOL "" FORCE)
 # Formats désactivés
 set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
@@ -285,9 +283,7 @@ set(SDLIMAGE_XPM  OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_XV   OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_ANI  OFF CACHE BOOL "" FORCE)
 set(SDLIMAGE_JXL  OFF CACHE BOOL "" FORCE)
-if (NOT DEFINED SDLIMAGE_BACKEND_STB) # Pour l'exemple client de RCNET
-  set(SDLIMAGE_BACKEND_STB OFF CACHE BOOL "" FORCE)
-endif()
+set(SDLIMAGE_BACKEND_STB OFF CACHE BOOL "" FORCE)
 
 # ============================================================
 # SDL3 — Input / Controllers configuration
