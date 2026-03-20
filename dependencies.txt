@@ -1,10 +1,10 @@
 # Format: library=repository:tag ou library=repository:commit_sha
 
-SDL=https://github.com/libsdl-org/SDL.git:1d081314a89eb6bfd22bbc0224b604533ae6156b
+SDL=https://github.com/libsdl-org/SDL.git:3462494ec1a34efc55ac57cc5033280babccdc23
 SDL_image=https://github.com/libsdl-org/SDL_image.git:98ed433a6c27345ea4ac2c498ba50879d5f92778
-SDL_ttf=https://github.com/libsdl-org/SDL_ttf.git:a49130e3ecc0ad5a4aad12083e9aeab57ac34dbd
-SDL_mixer=https://github.com/libsdl-org/SDL_mixer.git:d96049ce8873fb4d8fbaa5e36449cb6cf37227ad
+SDL_ttf=https://github.com/libsdl-org/SDL_ttf.git:0165849a0061d91c51d4a3fa8bcda5b5fcf53cc9
+SDL_mixer=https://github.com/libsdl-org/SDL_mixer.git:092fafa4d820c45e3f05b59b7be75807ef3eefe8
 Crzgames_Libraries=https://github.com/CrzGames/Crzgames_Libraries.git:8c8e223780a46b97be843615d4e8c1edc0cf1711
-cJSON=https://github.com/DaveGamble/cJSON:v1.7.19
-libwebsockets=https://github.com/warmcat/libwebsockets.git:v4.5.5
+cJSON=https://github.com/DaveGamble/cJSON.git:v1.7.19
+libwebsockets=https://github.com/warmcat/libwebsockets.git:v4.5.7
 curl=https://github.com/curl/curl.git:curl-8_19_0
