@@ -164,6 +164,262 @@ jobs:
             ./build-scripts/generate-project/steamrt4-arm64.sh
           fi
 
+      - name: Print runtime minimums - Linux / SteamRT4
+        if: matrix.config.platform == 'linux' || matrix.config.platform == 'steamrt4'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          platform="${{ matrix.config.platform }}"
+          arch="${{ matrix.config.arch }}"
+          build_dir="build/${platform}/${arch}/Release"
+          exe="${build_dir}/rc2d_example"
+
+          if ! command -v readelf >/dev/null 2>&1; then
+            echo "[runtime-check][$platform][$arch] ERROR: readelf is not available"
+            exit 1
+          fi
+
+          if [ ! -f "$exe" ]; then
+            echo "[runtime-check][$platform][$arch] ERROR: executable not found at $exe"
+            exit 1
+          fi
+
+          glibc_from_file() {
+            local file="$1"
+            readelf --version-info "$file" 2>/dev/null \
+              | grep -oE 'GLIBC_[0-9]+(\.[0-9]+)+' \
+              | sed 's/^GLIBC_//' \
+              | sort -V \
+              | tail -n1 || true
+          }
+
+          exe_glibc="$(glibc_from_file "$exe")"
+          echo "[runtime-check][$platform][$arch] executable=$exe"
+          echo "[runtime-check][$platform][$arch] rc2d_example required GLIBC (max symbol version)=${exe_glibc:-none-detected}"
+
+      - name: Print runtime minimums - Windows
+        if: matrix.config.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $platform = "${{ matrix.config.platform }}"
+          $arch = "${{ matrix.config.arch }}"
+          $buildDir = "build/windows/$arch"
+          $exe = "$buildDir/Release/rc2d_example.exe"
+          $cachePath = "$buildDir/CMakeCache.txt"
+
+          function Get-CMakeCacheValue {
+            param(
+              [string]$Path,
+              [string]$Key
+            )
+            if (-not (Test-Path $Path)) {
+              return $null
+            }
+            $line = Select-String -Path $Path -Pattern ("^" + [regex]::Escape($Key) + ":[^=]*=") | Select-Object -First 1
+            if (-not $line) {
+              return $null
+            }
+            return ($line.Line -split "=", 2)[1]
+          }
+
+          function Get-PeInfo {
+            param([string]$Path)
+
+            [byte[]]$bytes = [System.IO.File]::ReadAllBytes($Path)
+            if ($bytes.Length -lt 256) {
+              throw "File is too small to be a valid PE: $Path"
+            }
+
+            if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) {
+              throw "Missing MZ signature: $Path"
+            }
+
+            $peOffset = [BitConverter]::ToInt32($bytes, 0x3C)
+            if ($peOffset -lt 0 -or ($peOffset + 88) -ge $bytes.Length) {
+              throw "Invalid PE header offset: $Path"
+            }
+
+            $peSignature = [BitConverter]::ToUInt32($bytes, $peOffset)
+            if ($peSignature -ne 0x00004550) {
+              throw "Missing PE signature: $Path"
+            }
+
+            $machine = [BitConverter]::ToUInt16($bytes, $peOffset + 4)
+            $optOffset = $peOffset + 24
+            $magic = [BitConverter]::ToUInt16($bytes, $optOffset)
+
+            $majorOs = [BitConverter]::ToUInt16($bytes, $optOffset + 40)
+            $minorOs = [BitConverter]::ToUInt16($bytes, $optOffset + 42)
+            $majorImage = [BitConverter]::ToUInt16($bytes, $optOffset + 44)
+            $minorImage = [BitConverter]::ToUInt16($bytes, $optOffset + 46)
+            $majorSubsystem = [BitConverter]::ToUInt16($bytes, $optOffset + 48)
+            $minorSubsystem = [BitConverter]::ToUInt16($bytes, $optOffset + 50)
+
+            $machineLabel = switch ($machine) {
+              0x8664 { "x64" }
+              0xAA64 { "arm64" }
+              0x014C { "x86" }
+              default { "unknown" }
+            }
+
+            $formatLabel = switch ($magic) {
+              0x20B { "PE32+" }
+              0x10B { "PE32" }
+              default { "unknown" }
+            }
+
+            return [PSCustomObject]@{
+              Machine = $machine
+              MachineLabel = $machineLabel
+              Format = $formatLabel
+              MajorOs = $majorOs
+              MinorOs = $minorOs
+              MajorImage = $majorImage
+              MinorImage = $minorImage
+              MajorSubsystem = $majorSubsystem
+              MinorSubsystem = $minorSubsystem
+            }
+          }
+
+          if (-not (Test-Path $exe)) {
+            Write-Host "[runtime-check][$platform][$arch] ERROR: executable not found at $exe"
+            exit 1
+          }
+
+          $cmakeSystemVersion = Get-CMakeCacheValue -Path $cachePath -Key "CMAKE_SYSTEM_VERSION"
+          $pe = Get-PeInfo -Path $exe
+
+          Write-Host "[runtime-check][$platform][$arch] executable=$exe"
+          if ($cmakeSystemVersion) {
+            Write-Host "[runtime-check][$platform][$arch] CMAKE_SYSTEM_VERSION=$cmakeSystemVersion"
+          }
+          Write-Host "[runtime-check][$platform][$arch] PE format=$($pe.Format)"
+          Write-Host "[runtime-check][$platform][$arch] PE machine=$($pe.MachineLabel) (0x$("{0:X4}" -f $pe.Machine))"
+          Write-Host "[runtime-check][$platform][$arch] PE OS version=$($pe.MajorOs).$($pe.MinorOs)"
+          Write-Host "[runtime-check][$platform][$arch] PE image version=$($pe.MajorImage).$($pe.MinorImage)"
+          Write-Host "[runtime-check][$platform][$arch] PE subsystem version=$($pe.MajorSubsystem).$($pe.MinorSubsystem)"
+
+      - name: Print runtime minimums - macOS / iOS
+        if: matrix.config.platform == 'macos' || matrix.config.platform == 'ios'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          platform="${{ matrix.config.platform }}"
+          arch="${{ matrix.config.arch }}"
+
+          minos_from_macho() {
+            local file="$1"
+            otool -l "$file" | awk '
+              $1=="cmd" && $2=="LC_BUILD_VERSION" { mode="build"; next }
+              mode=="build" && $1=="minos" { print $2; exit }
+              $1=="cmd" && ($2=="LC_VERSION_MIN_MACOSX" || $2=="LC_VERSION_MIN_IPHONEOS") { mode="legacy"; next }
+              mode=="legacy" && $1=="version" { print $2; exit }
+            '
+          }
+
+          if [ "$platform" = "macos" ]; then
+            root="build/macos/$arch"
+            cache="$root/CMakeCache.txt"
+            app_path="$(find "$root" -type d -path "*/Release*/rc2d_example.app" -print -quit || true)"
+            if [ -z "$app_path" ]; then
+              app_path="$(find "$root" -type d -name "rc2d_example.app" -print -quit || true)"
+            fi
+            plist_path="$app_path/Contents/Info.plist"
+            exe_path="$app_path/Contents/MacOS/rc2d_example"
+          else
+            root="build/ios/iphoneos"
+            cache="$root/CMakeCache.txt"
+            app_path="$(find "$root" -type d -path "*/Release*/rc2d_example.app" -print -quit || true)"
+            if [ -z "$app_path" ]; then
+              app_path="$(find "$root" -type d -name "rc2d_example.app" -print -quit || true)"
+            fi
+            plist_path="$app_path/Info.plist"
+            exe_path="$app_path/rc2d_example"
+          fi
+
+          if [ -z "${app_path:-}" ] || [ ! -d "$app_path" ]; then
+            echo "[runtime-check][$platform][$arch] ERROR: app bundle not found"
+            exit 1
+          fi
+
+          if [ ! -f "$exe_path" ]; then
+            if [ "$platform" = "macos" ] && [ -d "$app_path/Contents/MacOS" ]; then
+              exe_path="$(find "$app_path/Contents/MacOS" -type f -print -quit || true)"
+            else
+              exe_path="$(find "$app_path" -maxdepth 1 -type f -print -quit || true)"
+            fi
+          fi
+
+          if [ -z "${exe_path:-}" ] || [ ! -f "$exe_path" ]; then
+            echo "[runtime-check][$platform][$arch] ERROR: executable not found in app bundle $app_path"
+            exit 1
+          fi
+
+          cmake_target="$(awk -F= '/^CMAKE_OSX_DEPLOYMENT_TARGET:/{print $2; exit}' "$cache" 2>/dev/null || true)"
+          exe_minos="$(minos_from_macho "$exe_path")"
+
+          echo "[runtime-check][$platform][$arch] app_bundle=$app_path"
+          echo "[runtime-check][$platform][$arch] executable=$exe_path"
+          if [ -n "$cmake_target" ]; then
+            echo "[runtime-check][$platform][$arch] CMAKE_OSX_DEPLOYMENT_TARGET=$cmake_target"
+          fi
+          echo "[runtime-check][$platform][$arch] executable minos=${exe_minos:-unknown}"
+
+          if [ -f "$plist_path" ]; then
+            if [ "$platform" = "macos" ]; then
+              plist_min=$(/usr/libexec/PlistBuddy -c "Print :LSMinimumSystemVersion" "$plist_path" 2>/dev/null || true)
+              if [ -n "$plist_min" ]; then
+                echo "[runtime-check][$platform][$arch] Info.plist LSMinimumSystemVersion=$plist_min"
+              fi
+            else
+              plist_min=$(/usr/libexec/PlistBuddy -c "Print :MinimumOSVersion" "$plist_path" 2>/dev/null || true)
+              if [ -n "$plist_min" ]; then
+                echo "[runtime-check][$platform][$arch] Info.plist MinimumOSVersion=$plist_min"
+              fi
+            fi
+          fi
+
+      - name: Print runtime minimums - Android
+        if: matrix.config.platform == 'android'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          platform="${{ matrix.config.platform }}"
+          arch="${{ matrix.config.arch }}"
+          apk_path="android-project/app/build/outputs/apk/debug/app-debug.apk"
+
+          cache_path="$(find android-project -type f -name CMakeCache.txt -print -quit || true)"
+          if [ -n "$cache_path" ]; then
+            cmake_android_api="$(awk -F= '/^CMAKE_ANDROID_API:/{print $2; exit}' "$cache_path" 2>/dev/null || true)"
+            if [ -n "$cmake_android_api" ]; then
+              echo "[runtime-check][$platform][$arch] CMAKE_ANDROID_API=$cmake_android_api"
+            fi
+          fi
+
+          if [ ! -f "$apk_path" ]; then
+            echo "[runtime-check][$platform][$arch] ERROR: APK not found at $apk_path"
+            exit 1
+          fi
+
+          echo "[runtime-check][$platform][$arch] apk=$apk_path"
+
+          aapt_bin="$(find "${ANDROID_HOME:-}" -type f -name aapt 2>/dev/null | sort -V | tail -n1 || true)"
+          if [ -n "$aapt_bin" ]; then
+            sdk_lines="$("$aapt_bin" dump badging "$apk_path" | grep -E "sdkVersion:'|targetSdkVersion:'" || true)"
+            if [ -n "$sdk_lines" ]; then
+              echo "$sdk_lines" | sed "s/^/[runtime-check][$platform][$arch] /"
+            else
+              echo "[runtime-check][$platform][$arch] WARN: sdkVersion/targetSdkVersion not found in APK metadata"
+            fi
+          else
+            echo "[runtime-check][$platform][$arch] WARN: aapt not found in ANDROID_HOME"
+          fi
+
       - name: Inspect APK (Debug) - Android
         if: matrix.config.platform == 'android'
         shell: bash
