@@ -73,7 +73,7 @@
 | **macOS** | Apple Silicon arm64 | macOS 15.0+ | 🟢 |
 | **iOS/iPadOS** | arm64 (iphoneos) | iOS/iPadOS 18.0+ | 🟢 |
 | **Android** | arm64-v8a / armeabi-v7a | Android 9.0+ | 🟢 |
-| **Linux** | x64 / arm64 | glibc 2.35+ | 🟢 |
+| **Linux** | x64 / arm64 | glibc 2.34+ | 🟢 |
 | **Steam Linux** | x64 / arm64 | Steam Linux Runtime 4.0 | 🟢 |
 | **Steam Deck** | x64 | Steam Linux Runtime 4.0 | 🟢 |
 | **Xbox Série X/S** | x64 | - | 🔴 |
@@ -112,7 +112,7 @@
 - OnePlus 6T et plus récent.
 - Galaxy Tab S4 (2018) et plus récent.
 
-### **Linux (glibc 2.35+)**
+### **Linux (glibc 2.34+)**
 - Ubuntu 22.04 et plus récent.
 - Debian 12 et plus récent.
 - Fedora 36 et plus récent.
@@ -167,9 +167,9 @@
   - Pas d'architecture Android : x86_64 et x86, parce que ONNX Runtime compatible que : arm64-v8a / armeabi-v7a
 
 ### Linux
-- **Version minimale** : glibc 2.35+
+- **Version minimale** : glibc 2.34+
 - **Raison** :
-  - CI/CD basée sur Ubuntu 22.04 LTS (donc librairie RC2D + dépendences construite sur glibc 2.35)
+  - CI/CD basée sur Ubuntu 22.04 LTS (donc librairie RC2D + dépendences construite sur glibc 2.34)
   - ONNX Runtime nécessite C++20 (glibc 2.31+)
 
 ### Steam Deck / Steam Linux
@@ -177,7 +177,7 @@
 - **Raison** :
   - Steam recommande l'utilisation du runtime Sniper pour tous les nouveaux jeux compatibles Linux.
   - Le Steam Deck est livré avec SteamOS 3.0+, basé sur Arch Linux, et embarque nativement le runtime Sniper.
-  - Toutes les dépendances système (glibc ≥ 2.35, Mesa Vulkan ≥ 22, etc.) sont fournies via le runtime, assurant un environnement stable et cohérent.
+  - Toutes les dépendances système sont fournies via le runtime, assurant un environnement stable et cohérent.
 
 <br /><br />
 
@@ -236,7 +236,7 @@
 
 
   # Linux (x64/arm64) :
-  1. Requirements : glibc >= 2.35.0 (Exemple : Ubuntu >= 22.04 OR Debian >= 12.0), checker via : ldd --version
+  1. Requirements : glibc >= 2.34.0 (Exemple : Ubuntu >= 22.04 OR Debian >= 12.0), checker via : ldd --version
   2. Download and Install (gcc, g++, make..) :
      sudo apt update
      sudo apt install -y build-essential

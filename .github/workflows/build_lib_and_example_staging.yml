@@ -194,9 +194,54 @@ jobs:
               | tail -n1 || true
           }
 
-          exe_glibc="$(glibc_from_file "$exe")"
+          max_version() {
+            local current="${1:-}"
+            local candidate="${2:-}"
+            if [ -z "$candidate" ]; then
+              printf '%s' "$current"
+              return
+            fi
+            if [ -z "$current" ]; then
+              printf '%s' "$candidate"
+              return
+            fi
+            if [ "$(printf '%s\n%s\n' "$current" "$candidate" | sort -V | tail -n1)" = "$candidate" ]; then
+              printf '%s' "$candidate"
+            else
+              printf '%s' "$current"
+            fi
+          }
+
+          missing_libs="$(ldd "$exe" | awk '/=> not found/ {print $1}' || true)"
+          if [ -n "$missing_libs" ]; then
+            echo "[runtime-check][$platform][$arch] ERROR: unresolved shared libraries for $exe"
+            echo "$missing_libs" | sed "s/^/[runtime-check][$platform][$arch]   missing=/"
+            exit 1
+          fi
+
+          closure_file="$(mktemp)"
+          {
+            echo "$exe"
+            ldd "$exe" | awk '
+              /=>/ && $3 ~ /^\// { print $3 }
+              $1 ~ /^\// { print $1 }
+            '
+          } | awk '!seen[$0]++' > "$closure_file"
+
+          closure_max_glibc=""
+          closure_count=0
+          while IFS= read -r file; do
+            [ -f "$file" ] || continue
+            closure_count=$((closure_count + 1))
+            file_glibc="$(glibc_from_file "$file")"
+            closure_max_glibc="$(max_version "$closure_max_glibc" "$file_glibc")"
+          done < "$closure_file"
+
+          rm -f "$closure_file"
+
           echo "[runtime-check][$platform][$arch] executable=$exe"
-          echo "[runtime-check][$platform][$arch] rc2d_example required GLIBC (max symbol version)=${exe_glibc:-none-detected}"
+          echo "[runtime-check][$platform][$arch] runtime closure files (exe + resolved shared libs)=$closure_count"
+          echo "[runtime-check][$platform][$arch] required GLIBC for runtime closure (max symbol version)=${closure_max_glibc:-none-detected}"
 
       - name: Print runtime minimums - Windows
         if: matrix.config.platform == 'windows'
@@ -292,15 +337,44 @@ jobs:
           $cmakeSystemVersion = Get-CMakeCacheValue -Path $cachePath -Key "CMAKE_SYSTEM_VERSION"
           $pe = Get-PeInfo -Path $exe
 
+          $dllDir = Split-Path -Parent $exe
+          $bundledDlls = @(Get-ChildItem -Path $dllDir -Filter *.dll -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
+
+          $closureCount = 1 + $bundledDlls.Count
+          $closureMaxOs = "{0}.{1}" -f $pe.MajorOs, $pe.MinorOs
+          $closureMaxSubsystem = "{0}.{1}" -f $pe.MajorSubsystem, $pe.MinorSubsystem
+
+          foreach ($dll in $bundledDlls) {
+            try {
+              $dllPe = Get-PeInfo -Path $dll
+            } catch {
+              Write-Host "[runtime-check][$platform][$arch] WARN: failed to parse DLL header: $dll"
+              continue
+            }
+
+            $dllOs = "{0}.{1}" -f $dllPe.MajorOs, $dllPe.MinorOs
+            $dllSubsystem = "{0}.{1}" -f $dllPe.MajorSubsystem, $dllPe.MinorSubsystem
+
+            if ([version]$dllOs -gt [version]$closureMaxOs) {
+              $closureMaxOs = $dllOs
+            }
+            if ([version]$dllSubsystem -gt [version]$closureMaxSubsystem) {
+              $closureMaxSubsystem = $dllSubsystem
+            }
+          }
+
           Write-Host "[runtime-check][$platform][$arch] executable=$exe"
           if ($cmakeSystemVersion) {
             Write-Host "[runtime-check][$platform][$arch] CMAKE_SYSTEM_VERSION=$cmakeSystemVersion"
           }
+          Write-Host "[runtime-check][$platform][$arch] runtime closure files (exe + bundled dll)=$closureCount"
           Write-Host "[runtime-check][$platform][$arch] PE format=$($pe.Format)"
           Write-Host "[runtime-check][$platform][$arch] PE machine=$($pe.MachineLabel) (0x$("{0:X4}" -f $pe.Machine))"
           Write-Host "[runtime-check][$platform][$arch] PE OS version=$($pe.MajorOs).$($pe.MinorOs)"
           Write-Host "[runtime-check][$platform][$arch] PE image version=$($pe.MajorImage).$($pe.MinorImage)"
           Write-Host "[runtime-check][$platform][$arch] PE subsystem version=$($pe.MajorSubsystem).$($pe.MinorSubsystem)"
+          Write-Host "[runtime-check][$platform][$arch] required PE OS version for runtime closure=$closureMaxOs"
+          Write-Host "[runtime-check][$platform][$arch] required PE subsystem version for runtime closure=$closureMaxSubsystem"
 
       - name: Print runtime minimums - macOS / iOS
         if: matrix.config.platform == 'macos' || matrix.config.platform == 'ios'
@@ -319,6 +393,24 @@ jobs:
               $1=="cmd" && ($2=="LC_VERSION_MIN_MACOSX" || $2=="LC_VERSION_MIN_IPHONEOS") { mode="legacy"; next }
               mode=="legacy" && $1=="version" { print $2; exit }
             '
+          }
+
+          max_version() {
+            local current="${1:-}"
+            local candidate="${2:-}"
+            if [ -z "$candidate" ]; then
+              printf '%s' "$current"
+              return
+            fi
+            if [ -z "$current" ]; then
+              printf '%s' "$candidate"
+              return
+            fi
+            if [ "$(printf '%s\n%s\n' "$current" "$candidate" | sort -V | tail -n1)" = "$candidate" ]; then
+              printf '%s' "$candidate"
+            else
+              printf '%s' "$current"
+            fi
           }
 
           if [ "$platform" = "macos" ]; then
@@ -383,6 +475,19 @@ jobs:
             fi
           fi
 
+          closure_max_minos=""
+          closure_count=0
+          while IFS= read -r -d '' file; do
+            if file -b "$file" 2>/dev/null | grep -q "Mach-O"; then
+              closure_count=$((closure_count + 1))
+              file_minos="$(minos_from_macho "$file")"
+              closure_max_minos="$(max_version "$closure_max_minos" "$file_minos")"
+            fi
+          done < <(find "$app_path" -type f -print0)
+
+          echo "[runtime-check][$platform][$arch] runtime closure files (Mach-O in app bundle)=$closure_count"
+          echo "[runtime-check][$platform][$arch] required minos for runtime closure=${closure_max_minos:-unknown}"
+
       - name: Print runtime minimums - Android
         if: matrix.config.platform == 'android'
         shell: bash
@@ -419,6 +524,36 @@ jobs:
           else
             echo "[runtime-check][$platform][$arch] WARN: aapt not found in ANDROID_HOME"
           fi
+
+          tmpdir="$(mktemp -d)"
+          unzip -qq "$apk_path" "lib/*/*.so" -d "$tmpdir" || true
+          mapfile -t native_libs < <(find "$tmpdir/lib" -type f -name '*.so' 2>/dev/null | sort)
+          native_count="${#native_libs[@]}"
+          echo "[runtime-check][$platform][$arch] runtime closure files (native .so in APK)=$native_count"
+
+          if [ "$native_count" -gt 0 ]; then
+            if command -v readelf >/dev/null 2>&1; then
+              max_native_sdk=""
+              for so in "${native_libs[@]}"; do
+                so_sdk="$(readelf -n "$so" 2>/dev/null | awk '/Android SDK version:/ {print $NF; exit}' || true)"
+                if [ -n "$so_sdk" ]; then
+                  if [ -z "$max_native_sdk" ] || [ "$so_sdk" -gt "$max_native_sdk" ]; then
+                    max_native_sdk="$so_sdk"
+                  fi
+                fi
+              done
+
+              if [ -n "$max_native_sdk" ]; then
+                echo "[runtime-check][$platform][$arch] required Android native SDK for runtime closure (max ELF note)=$max_native_sdk"
+              else
+                echo "[runtime-check][$platform][$arch] WARN: no Android SDK ELF note found in native .so files"
+              fi
+            else
+              echo "[runtime-check][$platform][$arch] WARN: readelf not available to inspect native .so files"
+            fi
+          fi
+
+          rm -rf "$tmpdir"
 
       - name: Inspect APK (Debug) - Android
         if: matrix.config.platform == 'android'
