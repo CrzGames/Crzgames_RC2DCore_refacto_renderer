@@ -475,18 +475,83 @@ jobs:
             fi
           fi
 
-          closure_max_minos=""
-          closure_count=0
+          add_unique_line() {
+            local list_file="$1"
+            local value="$2"
+            if ! grep -Fqx "$value" "$list_file" 2>/dev/null; then
+              printf '%s\n' "$value" >> "$list_file"
+            fi
+          }
+
+          closure_list="$(mktemp)"
+          external_non_system_list="$(mktemp)"
+          unresolved_absolute_list="$(mktemp)"
+
+          bundle_macho_count=0
           while IFS= read -r -d '' file; do
             if file -b "$file" 2>/dev/null | grep -q "Mach-O"; then
-              closure_count=$((closure_count + 1))
-              file_minos="$(minos_from_macho "$file")"
-              closure_max_minos="$(max_version "$closure_max_minos" "$file_minos")"
+              add_unique_line "$closure_list" "$file"
+              bundle_macho_count=$((bundle_macho_count + 1))
             fi
           done < <(find "$app_path" -type f -print0)
 
-          echo "[runtime-check][$platform][$arch] runtime closure files (Mach-O in app bundle)=$closure_count"
+          idx=1
+          while true; do
+            total="$(wc -l < "$closure_list" | tr -d ' ')"
+            if [ "$idx" -gt "$total" ]; then
+              break
+            fi
+
+            current="$(sed -n "${idx}p" "$closure_list")"
+            idx=$((idx + 1))
+            [ -f "$current" ] || continue
+
+            while IFS= read -r dep; do
+              case "$dep" in
+                /*)
+                  if [ -f "$dep" ]; then
+                    if file -b "$dep" 2>/dev/null | grep -q "Mach-O"; then
+                      add_unique_line "$closure_list" "$dep"
+                    fi
+                    case "$dep" in
+                      /System/*|/usr/lib/*) ;;
+                      *) add_unique_line "$external_non_system_list" "$dep" ;;
+                    esac
+                  else
+                    add_unique_line "$unresolved_absolute_list" "$dep"
+                  fi
+                ;;
+              esac
+            done < <(otool -L "$current" | tail -n +2 | awk '{print $1}')
+          done
+
+          closure_max_minos=""
+          closure_count=0
+          while IFS= read -r file; do
+            [ -f "$file" ] || continue
+            closure_count=$((closure_count + 1))
+            file_minos="$(minos_from_macho "$file")"
+            closure_max_minos="$(max_version "$closure_max_minos" "$file_minos")"
+          done < "$closure_list"
+
+          external_non_system_count="$(wc -l < "$external_non_system_list" | tr -d ' ')"
+          unresolved_absolute_count="$(wc -l < "$unresolved_absolute_list" | tr -d ' ')"
+
+          echo "[runtime-check][$platform][$arch] Mach-O files inside app bundle=$bundle_macho_count"
+          echo "[runtime-check][$platform][$arch] runtime closure files (bundle + resolved absolute dylibs)=$closure_count"
           echo "[runtime-check][$platform][$arch] required minos for runtime closure=${closure_max_minos:-unknown}"
+
+          if [ "$external_non_system_count" -gt 0 ]; then
+            echo "[runtime-check][$platform][$arch] external non-system dylibs detected=$external_non_system_count"
+            sed "s|^|[runtime-check][$platform][$arch]   external_dylib=|" "$external_non_system_list"
+          fi
+
+          if [ "$unresolved_absolute_count" -gt 0 ]; then
+            echo "[runtime-check][$platform][$arch] WARN: unresolved absolute dylibs in load commands=$unresolved_absolute_count"
+            sed "s|^|[runtime-check][$platform][$arch]   unresolved_dylib=|" "$unresolved_absolute_list"
+          fi
+
+          rm -f "$closure_list" "$external_non_system_list" "$unresolved_absolute_list"
 
       - name: Print runtime minimums - Android
         if: matrix.config.platform == 'android'
