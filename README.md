@@ -411,45 +411,35 @@ Cela aura générer à nouveau le fichier à jour dans : `src/RC2D/RC2D_gamecont
 <br /><br />
 
 ## 🧱 Générer RC2D (lib statique) + Projet d'exemple
-1. **Par défaut** : ces scripts **génèrent un projet CMake** dans `./build/`, puis **compilent RC2D en bibliothèque statique** et **construisent le projet d’exemple** pour la plateforme choisie.
-
-   - ✅ **Si le projet est déjà généré** (ex: solution **Visual Studio 2022**, projet Xcode, Ninja, etc.) : vous pouvez simplement **recompiler depuis votre IDE** ou via votre outil de build (Build/Run) **sans relancer les scripts**, tant que la configuration CMake ne change pas.
-
-   - 🔁 **Quand relancer les scripts (ou rerun CMake)** :
-     - Si vous modifiez des options CMake / flags / dépendances (ex: activation d’un module, ajout de libs, changement de toolchain, mise à jour `dependencies.txt`, etc.)
-     - Si vous supprimez le dossier `build/` ou changez de plateforme/architecture/générateur.
-
-   - 🧩 **Qu’est-ce qui demande une recompilation ?**
-     - Si vous modifiez `src/RC2D/**` ou `include/RC2D/**` → vous modifiez la **lib RC2D** → **recompiler RC2D** (IDE ou scripts).
-     - Si vous modifiez `examples/src/**` ou `examples/include/**` → vous modifiez **l’exemple** → **recompiler l’exemple** (IDE ou scripts).
+1. **Première fois uniquement** : utilisez les scripts `generate-project` pour **générer le projet CMake** dans `./build/` puis faire un build initial.
 
 ```bash
 # Linux - x64
 chmod +x ./build-scripts/generate-project/linux-x64.sh
 ./build-scripts/generate-project/linux-x64.sh
-# Spécifiquement pour Linux sur un VPS ou autres, après compilation réussi, lancer l'exemple via : 
-# Executable classique : SDL_AUDIODRIVER=dummy ./rc2d_example
-# Executable .AppImage : SDL_AUDIODRIVER=dummy ./rc2d_example.AppImage
+# Spécifiquement pour Linux sur un VPS (sans audio) :
+# Exécutable classique : SDL_AUDIODRIVER=dummy ./rc2d_example
+# Exécutable AppImage : SDL_AUDIODRIVER=dummy ./rc2d_example.AppImage
 
 
 # Linux - arm64
 chmod +x ./build-scripts/generate-project/linux-arm64.sh
 ./build-scripts/generate-project/linux-arm64.sh
-# Spécifiquement pour Linux sur un VPS ou autres, après compilation réussi, lancer l'exemple via : 
-# Executable classique : SDL_AUDIODRIVER=dummy ./rc2d_example
-# Executable .AppImage : SDL_AUDIODRIVER=dummy ./rc2d_example.AppImage
+# Spécifiquement pour Linux sur un VPS (sans audio) :
+# Exécutable classique : SDL_AUDIODRIVER=dummy ./rc2d_example
+# Exécutable AppImage : SDL_AUDIODRIVER=dummy ./rc2d_example.AppImage
 
 
-# macOS (Apple Silicon arm64) - No Signed Bundle .app for Project Example
+# macOS - Apple Silicon arm64 - No Signed Bundle .app
 chmod +x ./build-scripts/generate-project/macos-arm64-nosignedbundleapp.sh
 ./build-scripts/generate-project/macos-arm64-nosignedbundleapp.sh
 
 
-# macOS (Apple Silicon arm64) - Signed Bundle .app for Project Example
+# macOS - Apple Silicon arm64 - Signed Bundle .app
 chmod +x ./build-scripts/generate-project/macos-arm64-signedbundleapp.sh
 ./build-scripts/generate-project/macos-arm64-signedbundleapp.sh
-# Informations : Rentrer les bonne informations dans le CMakelists ou il y a "RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING"
-# Concernant : XCODE_ATTRIBUTE_DEVELOPMENT_TEAM, XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY..etc
+# Infos : configurer RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING dans CMakeLists.txt
+# (XCODE_ATTRIBUTE_DEVELOPMENT_TEAM, XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY, etc.)
 
 
 # Windows - x64
@@ -461,53 +451,147 @@ chmod +x ./build-scripts/generate-project/macos-arm64-signedbundleapp.sh
 
 
 # SteamRT4 - x64
-# Depuis Docker (Les artefacts générés (Debug / Release) sont disponibles dans le dossier : docker-build-output-steamrt4/): 
+# Depuis Docker (artefacts Debug/Release dans docker-build-output-steamrt4/) :
 docker compose run --rm rc2d-builder-x64
-# Depuis le script :
-chmod +x ./build-scripts/generate-project/steamrt4-arm64.sh
-./build-scripts/generate-project/steamrt4-arm64.sh
-
-
-# SteamRT4 - arm64
-# Depuis Docker (Les artefacts générés (Debug / Release) sont disponibles dans le dossier : docker-build-output-steamrt4/): 
-docker compose run --rm rc2d-builder-arm64
-# Depuis le script :
+# Ou via script :
 chmod +x ./build-scripts/generate-project/steamrt4-x64.sh
 ./build-scripts/generate-project/steamrt4-x64.sh
 
 
-# Android - Unix (Linux x64/arm64 or macOS Apple Silicon arm64)
+# SteamRT4 - arm64
+# Depuis Docker (artefacts Debug/Release dans docker-build-output-steamrt4/) :
+docker compose run --rm rc2d-builder-arm64
+# Ou via script :
+chmod +x ./build-scripts/generate-project/steamrt4-arm64.sh
+./build-scripts/generate-project/steamrt4-arm64.sh
+
+
+# Android (run on Unix)
 chmod +x ./build-scripts/generate-project/android-unix.sh
 ./build-scripts/generate-project/android-unix.sh
-# Generate la librairie static RC2D + APK/AAB (donc le projet d'exemple RC2D qui seras dans le AAB/APK)
+# Génère la lib statique RC2D + APK/AAB (exemple RC2D intégré dans APK/AAB)
 
 
-# Android - Windows (x64/arm64)
+# Android (run on Windows)
 .\build-scripts\generate-project\android-windows.bat
-# Generate la librairie static RC2D + APK/AAB (donc le projet d'exemple RC2D qui seras dans le AAB/APK)
+# Génère la lib statique RC2D + APK/AAB (exemple RC2D intégré dans APK/AAB)
 
 
-# iOS (run in macOS) - No Signed Bundle .app for Project Example
+# iOS (run on macOS) - No Signed Bundle .app
 chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
 ./build-scripts/generate-project/ios-iphoneos-arm64-nosignedbundleapp.sh
 
 
-# iOS (run in macOS) - Signed Bundle .app for Project Example
+# iOS (run on macOS) - Signed Bundle .app
 chmod +x ./build-scripts/generate-project/ios-iphoneos-arm64-signedbundleapp.sh
 ./build-scripts/generate-project/ios-iphoneos-arm64-signedbundleapp.sh
-# Informations : Rentrer les bonne informations dans le CMakelists ou il y a "RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING"
-# Concernant : XCODE_ATTRIBUTE_DEVELOPMENT_TEAM, XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY..etc
+# Infos : configurer RC2D_BUILD_EXAMPLES_APPLE_CODE_SIGNING dans CMakeLists.txt
+# (XCODE_ATTRIBUTE_DEVELOPMENT_TEAM, XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY, etc.)
 ```
-3. Il y a un dossier `build` à la racine qui est générer.
+
+2. **Développement quotidien (après génération initiale)** : utilisez les scripts du dossier `build-project-development-debug`.
+   - Sans argument : build en mode **Debug** des targets par défaut.
+   - Avec argument : build en mode **Debug** d'une target spécifique uniquement (plus rapide).
+   - Targets par défaut (CMake classique) :
+     - `rc2d`
+     - `rc2d_example`
+   - Android spécifiquement : target exemple = `main` (le script mappe aussi `rc2d_example` vers `main`).
+
 ```bash
-# Pour Windows x64 par exemple, un projet Visual Studio 2022 à été générer au path suivant :
+# Linux - x64 - targets par défaut: rc2d + rc2d_example
+chmod +x ./build-scripts/build-project-development-debug/linux-x64.sh
+./build-scripts/build-project-development-debug/linux-x64.sh
+# target spécifique
+./build-scripts/build-project-development-debug/linux-x64.sh rc2d_example
+
+
+# Linux - arm64 - targets par défaut: rc2d + rc2d_example
+chmod +x ./build-scripts/build-project-development-debug/linux-arm64.sh
+./build-scripts/build-project-development-debug/linux-arm64.sh
+# target spécifique
+./build-scripts/build-project-development-debug/linux-arm64.sh rc2d
+
+
+# SteamRT4 - x64 - targets par défaut: rc2d + rc2d_example
+chmod +x ./build-scripts/build-project-development-debug/steamrt4-x64.sh
+./build-scripts/build-project-development-debug/steamrt4-x64.sh
+# target spécifique
+./build-scripts/build-project-development-debug/steamrt4-x64.sh rc2d_example
+
+
+# SteamRT4 - arm64 - targets par défaut: rc2d + rc2d_example
+chmod +x ./build-scripts/build-project-development-debug/steamrt4-arm64.sh
+./build-scripts/build-project-development-debug/steamrt4-arm64.sh
+# target spécifique
+./build-scripts/build-project-development-debug/steamrt4-arm64.sh rc2d
+
+
+# macOS - Apple Silicon arm64 - No Signed Bundle .app - targets par défaut: rc2d + rc2d_example
+chmod +x ./build-scripts/build-project-development-debug/macos-arm64-nosignedbundleapp.sh
+./build-scripts/build-project-development-debug/macos-arm64-nosignedbundleapp.sh
+# target spécifique
+./build-scripts/build-project-development-debug/macos-arm64-nosignedbundleapp.sh rc2d_example
+
+
+# macOS - Apple Silicon arm64 - Signed Bundle .app - targets par défaut: rc2d + rc2d_example
+chmod +x ./build-scripts/build-project-development-debug/macos-arm64-signedbundleapp.sh
+./build-scripts/build-project-development-debug/macos-arm64-signedbundleapp.sh
+# target spécifique
+./build-scripts/build-project-development-debug/macos-arm64-signedbundleapp.sh rc2d
+
+
+# iOS (run on macOS) - No Signed Bundle .app - targets par défaut: rc2d + rc2d_example
+chmod +x ./build-scripts/build-project-development-debug/ios-iphoneos-arm64-nosignedbundleapp.sh
+./build-scripts/build-project-development-debug/ios-iphoneos-arm64-nosignedbundleapp.sh
+# target spécifique
+./build-scripts/build-project-development-debug/ios-iphoneos-arm64-nosignedbundleapp.sh rc2d_example
+
+
+# iOS (run on macOS) - Signed Bundle .app - targets par défaut: rc2d + rc2d_example
+chmod +x ./build-scripts/build-project-development-debug/ios-iphoneos-arm64-signedbundleapp.sh
+./build-scripts/build-project-development-debug/ios-iphoneos-arm64-signedbundleapp.sh
+# target spécifique
+./build-scripts/build-project-development-debug/ios-iphoneos-arm64-signedbundleapp.sh rc2d
+
+
+# Android (run on Unix) - targets par défaut: rc2d + main (main = rc2d_example)
+chmod +x ./build-scripts/build-project-development-debug/android-unix.sh
+./build-scripts/build-project-development-debug/android-unix.sh
+# target spécifique (main pour l'exemple Android)
+./build-scripts/build-project-development-debug/android-unix.sh main
+
+
+# Android (run on Windows) - targets par défaut: rc2d + main (main = rc2d_example)
+.\build-scripts\build-project-development-debug\android-windows.bat
+# target spécifique
+.\build-scripts\build-project-development-debug\android-windows.bat main
+
+
+# Windows - x64 - targets par défaut: rc2d + rc2d_example
+.\build-scripts\build-project-development-debug\windows-x64.bat
+# target spécifique
+.\build-scripts\build-project-development-debug\windows-x64.bat rc2d
+
+
+# Windows - arm64 - targets par défaut: rc2d + rc2d_example
+.\build-scripts\build-project-development-debug\windows-arm64.bat
+# target spécifique
+.\build-scripts\build-project-development-debug\windows-arm64.bat rc2d_example
+```
+
+3. **Quand relancer `generate-project` (ou rerun CMake)** :
+   - Si vous modifiez des options CMake / flags / dépendances (activation d’un module, ajout de libs, changement de toolchain, mise à jour `dependencies.txt`, etc.).
+   - Si vous supprimez le dossier `build/` ou changez de plateforme/architecture/générateur.
+
+4. Dossier de sortie (exemple Windows x64) :
+```bash
+# Projet Visual Studio généré :
 .\build\windows\x64
 
-# La librairie RC2D static + l'exemple générer dans le même dossier :
-Release : .\build\windows\x64\Debug
-Debug : .\build\windows\x64\Release
+# Binaries générés :
+Debug   : .\build\windows\x64\Debug
+Release : .\build\windows\x64\Release
 ```
-4. Ouvrir le projet générer dans votre IDE favoris.
 
 <br /><br />
 
