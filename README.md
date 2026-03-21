@@ -73,7 +73,7 @@
 | **macOS** | Apple Silicon arm64 | macOS 15.0+ | 🟢 |
 | **iOS/iPadOS** | arm64 (iphoneos) | iOS/iPadOS 18.0+ | 🟢 |
 | **Android** | arm64-v8a / armeabi-v7a | Android 9.0+ | 🟢 |
-| **Linux** | x64 / arm64 | glibc 2.34+ | 🟢 |
+| **Linux** | x64 / arm64 | glibc 2.35+ | 🟢 |
 | **Steam Linux** | x64 / arm64 | Steam Linux Runtime 4.0 | 🟢 |
 | **Steam Deck** | x64 | Steam Linux Runtime 4.0 | 🟢 |
 | **Xbox Série X/S** | x64 | - | 🔴 |
@@ -112,7 +112,7 @@
 - OnePlus 6T et plus récent.
 - Galaxy Tab S4 (2018) et plus récent.
 
-### **Linux (glibc 2.34+)**
+### **Linux (glibc 2.35+)**
 - Ubuntu 22.04 et plus récent.
 - Debian 12 et plus récent.
 - Fedora 36 et plus récent.
@@ -167,9 +167,9 @@
   - Pas d'architecture Android : x86_64 et x86, parce que ONNX Runtime compatible que : arm64-v8a / armeabi-v7a
 
 ### Linux
-- **Version minimale** : glibc 2.34+
+- **Version minimale** : glibc 2.35+
 - **Raison** :
-  - CI/CD basée sur Ubuntu 22.04 LTS (donc librairie RC2D + dépendences construite sur glibc 2.34)
+  - CI/CD basée sur Ubuntu 22.04 LTS (donc librairie RC2D + dépendences construite sur glibc 2.35)
   - ONNX Runtime nécessite C++20 (glibc 2.31+)
 
 ### Steam Deck / Steam Linux
@@ -236,7 +236,7 @@
 
 
   # Linux (x64/arm64) :
-  1. Requirements : glibc >= 2.34.0 (Exemple : Ubuntu >= 22.04 OR Debian >= 12.0), checker via : ldd --version
+  1. Requirements : glibc >= 2.35.0 (Exemple : Ubuntu >= 22.04 OR Debian >= 12.0), checker via : ldd --version
   2. Download and Install (gcc, g++, make..) :
      sudo apt update
      sudo apt install -y build-essential
