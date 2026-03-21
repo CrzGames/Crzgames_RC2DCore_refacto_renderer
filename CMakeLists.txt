@@ -139,32 +139,34 @@ endif()
 # Flags d'avertissements et de conformité :
 # - MSVC : /W4, /permissive- (C++ strict), désactivations ciblées
 # - GCC/Clang : -Wall -Wextra -pedantic + exceptions ciblées
-#
-# Note :
-# - Les flags C et CXX ne sont pas toujours identiques (ex: strict-prototypes)
 # ============================================================
-if(MSVC)
-  # /W4 : Niveau d'avertissement 4 (equivalent a -Wextra)
-  # /permissive- : Spécifie un mode de compilation strict pour suivre les standards C++ 
-  # /wd4100 : Désactive l'avertissement pour les paramètres de fonction non utilisés (C4100)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4 /wd4100")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /permissive- /wd4100")
-else()
-  # -Wall : Active tous les avertissements de base
-  # -Wextra : Active des avertissements supplémentaires
-  # -pedantic : Enforce strictement les standards C++
-  # -Wno-unused-parameter : Désactive les avertissements pour les paramètres de fonction non utilisés
-  # -Wno-error=strict-prototypes : Désactive les erreurs pour les prototypes de fonction stricts en C.
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wno-error=strict-prototypes")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter")
+function(rc2d_apply_warnings target_name)
+  target_compile_options(${target_name} PRIVATE
+    # MSVC
+    # /W4 : Niveau d'avertissement 4 (equivalent a -Wextra)
+    # /permissive- : Spécifie un mode de compilation strict pour suivre les standards C++ 
+    # /wd4100 : Désactive l'avertissement pour les paramètres de fonction non utilisés (C4100)
+    "$<$<COMPILE_LANG_AND_ID:C,MSVC>:/W4;/wd4100>"
+    "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/W4;/permissive-;/wd4100>"
 
-  # Clang a un warning spécifique pour les fichiers qui ne se terminent pas par une nouvelle ligne (newline at end of file).
-  # -Wno-newline-eof : Désactive les avertissements pour les nouvelles lignes à la fin du fichier
-  if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-newline-eof")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-newline-eof")
-  endif()
-endif()
+    # GCC / Clang / AppleClang - C
+    # -Wall : Active tous les avertissements de base
+    # -Wextra : Active des avertissements supplémentaires
+    # -pedantic : Enforce strictement les standards C++
+    # -Wno-unused-parameter : Désactive les avertissements pour les paramètres de fonction non utilisés
+    # -Wno-error=strict-prototypes : Désactive les erreurs pour les prototypes de fonction stricts en C.
+    "$<$<COMPILE_LANG_AND_ID:C,GNU,Clang,AppleClang>:-Wall;-Wextra;-pedantic;-Wno-unused-parameter;-Wno-error=strict-prototypes>"
+
+    # GCC / Clang / AppleClang - C++
+    "$<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang,AppleClang>:-Wall;-Wextra;-pedantic;-Wno-unused-parameter>"
+
+    # Clang-specific: newline at end of file
+    # Clang a un warning spécifique pour les fichiers qui ne se terminent pas par une nouvelle ligne (newline at end of file).
+    # -Wno-newline-eof : Désactive les avertissements pour les nouvelles lignes à la fin du fichier
+    "$<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-newline-eof>"
+    "$<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-Wno-newline-eof>"
+  )
+endfunction()
 
 # ============================================================
 # Paths — Dépendances précompilées (Crzgames_Libraries)
@@ -1721,7 +1723,7 @@ function(rc2d_target_compile_definitions target_name)
       target_compile_definitions(${target_name} PUBLIC SODIUM_STATIC)
     endif()
     if(WIN32)
-      target_compile_definitions(${PROJECT_NAME} PUBLIC CURL_STATICLIB)
+      target_compile_definitions(${target_name} PUBLIC CURL_STATICLIB)
     endif()
   else()
     target_compile_definitions(${target_name} PUBLIC RC2D_NET_MODULE_ENABLED=0)
@@ -1783,6 +1785,13 @@ else()
   # Rajouter le suffixe "*_static" au nom de la bibliothèque statique, pour éviter les conflits
   set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}_static")
 endif()
+
+# ============================================================
+# Warnings et Sanitizers
+# ============================================================
+# Applique les flags de warning et sanitizers à la target RC2D.
+# ============================================================
+rc2d_apply_warnings(${PROJECT_NAME})
 
 # ============================================================
 # Compile Definitions (RC2D_* flags)
@@ -2013,6 +2022,11 @@ if(RC2D_BUILD_EXAMPLES)
       ${RC2D_EXAMPLE_HEADERS}
     )
   endif()
+
+  # ============================================================
+  # Appliquer les warnings et les compile definitions à la target de l’exemple
+  # ============================================================
+  rc2d_apply_warnings(${RC2D_EXAMPLE_TARGET_NAME})
 
   # ============================================================
   # Include directories pour l’exemple
@@ -2372,7 +2386,7 @@ if(RC2D_BUILD_EXAMPLES)
     )
   elseif(UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4"))
     # Pour l'executable "classique" sur Linux (on ne parle pas de l'AppImage ici, mais rc2d_example)
-    set_target_properties(${PROJECT_NAME} PROPERTIES
+    set_target_properties(${RC2D_EXAMPLE_TARGET_NAME} PROPERTIES
       BUILD_RPATH "\$ORIGIN;\$ORIGIN/usr/lib"
       INSTALL_RPATH "\$ORIGIN;\$ORIGIN/usr/lib"
       BUILD_WITH_INSTALL_RPATH TRUE
