@@ -51,7 +51,7 @@ jobs:
 
       - name: Setup Android SDK (Platform + Build Tools + NDK + CMake + CLI) - Android
         if: matrix.config.platform == 'android'
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           accept-android-sdk-licenses: true
           packages: >
