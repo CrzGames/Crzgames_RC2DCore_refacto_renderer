@@ -63,8 +63,10 @@ function(make_appimage)
   # ------------------------------------------------------------
   # Copy executable to AppDir root
   # ------------------------------------------------------------
-  file(COPY "${ARGS_EXE}" DESTINATION "${APPDIR}" FOLLOW_SYMLINK_CHAIN)
   get_filename_component(EXE_NAME "${ARGS_EXE}" NAME)
+  file(REAL_PATH "${ARGS_EXE}" EXE_REAL)
+  file(COPY_FILE "${EXE_REAL}" "${APPDIR}/${EXE_NAME}" ONLY_IF_DIFFERENT)
+  execute_process(COMMAND chmod +x "${APPDIR}/${EXE_NAME}")
 
   # ------------------------------------------------------------
   # Copier toutes les libs .so* qui sont à côté de l'exe (build dir)
@@ -76,7 +78,8 @@ function(make_appimage)
   # On copie :
   #   *.so
   #   *.so.*
-  #   (et donc les symlinks si présents, selon ton build)
+  # En forçant des fichiers réels (pas de symlink) pour rester compatible
+  # avec un pipeline de patch/update fichier-par-fichier.
   # ------------------------------------------------------------
   get_filename_component(EXE_DIR "${ARGS_EXE}" DIRECTORY)
 
@@ -89,8 +92,10 @@ function(make_appimage)
   if(SO_FILES)
     message(STATUS "make_appimage: copie des .so depuis '${EXE_DIR}' vers '${APPDIR}/usr/lib'")
     foreach(_so IN LISTS SO_FILES)
-      # COPIE le fichier (suivra la chaîne de symlinks si besoin)
-      file(COPY "${_so}" DESTINATION "${APPDIR}/usr/lib" FOLLOW_SYMLINK_CHAIN)
+      # Copie en fichier réel avec le nom d'origine (.so alias inclus).
+      file(REAL_PATH "${_so}" _so_real)
+      get_filename_component(_so_name "${_so}" NAME)
+      file(COPY_FILE "${_so_real}" "${APPDIR}/usr/lib/${_so_name}" ONLY_IF_DIFFERENT)
     endforeach()
   else()
     message(STATUS "make_appimage: aucun .so trouvé à côté de l'exe dans '${EXE_DIR}'")
