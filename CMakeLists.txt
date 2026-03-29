@@ -984,9 +984,7 @@ function(rc2d_configure_onnxruntime target_name)
         foreach(FILE IN LISTS ONNX_DYLIBS)
           get_filename_component(FILE_NAME "${FILE}" NAME)
           add_custom_command(TARGET ${target_name} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${FILE}"
-                    "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+            COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}\""
           )
         endforeach()
       elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS") # iOS (iPhone/iPad)
@@ -1021,11 +1019,14 @@ function(rc2d_configure_onnxruntime target_name)
         "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so"
         "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
       )
-      add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND cp -a ${ONNX_SO} "$<TARGET_FILE_DIR:${target_name}>/"
-        COMMENT "Copie des bibliothèques ONNX Runtime avec conservation des liens symboliques"
-        VERBATIM
-      )
+      foreach(FILE IN LISTS ONNX_SO)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}\""
+          COMMENT "Copie ONNX Runtime (sans symlink): ${FILE_NAME}"
+          VERBATIM
+        )
+      endforeach()
     elseif (UNIX AND NOT APPLE AND NOT ANDROID AND NOT (RC2D_PLATFORM STREQUAL "STEAMRT4")) # Linux, Raspberry PI 5 etc.
         # Link le dossier include de ONNX Runtime à la target
         target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/linux/include/include_onnxruntime/onnxruntime")
@@ -1043,11 +1044,14 @@ function(rc2d_configure_onnxruntime target_name)
           "${CRZGAMES_LIBRARIES_PATH}/linux/lib/onnxruntime/${RC2D_ARCH}/*.so"
           "${CRZGAMES_LIBRARIES_PATH}/linux/lib/onnxruntime/${RC2D_ARCH}/*.so.*"
         )
-        add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND cp -a ${ONNX_SO} "$<TARGET_FILE_DIR:${target_name}>/"
-          COMMENT "Copie des bibliothèques ONNX Runtime avec conservation des liens symboliques"
-          VERBATIM
-        )
+        foreach(FILE IN LISTS ONNX_SO)
+          get_filename_component(FILE_NAME "${FILE}" NAME)
+          add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}\""
+            COMMENT "Copie ONNX Runtime (sans symlink): ${FILE_NAME}"
+            VERBATIM
+          )
+        endforeach()
     endif()
   endif()
 endfunction()
@@ -1087,9 +1091,7 @@ function(rc2d_configure_shadercross target_name)
       foreach(FILE IN LISTS SHADERCROSS_BINARY)
         get_filename_component(FILE_NAME "${FILE}" NAME)
         add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                  "${FILE}"
-                  "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+          COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"${SHADER_TOOLS_DIR}/${FILE_NAME}\""
         )
       endforeach()
 
@@ -1100,9 +1102,7 @@ function(rc2d_configure_shadercross target_name)
       foreach(FILE IN LISTS SHADERCROSS_DYLIB)
         get_filename_component(FILE_NAME "${FILE}" NAME)
         add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                  "${FILE}"
-                  "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+          COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"${SHADER_TOOLS_DIR}/${FILE_NAME}\""
         )
       endforeach()
 
@@ -1144,9 +1144,7 @@ function(rc2d_configure_shadercross target_name)
         foreach(FILE IN LISTS SHADERCROSS_DLLS)
           get_filename_component(FILE_NAME "${FILE}" NAME)
           add_custom_command(TARGET ${target_name} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${FILE}"
-                    "$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}"
+            COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}\""
           )
         endforeach()
       endif()
@@ -1229,9 +1227,7 @@ function(rc2d_configure_shadercross target_name)
       foreach(FILE IN LISTS SHADERCROSS_BINARY)
         get_filename_component(FILE_NAME "${FILE}" NAME)
         add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                  "${FILE}"
-                  "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+          COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"${SHADER_TOOLS_DIR}/${FILE_NAME}\""
         )
       endforeach()
 
@@ -1240,11 +1236,14 @@ function(rc2d_configure_shadercross target_name)
         "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
         "${CRZGAMES_LIBRARIES_PATH}/steamrt4/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
       )
-      add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND cp -a ${SHADERCROSS_SO} "${SHADER_TOOLS_DIR}/"
-        COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
-        VERBATIM
-      )
+      foreach(FILE IN LISTS SHADERCROSS_SO)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"${SHADER_TOOLS_DIR}/${FILE_NAME}\""
+          COMMENT "Copie SDL3_shadercross (sans symlink): ${FILE_NAME}"
+          VERBATIM
+        )
+      endforeach()
 
       # Rendre shadercross exécutable (important s’il est copié depuis une archive)
       add_custom_command(TARGET ${target_name} POST_BUILD
@@ -1280,9 +1279,7 @@ function(rc2d_configure_shadercross target_name)
       foreach(FILE IN LISTS SHADERCROSS_BINARY)
         get_filename_component(FILE_NAME "${FILE}" NAME)
         add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                  "${FILE}"
-                  "${SHADER_TOOLS_DIR}/${FILE_NAME}"
+          COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"${SHADER_TOOLS_DIR}/${FILE_NAME}\""
         )
       endforeach()
 
@@ -1291,11 +1288,14 @@ function(rc2d_configure_shadercross target_name)
         "${CRZGAMES_LIBRARIES_PATH}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/*.so"
         "${CRZGAMES_LIBRARIES_PATH}/linux/lib/SDL3_shadercross/${RC2D_ARCH}/*.so.*"
       )
-      add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND cp -a ${SHADERCROSS_SO} "${SHADER_TOOLS_DIR}/"
-        COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
-        VERBATIM
-      )
+      foreach(FILE IN LISTS SHADERCROSS_SO)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"${SHADER_TOOLS_DIR}/${FILE_NAME}\""
+          COMMENT "Copie SDL3_shadercross (sans symlink): ${FILE_NAME}"
+          VERBATIM
+        )
+      endforeach()
 
       # Rendre shadercross exécutable (important s’il est copié depuis une archive)
       add_custom_command(TARGET ${target_name} POST_BUILD
@@ -1328,11 +1328,14 @@ function(rc2d_configure_shadercross target_name)
 
       if (RC2D_BUILD_EXAMPLES)
         # Copier aussi les .so dans le répertoire de l'exécutable
-        add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND cp -a ${SHADERCROSS_SO} "$<TARGET_FILE_DIR:${target_name}>/"
-          COMMENT "Copie des bibliothèques SDL3_shadercross avec conservation des liens symboliques"
-          VERBATIM
-        )
+        foreach(FILE IN LISTS SHADERCROSS_SO)
+          get_filename_component(FILE_NAME "${FILE}" NAME)
+          add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}\""
+            COMMENT "Copie SDL3_shadercross (sans symlink): ${FILE_NAME}"
+            VERBATIM
+          )
+        endforeach()
       endif()
     endif()
   elseif(ANDROID AND RC2D_BUILD_EXAMPLES)
@@ -1373,7 +1376,7 @@ function(rc2d_configure_shadercross target_name)
       foreach(f IN LISTS _bins)
         get_filename_component(n "${f}" NAME)
         add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${f}" "${SHADER_TOOLS_DIR}/${n}"
+          COMMAND /bin/sh -c "cp -fL \"${f}\" \"${SHADER_TOOLS_DIR}/${n}\""
         )
       endforeach()
 
@@ -1381,7 +1384,7 @@ function(rc2d_configure_shadercross target_name)
       foreach(f IN LISTS _dylibs)
         get_filename_component(n "${f}" NAME)
         add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${f}" "${SHADER_TOOLS_DIR}/${n}"
+          COMMAND /bin/sh -c "cp -fL \"${f}\" \"${SHADER_TOOLS_DIR}/${n}\""
         )
       endforeach()
 
@@ -1399,7 +1402,7 @@ function(rc2d_configure_shadercross target_name)
       foreach(f IN LISTS _bins)
         get_filename_component(n "${f}" NAME)
         add_custom_command(TARGET ${target_name} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${f}" "${SHADER_TOOLS_DIR}/${n}"
+          COMMAND /bin/sh -c "cp -fL \"${f}\" \"${SHADER_TOOLS_DIR}/${n}\""
         )
       endforeach()
 
@@ -1407,10 +1410,13 @@ function(rc2d_configure_shadercross target_name)
         "${CRZGAMES_LIBRARIES_PATH}/linux/lib/SDL3_shadercross/${HOST_ARCH}/*.so"
         "${CRZGAMES_LIBRARIES_PATH}/linux/lib/SDL3_shadercross/${HOST_ARCH}/*.so.*"
       )
-      add_custom_command(TARGET ${target_name} POST_BUILD
-        COMMAND cp -a ${_sos} "${SHADER_TOOLS_DIR}/"
-        VERBATIM
-      )
+      foreach(f IN LISTS _sos)
+        get_filename_component(n "${f}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND /bin/sh -c "cp -fL \"${f}\" \"${SHADER_TOOLS_DIR}/${n}\""
+          VERBATIM
+        )
+      endforeach()
 
       add_custom_command(TARGET ${target_name} POST_BUILD
         COMMAND chmod +x "${SHADER_TOOLS_DIR}/shadercross"
@@ -2259,10 +2265,15 @@ if(RC2D_BUILD_EXAMPLES)
     )
 
     # Copier les .dylib générées dans le dossier Contents/Frameworks du bundle .app
-    set(DYLIB_SOURCE_DIR "${CMAKE_BINARY_DIR}/$<CONFIG>")
+    # - Single-config (Makefiles/Ninja): ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} == ${CMAKE_BINARY_DIR}
+    # - Multi-config (Xcode): ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} contient la config active
+    set(DYLIB_SOURCE_DIR "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+    if(NOT DYLIB_SOURCE_DIR)
+      set(DYLIB_SOURCE_DIR "${CMAKE_BINARY_DIR}")
+    endif()
     add_custom_command(TARGET ${RC2D_EXAMPLE_TARGET_NAME} POST_BUILD
-      COMMAND /bin/sh -c "cp -a \"${DYLIB_SOURCE_DIR}\"/*.dylib \"${FRAMEWORKS_DIR}\"/ 2>/dev/null || true"
-      COMMENT "Copy dylibs into Contents/Frameworks (cp -a keeps symlinks)"
+      COMMAND /bin/sh -c "rsync -aL --include='*.dylib' --exclude='*' \"${DYLIB_SOURCE_DIR}/\" \"${FRAMEWORKS_DIR}/\""
+      COMMENT "Copy dylibs into Contents/Frameworks (dereference symlinks)"
       VERBATIM
     )
   elseif(APPLE AND CMAKE_SYSTEM_NAME STREQUAL "iOS")
