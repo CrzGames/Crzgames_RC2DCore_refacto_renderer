@@ -291,18 +291,18 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
         format = SDL_GPU_SHADERFORMAT_MSL;
         entrypoint = "main0"; // SDL_shadercross requiert "main0" pour MSL
     } 
-    // D3D: on priorise DXBC avant DXIL pour eviter les mismatch de shader model
-    // avec le pipeline interne du renderer GPU SDL.
-    else if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_DXBC)
-    {
-        SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/dxbc/%s.dxbc", root_shaders, base);
-        format = SDL_GPU_SHADERFORMAT_DXBC;
-        entrypoint = "main";
-    }
+    // D3D (renderer GPU SDL): les shaders internes sont DXIL60.
+    // On priorise donc DXIL pour eviter un mix de shader model dans un meme PSO.
     else if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_DXIL) 
     {
         SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/dxil/%s.dxil", root_shaders, base);
         format = SDL_GPU_SHADERFORMAT_DXIL;
+        entrypoint = "main";
+    }
+    else if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_DXBC)
+    {
+        SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/dxbc/%s.dxbc", root_shaders, base);
+        format = SDL_GPU_SHADERFORMAT_DXBC;
         entrypoint = "main";
     } 
     else 
@@ -494,39 +494,16 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
 
     // Compiler le shader graphique.
     // IMPORTANT (Windows / D3D12 + SDL GPU Renderer):
-    // on force la priorite DXBC -> DXIL pour eviter les mismatch de shader model
-    // entre le vertex interne du renderer et le fragment custom.
+    // les shaders internes du renderer SDL sont DXIL60, donc on priorise DXIL ici.
     SDL_GPUShader* graphicsShader = NULL;
 
     SDL_GPUShaderFormat backendFormatsSupportedHotReload = SDL_GetGPUShaderFormats(rc2d_gpu_getDevice());
+    const bool hasDxbcHotReload = (backendFormatsSupportedHotReload & SDL_GPU_SHADERFORMAT_DXBC) != 0;
+    const bool hasDxilHotReload = (backendFormatsSupportedHotReload & SDL_GPU_SHADERFORMAT_DXIL) != 0;
     const bool d3dBackendHotReload = (backendFormatsSupportedHotReload & SDL_GPU_SHADERFORMAT_DXBC) ||
                                      (backendFormatsSupportedHotReload & SDL_GPU_SHADERFORMAT_DXIL);
 
-    if (backendFormatsSupportedHotReload & SDL_GPU_SHADERFORMAT_DXBC)
-    {
-        size_t dxbcByteCodeSize = 0;
-        void* dxbcByteCode = SDL_ShaderCross_CompileDXBCFromSPIRV(&spirvInfo, &dxbcByteCodeSize);
-        if (dxbcByteCode != NULL && dxbcByteCodeSize > 0)
-        {
-            SDL_GPUShaderCreateInfo dxbcShaderInfo = {
-                .code = dxbcByteCode,
-                .code_size = dxbcByteCodeSize,
-                .entrypoint = "main",
-                .format = SDL_GPU_SHADERFORMAT_DXBC,
-                .stage = stage,
-                .num_samplers = metadata->resource_info.num_samplers,
-                .num_uniform_buffers = metadata->resource_info.num_uniform_buffers,
-                .num_storage_buffers = metadata->resource_info.num_storage_buffers,
-                .num_storage_textures = metadata->resource_info.num_storage_textures,
-                .props = 0
-            };
-
-            graphicsShader = SDL_CreateGPUShader(rc2d_gpu_getDevice(), &dxbcShaderInfo);
-        }
-        RC2D_safe_free(dxbcByteCode);
-    }
-
-    if (graphicsShader == NULL && (backendFormatsSupportedHotReload & SDL_GPU_SHADERFORMAT_DXIL))
+    if (hasDxilHotReload)
     {
         size_t dxilByteCodeSize = 0;
         void* dxilByteCode = SDL_ShaderCross_CompileDXILFromSPIRV(&spirvInfo, &dxilByteCodeSize);
@@ -546,8 +523,41 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
             };
 
             graphicsShader = SDL_CreateGPUShader(rc2d_gpu_getDevice(), &dxilShaderInfo);
+            if (graphicsShader != NULL)
+            {
+                RC2D_log(RC2D_LOG_INFO, "Hot reload graphics shader created as DXIL: %s", storage_path);
+            }
         }
         RC2D_safe_free(dxilByteCode);
+    }
+
+    // Fallback DXBC uniquement si DXIL n'est pas supporte par le device.
+    if (graphicsShader == NULL && !hasDxilHotReload && hasDxbcHotReload)
+    {
+        size_t dxbcByteCodeSize = 0;
+        void* dxbcByteCode = SDL_ShaderCross_CompileDXBCFromSPIRV(&spirvInfo, &dxbcByteCodeSize);
+        if (dxbcByteCode != NULL && dxbcByteCodeSize > 0)
+        {
+            SDL_GPUShaderCreateInfo dxbcShaderInfo = {
+                .code = dxbcByteCode,
+                .code_size = dxbcByteCodeSize,
+                .entrypoint = "main",
+                .format = SDL_GPU_SHADERFORMAT_DXBC,
+                .stage = stage,
+                .num_samplers = metadata->resource_info.num_samplers,
+                .num_uniform_buffers = metadata->resource_info.num_uniform_buffers,
+                .num_storage_buffers = metadata->resource_info.num_storage_buffers,
+                .num_storage_textures = metadata->resource_info.num_storage_textures,
+                .props = 0
+            };
+
+            graphicsShader = SDL_CreateGPUShader(rc2d_gpu_getDevice(), &dxbcShaderInfo);
+            if (graphicsShader != NULL)
+            {
+                RC2D_log(RC2D_LOG_INFO, "Hot reload graphics shader created as DXBC: %s", storage_path);
+            }
+        }
+        RC2D_safe_free(dxbcByteCode);
     }
 
     // Backends non-D3D: conserver le chemin cross-platform habituel.
@@ -569,6 +579,10 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
     // Vérifier si la compilation du shader graphique a réussi
     if (graphicsShader == NULL) 
     {
+        if (d3dBackendHotReload)
+        {
+            RC2D_log(RC2D_LOG_ERROR, "D3D hot reload shader creation failed for both DXIL and DXBC: %s", storage_path);
+        }
         RC2D_log(RC2D_LOG_ERROR, "Failed to create GPU graphics shader from SPIR-V: %s", storage_path);
         return NULL;
     }
