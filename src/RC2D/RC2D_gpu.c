@@ -291,6 +291,14 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
         format = SDL_GPU_SHADERFORMAT_MSL;
         entrypoint = "main0"; // SDL_shadercross requiert "main0" pour MSL
     } 
+    // D3D: on priorise DXBC avant DXIL pour eviter les mismatch de shader model
+    // avec le pipeline interne du renderer GPU SDL.
+    else if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_DXBC)
+    {
+        SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/dxbc/%s.dxbc", root_shaders, base);
+        format = SDL_GPU_SHADERFORMAT_DXBC;
+        entrypoint = "main";
+    }
     else if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_DXIL) 
     {
         SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/dxil/%s.dxil", root_shaders, base);
@@ -484,13 +492,74 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
         .props         = shaderProps
     };
 
-    // Compiler le shader graphique
-    SDL_GPUShader* graphicsShader = SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(
-        rc2d_gpu_getDevice(),
-        &spirvInfo,
-        &metadata->resource_info,
-        shaderProps
-    );
+    // Compiler le shader graphique.
+    // IMPORTANT (Windows / D3D12 + SDL GPU Renderer):
+    // on force la priorite DXBC -> DXIL pour eviter les mismatch de shader model
+    // entre le vertex interne du renderer et le fragment custom.
+    SDL_GPUShader* graphicsShader = NULL;
+
+    SDL_GPUShaderFormat backendFormatsSupportedHotReload = SDL_GetGPUShaderFormats(rc2d_gpu_getDevice());
+    const bool d3dBackendHotReload = (backendFormatsSupportedHotReload & SDL_GPU_SHADERFORMAT_DXBC) ||
+                                     (backendFormatsSupportedHotReload & SDL_GPU_SHADERFORMAT_DXIL);
+
+    if (backendFormatsSupportedHotReload & SDL_GPU_SHADERFORMAT_DXBC)
+    {
+        size_t dxbcByteCodeSize = 0;
+        void* dxbcByteCode = SDL_ShaderCross_CompileDXBCFromSPIRV(&spirvInfo, &dxbcByteCodeSize);
+        if (dxbcByteCode != NULL && dxbcByteCodeSize > 0)
+        {
+            SDL_GPUShaderCreateInfo dxbcShaderInfo = {
+                .code = dxbcByteCode,
+                .code_size = dxbcByteCodeSize,
+                .entrypoint = "main",
+                .format = SDL_GPU_SHADERFORMAT_DXBC,
+                .stage = stage,
+                .num_samplers = metadata->resource_info.num_samplers,
+                .num_uniform_buffers = metadata->resource_info.num_uniform_buffers,
+                .num_storage_buffers = metadata->resource_info.num_storage_buffers,
+                .num_storage_textures = metadata->resource_info.num_storage_textures,
+                .props = 0
+            };
+
+            graphicsShader = SDL_CreateGPUShader(rc2d_gpu_getDevice(), &dxbcShaderInfo);
+        }
+        RC2D_safe_free(dxbcByteCode);
+    }
+
+    if (graphicsShader == NULL && (backendFormatsSupportedHotReload & SDL_GPU_SHADERFORMAT_DXIL))
+    {
+        size_t dxilByteCodeSize = 0;
+        void* dxilByteCode = SDL_ShaderCross_CompileDXILFromSPIRV(&spirvInfo, &dxilByteCodeSize);
+        if (dxilByteCode != NULL && dxilByteCodeSize > 0)
+        {
+            SDL_GPUShaderCreateInfo dxilShaderInfo = {
+                .code = dxilByteCode,
+                .code_size = dxilByteCodeSize,
+                .entrypoint = "main",
+                .format = SDL_GPU_SHADERFORMAT_DXIL,
+                .stage = stage,
+                .num_samplers = metadata->resource_info.num_samplers,
+                .num_uniform_buffers = metadata->resource_info.num_uniform_buffers,
+                .num_storage_buffers = metadata->resource_info.num_storage_buffers,
+                .num_storage_textures = metadata->resource_info.num_storage_textures,
+                .props = 0
+            };
+
+            graphicsShader = SDL_CreateGPUShader(rc2d_gpu_getDevice(), &dxilShaderInfo);
+        }
+        RC2D_safe_free(dxilByteCode);
+    }
+
+    // Backends non-D3D: conserver le chemin cross-platform habituel.
+    if (graphicsShader == NULL && !d3dBackendHotReload)
+    {
+        graphicsShader = SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(
+            rc2d_gpu_getDevice(),
+            &spirvInfo,
+            &metadata->resource_info,
+            shaderProps
+        );
+    }
 
     // Libérer les ressources allouées pour les métadonnées et le code SPIR-V
     RC2D_safe_free(metadata);
