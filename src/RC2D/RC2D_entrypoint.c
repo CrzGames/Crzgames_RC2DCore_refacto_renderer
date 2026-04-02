@@ -269,6 +269,9 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 #if RC2D_EOS_SDK_ENABLED
     rc2d_eos_platformTick();
 #endif // RC2D_EOS_SDK_ENABLED
+#if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
+    rc2d_gpu_hotReloadGraphicsShaders();
+#endif // RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
     if (rc2d_engine_state.config != NULL && 
         rc2d_engine_state.config->callbacks != NULL && 
         rc2d_engine_state.config->callbacks->rc2d_update != NULL) 

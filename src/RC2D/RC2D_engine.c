@@ -3307,6 +3307,22 @@ void rc2d_engine_quit(void)
         SDL_LockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
         for (int i = 0; i < rc2d_engine_state.gpu_graphics_shader_count; i++)
         {
+            if (rc2d_engine_state.gpu_graphics_shaders_cache[i].gpu_render_states)
+            {
+                for (int j = 0; j < rc2d_engine_state.gpu_graphics_shaders_cache[i].gpu_render_state_count; ++j)
+                {
+                    RC2D_safe_free(rc2d_engine_state.gpu_graphics_shaders_cache[i].gpu_render_states[j].sampler_bindings);
+                    rc2d_engine_state.gpu_graphics_shaders_cache[i].gpu_render_states[j].sampler_bindings = NULL;
+                    rc2d_engine_state.gpu_graphics_shaders_cache[i].gpu_render_states[j].state_handle = NULL;
+                    rc2d_engine_state.gpu_graphics_shaders_cache[i].gpu_render_states[j].num_sampler_bindings = 0;
+                }
+
+                RC2D_safe_free(rc2d_engine_state.gpu_graphics_shaders_cache[i].gpu_render_states);
+                rc2d_engine_state.gpu_graphics_shaders_cache[i].gpu_render_states = NULL;
+                rc2d_engine_state.gpu_graphics_shaders_cache[i].gpu_render_state_count = 0;
+                rc2d_engine_state.gpu_graphics_shaders_cache[i].gpu_render_state = NULL;
+            }
+
             if (rc2d_engine_state.gpu_graphics_shaders_cache[i].filename) 
             {
                 RC2D_safe_free(rc2d_engine_state.gpu_graphics_shaders_cache[i].filename);

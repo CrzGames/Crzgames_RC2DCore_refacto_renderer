@@ -50,6 +50,46 @@ static SDL_Time rc2d_gpu_getFileModificationTime(const char* path)
     }
 }
 
+static SDL_Time rc2d_gpu_getStorageFileModificationTime(const char* storage_path, RC2D_StorageKind storage_kind)
+{
+    if (storage_path == NULL || *storage_path == '\0')
+    {
+        return 0;
+    }
+
+    if (storage_kind == RC2D_STORAGE_TITLE)
+    {
+        const char* basePath = SDL_GetBasePath();
+        if (basePath != NULL)
+        {
+            char absolutePath[1024];
+            SDL_snprintf(absolutePath, sizeof(absolutePath), "%s%s", basePath, storage_path);
+            return rc2d_gpu_getFileModificationTime(absolutePath);
+        }
+    }
+    else if (storage_kind == RC2D_STORAGE_USER &&
+             rc2d_engine_state.config != NULL &&
+             rc2d_engine_state.config->appInfo != NULL)
+    {
+        const char* org = rc2d_engine_state.config->appInfo->organization;
+        const char* app = rc2d_engine_state.config->appInfo->name;
+        if (org != NULL && app != NULL)
+        {
+            char* prefPath = SDL_GetPrefPath(org, app);
+            if (prefPath != NULL)
+            {
+                char absolutePath[1024];
+                SDL_snprintf(absolutePath, sizeof(absolutePath), "%s%s", prefPath, storage_path);
+                SDL_free(prefPath);
+                return rc2d_gpu_getFileModificationTime(absolutePath);
+            }
+        }
+    }
+
+    // Fallback: chemin relatif au CWD (utile en développement local).
+    return rc2d_gpu_getFileModificationTime(storage_path);
+}
+
 RC2D_GPUDevice* rc2d_gpu_getDevice(void)
 {
     RC2D_assert_release(rc2d_engine_state.gpu_device != NULL, RC2D_LOG_CRITICAL, "GPU device is NULL.");
@@ -609,7 +649,11 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
     RC2D_GraphicsShaderEntry* entry = &rc2d_engine_state.gpu_graphics_shaders_cache[rc2d_engine_state.gpu_graphics_shader_count++];
     entry->filename = RC2D_strdup(storage_path);
     entry->shader = graphicsShader;
-    entry->lastModified = 0; // Pas de mtime via Storage : laisser 0 ou TODO si tu exposes une API.
+    entry->gpu_render_state = NULL;
+    entry->storage_kind = storage_kind;
+    entry->gpu_render_states = NULL;
+    entry->gpu_render_state_count = 0;
+    entry->lastModified = rc2d_gpu_getStorageFileModificationTime(fullPath, storage_kind);
 
     /**
      * On unlock le mutex après avoir ajouté le shader graphique au cache.
@@ -641,7 +685,11 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
     RC2D_GraphicsShaderEntry* entry2 = &rc2d_engine_state.gpu_graphics_shaders_cache[rc2d_engine_state.gpu_graphics_shader_count++];
     entry2->filename = RC2D_strdup(storage_path);
     entry2->shader = graphicsShader;
-    entry2->lastModified = 0; // TODO: si tu ajoutes rc2d_storage_getFileMTime(), renseigne-le ici.
+    entry2->gpu_render_state = NULL;
+    entry2->storage_kind = storage_kind;
+    entry2->gpu_render_states = NULL;
+    entry2->gpu_render_state_count = 0;
+    entry2->lastModified = rc2d_gpu_getStorageFileModificationTime(fullPath, storage_kind);
 
     /**
      * On unlock le mutex après avoir ajouté le shader graphique au cache.
@@ -653,3 +701,467 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
     RC2D_log(RC2D_LOG_INFO, "Graphics Shader loaded and cached from storage: %s", storage_path);
     return graphicsShader;
 }
+
+#if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
+static bool rc2d_gpu_extractStageAndPaths(const char* storage_path,
+                                          SDL_GPUShaderStage* outStage,
+                                          char* outRootShaders,
+                                          size_t outRootShadersSize,
+                                          char* outBase,
+                                          size_t outBaseSize,
+                                          char* outSourcePath,
+                                          size_t outSourcePathSize)
+{
+    RC2D_assert_release(storage_path != NULL && *storage_path != '\0',
+                        RC2D_LOG_CRITICAL,
+                        "rc2d_gpu_extractStageAndPaths: storage_path is NULL or empty");
+
+    const char* base = storage_path;
+    const char* s1 = SDL_strrchr(storage_path, '/');
+    const char* s2 = SDL_strrchr(storage_path, '\\');
+    if (s1 || s2)
+    {
+        base = (s1 > s2 ? s1 : s2) + 1;
+    }
+
+    if (SDL_strstr(base, ".vertex"))
+    {
+        *outStage = SDL_GPU_SHADERSTAGE_VERTEX;
+    }
+    else if (SDL_strstr(base, ".fragment"))
+    {
+        *outStage = SDL_GPU_SHADERSTAGE_FRAGMENT;
+    }
+    else
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Unknown shader stage suffix in '%s'", storage_path);
+        return false;
+    }
+
+    SDL_strlcpy(outBase, base, outBaseSize);
+
+    char dirbuf[256];
+    if (base != storage_path)
+    {
+        size_t dirlen = (size_t)(base - storage_path);
+        if (dirlen >= sizeof(dirbuf))
+        {
+            dirlen = sizeof(dirbuf) - 1;
+        }
+        SDL_memcpy(dirbuf, storage_path, dirlen);
+        dirbuf[dirlen] = '\0';
+    }
+    else
+    {
+        dirbuf[0] = '\0';
+    }
+
+    for (char* p = dirbuf; *p; ++p)
+    {
+        if (*p == '\\')
+        {
+            *p = '/';
+        }
+    }
+
+    size_t n = SDL_strlen(dirbuf);
+    while (n > 0 && dirbuf[n - 1] == '/')
+    {
+        dirbuf[--n] = '\0';
+    }
+
+    if (dirbuf[0] == '\0')
+    {
+        SDL_strlcpy(outRootShaders, "shaders", outRootShadersSize);
+    }
+    else
+    {
+        bool endsWithShaders = false;
+        size_t dlen = SDL_strlen(dirbuf);
+        if (dlen >= 7)
+        {
+            const char* tail = dirbuf + (dlen - 7);
+            if (SDL_strcmp(tail, "shaders") == 0)
+            {
+                endsWithShaders = true;
+            }
+            else if (dlen >= 9 && SDL_strcmp(dirbuf + (dlen - 8), "/shaders") == 0)
+            {
+                endsWithShaders = true;
+            }
+        }
+
+        if (endsWithShaders)
+        {
+            SDL_strlcpy(outRootShaders, dirbuf, outRootShadersSize);
+        }
+        else
+        {
+            if (dlen + 1 + 7 + 1 >= outRootShadersSize)
+            {
+                RC2D_log(RC2D_LOG_ERROR, "Path too long when building shaders root from '%s'", dirbuf);
+                return false;
+            }
+            SDL_strlcpy(outRootShaders, dirbuf, outRootShadersSize);
+            SDL_strlcat(outRootShaders, "/shaders", outRootShadersSize);
+        }
+    }
+
+    SDL_snprintf(outSourcePath, outSourcePathSize, "%s/src/%s.hlsl", outRootShaders, outBase);
+    return true;
+}
+
+static RC2D_GPUShader* rc2d_gpu_compileGraphicsShaderHotReload(const char* storage_path,
+                                                                RC2D_StorageKind storage_kind,
+                                                                SDL_GPUShaderStage stage,
+                                                                const char* sourcePath)
+{
+    void* codeHLSLSourceBytes = NULL;
+    Uint64 codeHLSLSourceLen = 0;
+    if (!((storage_kind == RC2D_STORAGE_TITLE)
+            ? rc2d_storage_titleReadFile(sourcePath, &codeHLSLSourceBytes, &codeHLSLSourceLen)
+            : rc2d_storage_userReadFile(sourcePath, &codeHLSLSourceBytes, &codeHLSLSourceLen))
+        || !codeHLSLSourceBytes || codeHLSLSourceLen == 0)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Hot reload: failed to load HLSL source from storage: %s", sourcePath);
+        return NULL;
+    }
+
+    char* codeHLSLSource = (char*)RC2D_malloc((size_t)codeHLSLSourceLen + 1);
+    SDL_memcpy(codeHLSLSource, codeHLSLSourceBytes, (size_t)codeHLSLSourceLen);
+    codeHLSLSource[codeHLSLSourceLen] = '\0';
+    RC2D_safe_free(codeHLSLSourceBytes);
+
+    SDL_PropertiesID shaderProps = SDL_CreateProperties();
+    SDL_SetBooleanProperty(shaderProps, SDL_SHADERCROSS_PROP_SHADER_DEBUG_ENABLE_BOOLEAN, true);
+    SDL_SetStringProperty(shaderProps, SDL_SHADERCROSS_PROP_SHADER_DEBUG_NAME_STRING, storage_path);
+    SDL_SetBooleanProperty(shaderProps, SDL_SHADERCROSS_PROP_SHADER_CULL_UNUSED_BINDINGS_BOOLEAN, true);
+#if defined(RC2D_PLATFORM_APPLE)
+    SDL_SetStringProperty(shaderProps, SDL_SHADERCROSS_PROP_SPIRV_MSL_VERSION_STRING, "3.2.0");
+#endif
+
+    SDL_ShaderCross_HLSL_Info hlslInfo = {
+        .source = codeHLSLSource,
+        .entrypoint = "main",
+        .include_dir = NULL,
+        .defines = NULL,
+        .shader_stage = (SDL_ShaderCross_ShaderStage)stage,
+        .props = shaderProps
+    };
+
+    size_t spirvByteCodeSize = 0;
+    void* spirvByteCode = SDL_ShaderCross_CompileSPIRVFromHLSL(&hlslInfo, &spirvByteCodeSize);
+    RC2D_safe_free(codeHLSLSource);
+
+    if (spirvByteCode == NULL || spirvByteCodeSize == 0)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Hot reload: failed to compile HLSL to SPIR-V: %s", storage_path);
+        SDL_DestroyProperties(shaderProps);
+        return NULL;
+    }
+
+    SDL_ShaderCross_GraphicsShaderMetadata* metadata = SDL_ShaderCross_ReflectGraphicsSPIRV(
+        (const Uint8*)spirvByteCode,
+        spirvByteCodeSize,
+        shaderProps
+    );
+    if (metadata == NULL)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "Hot reload: failed to reflect shader metadata: %s", storage_path);
+        RC2D_safe_free(spirvByteCode);
+        SDL_DestroyProperties(shaderProps);
+        return NULL;
+    }
+
+    SDL_ShaderCross_SPIRV_Info spirvInfo = {
+        .bytecode = (const Uint8*)spirvByteCode,
+        .bytecode_size = spirvByteCodeSize,
+        .entrypoint = "main",
+        .shader_stage = (SDL_ShaderCross_ShaderStage)stage,
+        .props = shaderProps
+    };
+
+    SDL_GPUShader* graphicsShader = NULL;
+    SDL_GPUShaderFormat backendFormatsSupported = SDL_GetGPUShaderFormats(rc2d_gpu_getDevice());
+    const bool hasDxbc = (backendFormatsSupported & SDL_GPU_SHADERFORMAT_DXBC) != 0;
+    const bool hasDxil = (backendFormatsSupported & SDL_GPU_SHADERFORMAT_DXIL) != 0;
+    const bool d3dBackend = hasDxbc || hasDxil;
+
+    if (hasDxil)
+    {
+        size_t dxilByteCodeSize = 0;
+        void* dxilByteCode = SDL_ShaderCross_CompileDXILFromSPIRV(&spirvInfo, &dxilByteCodeSize);
+        if (dxilByteCode != NULL && dxilByteCodeSize > 0)
+        {
+            SDL_GPUShaderCreateInfo info = {
+                .code = dxilByteCode,
+                .code_size = dxilByteCodeSize,
+                .entrypoint = "main",
+                .format = SDL_GPU_SHADERFORMAT_DXIL,
+                .stage = stage,
+                .num_samplers = metadata->resource_info.num_samplers,
+                .num_uniform_buffers = metadata->resource_info.num_uniform_buffers,
+                .num_storage_buffers = metadata->resource_info.num_storage_buffers,
+                .num_storage_textures = metadata->resource_info.num_storage_textures,
+                .props = 0
+            };
+            graphicsShader = SDL_CreateGPUShader(rc2d_gpu_getDevice(), &info);
+        }
+        RC2D_safe_free(dxilByteCode);
+    }
+
+    if (graphicsShader == NULL && !hasDxil && hasDxbc)
+    {
+        size_t dxbcByteCodeSize = 0;
+        void* dxbcByteCode = SDL_ShaderCross_CompileDXBCFromSPIRV(&spirvInfo, &dxbcByteCodeSize);
+        if (dxbcByteCode != NULL && dxbcByteCodeSize > 0)
+        {
+            SDL_GPUShaderCreateInfo info = {
+                .code = dxbcByteCode,
+                .code_size = dxbcByteCodeSize,
+                .entrypoint = "main",
+                .format = SDL_GPU_SHADERFORMAT_DXBC,
+                .stage = stage,
+                .num_samplers = metadata->resource_info.num_samplers,
+                .num_uniform_buffers = metadata->resource_info.num_uniform_buffers,
+                .num_storage_buffers = metadata->resource_info.num_storage_buffers,
+                .num_storage_textures = metadata->resource_info.num_storage_textures,
+                .props = 0
+            };
+            graphicsShader = SDL_CreateGPUShader(rc2d_gpu_getDevice(), &info);
+        }
+        RC2D_safe_free(dxbcByteCode);
+    }
+
+    if (graphicsShader == NULL && !d3dBackend)
+    {
+        graphicsShader = SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(
+            rc2d_gpu_getDevice(),
+            &spirvInfo,
+            &metadata->resource_info,
+            shaderProps
+        );
+    }
+
+    RC2D_safe_free(metadata);
+    RC2D_safe_free(spirvByteCode);
+    SDL_DestroyProperties(shaderProps);
+
+    return graphicsShader;
+}
+
+bool rc2d_gpu_trackGraphicsRenderState(const char* shader_storage_path,
+                                       SDL_GPURenderState** state_handle,
+                                       int num_sampler_bindings,
+                                       const SDL_GPUTextureSamplerBinding* sampler_bindings)
+{
+    if (shader_storage_path == NULL || *shader_storage_path == '\0' || state_handle == NULL || *state_handle == NULL)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "trackGraphicsRenderState: invalid parameters");
+        return false;
+    }
+
+    SDL_LockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
+
+    RC2D_GraphicsShaderEntry* shaderEntry = NULL;
+    for (int i = 0; i < rc2d_engine_state.gpu_graphics_shader_count; ++i)
+    {
+        if (SDL_strcmp(rc2d_engine_state.gpu_graphics_shaders_cache[i].filename, shader_storage_path) == 0)
+        {
+            shaderEntry = &rc2d_engine_state.gpu_graphics_shaders_cache[i];
+            break;
+        }
+    }
+
+    if (shaderEntry == NULL)
+    {
+        SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
+        RC2D_log(RC2D_LOG_ERROR, "trackGraphicsRenderState: shader not found in cache: %s", shader_storage_path);
+        return false;
+    }
+
+    for (int i = 0; i < shaderEntry->gpu_render_state_count; ++i)
+    {
+        if (shaderEntry->gpu_render_states[i].state_handle == state_handle)
+        {
+            SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
+            return true;
+        }
+    }
+
+    RC2D_GPURenderStateBindingEntry* newEntries = (RC2D_GPURenderStateBindingEntry*)RC2D_realloc(
+        shaderEntry->gpu_render_states,
+        (shaderEntry->gpu_render_state_count + 1) * sizeof(RC2D_GPURenderStateBindingEntry)
+    );
+
+    RC2D_assert_release(newEntries != NULL, RC2D_LOG_CRITICAL, "trackGraphicsRenderState: realloc failed");
+    shaderEntry->gpu_render_states = newEntries;
+
+    RC2D_GPURenderStateBindingEntry* binding = &shaderEntry->gpu_render_states[shaderEntry->gpu_render_state_count++];
+    binding->state_handle = state_handle;
+    binding->num_sampler_bindings = num_sampler_bindings;
+    binding->sampler_bindings = NULL;
+
+    if (num_sampler_bindings > 0 && sampler_bindings != NULL)
+    {
+        binding->sampler_bindings = (SDL_GPUTextureSamplerBinding*)RC2D_malloc(
+            (size_t)num_sampler_bindings * sizeof(SDL_GPUTextureSamplerBinding)
+        );
+        RC2D_assert_release(binding->sampler_bindings != NULL, RC2D_LOG_CRITICAL, "trackGraphicsRenderState: malloc failed");
+        SDL_memcpy(binding->sampler_bindings,
+                   sampler_bindings,
+                   (size_t)num_sampler_bindings * sizeof(SDL_GPUTextureSamplerBinding));
+    }
+
+    shaderEntry->gpu_render_state = *state_handle;
+
+    SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
+    RC2D_log(RC2D_LOG_INFO, "Tracked GPURenderState for shader: %s", shader_storage_path);
+    return true;
+}
+
+void rc2d_gpu_untrackGraphicsRenderState(SDL_GPURenderState** state_handle)
+{
+    if (state_handle == NULL)
+    {
+        return;
+    }
+
+    SDL_LockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
+
+    for (int i = 0; i < rc2d_engine_state.gpu_graphics_shader_count; ++i)
+    {
+        RC2D_GraphicsShaderEntry* shaderEntry = &rc2d_engine_state.gpu_graphics_shaders_cache[i];
+        for (int j = 0; j < shaderEntry->gpu_render_state_count; ++j)
+        {
+            if (shaderEntry->gpu_render_states[j].state_handle == state_handle)
+            {
+                RC2D_safe_free(shaderEntry->gpu_render_states[j].sampler_bindings);
+
+                const int remaining = shaderEntry->gpu_render_state_count - (j + 1);
+                if (remaining > 0)
+                {
+                    SDL_memmove(&shaderEntry->gpu_render_states[j],
+                                &shaderEntry->gpu_render_states[j + 1],
+                                (size_t)remaining * sizeof(RC2D_GPURenderStateBindingEntry));
+                }
+                shaderEntry->gpu_render_state_count--;
+                j--;
+            }
+        }
+
+        if (shaderEntry->gpu_render_state_count == 0)
+        {
+            RC2D_safe_free(shaderEntry->gpu_render_states);
+            shaderEntry->gpu_render_states = NULL;
+            shaderEntry->gpu_render_state = NULL;
+        }
+    }
+
+    SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
+}
+
+void rc2d_gpu_hotReloadGraphicsShaders(void)
+{
+    if (!rc2d_engine_state.gpu_graphics_shader_mutex || rc2d_engine_state.renderer == NULL)
+    {
+        return;
+    }
+
+    SDL_LockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
+
+    for (int i = 0; i < rc2d_engine_state.gpu_graphics_shader_count; ++i)
+    {
+        RC2D_GraphicsShaderEntry* entry = &rc2d_engine_state.gpu_graphics_shaders_cache[i];
+        if (entry->filename == NULL || entry->shader == NULL)
+        {
+            continue;
+        }
+
+        SDL_GPUShaderStage stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
+        char rootShaders[320];
+        char base[256];
+        char sourcePath[512];
+        if (!rc2d_gpu_extractStageAndPaths(entry->filename,
+                                           &stage,
+                                           rootShaders,
+                                           sizeof(rootShaders),
+                                           base,
+                                           sizeof(base),
+                                           sourcePath,
+                                           sizeof(sourcePath)))
+        {
+            continue;
+        }
+        (void)rootShaders;
+        (void)base;
+
+        SDL_Time currentModified = rc2d_gpu_getStorageFileModificationTime(sourcePath, entry->storage_kind);
+        if (currentModified == 0 || currentModified <= entry->lastModified)
+        {
+            continue;
+        }
+
+        RC2D_GPUShader* newShader = rc2d_gpu_compileGraphicsShaderHotReload(
+            entry->filename,
+            entry->storage_kind,
+            stage,
+            sourcePath
+        );
+        if (newShader == NULL)
+        {
+            continue;
+        }
+
+        bool rebuildOk = true;
+        for (int j = 0; j < entry->gpu_render_state_count; ++j)
+        {
+            RC2D_GPURenderStateBindingEntry* binding = &entry->gpu_render_states[j];
+            if (binding->state_handle == NULL || *binding->state_handle == NULL)
+            {
+                continue;
+            }
+
+            SDL_GPURenderStateCreateInfo createInfo = {
+                .fragment_shader = newShader,
+                .num_sampler_bindings = binding->num_sampler_bindings,
+                .sampler_bindings = binding->sampler_bindings
+            };
+
+            SDL_GPURenderState* newState = SDL_CreateGPURenderState(rc2d_engine_state.renderer, &createInfo);
+            if (newState == NULL)
+            {
+                RC2D_log(RC2D_LOG_ERROR,
+                         "Hot reload: failed to recreate GPURenderState for shader %s: %s",
+                         entry->filename,
+                         SDL_GetError());
+                rebuildOk = false;
+                break;
+            }
+
+            SDL_GPURenderState* oldState = *binding->state_handle;
+            *binding->state_handle = newState;
+            SDL_DestroyGPURenderState(oldState);
+        }
+
+        if (!rebuildOk)
+        {
+            SDL_ReleaseGPUShader(rc2d_gpu_getDevice(), newShader);
+            continue;
+        }
+
+        // IMPORTANT:
+        // On ne libère pas automatiquement l'ancien shader ici pour éviter de casser les
+        // pointeurs conservés côté application en mode hot reload Renderer.
+        entry->shader = newShader;
+        entry->lastModified = currentModified;
+        entry->gpu_render_state = (entry->gpu_render_state_count > 0 && entry->gpu_render_states[0].state_handle != NULL)
+                                      ? *entry->gpu_render_states[0].state_handle
+                                      : NULL;
+
+        RC2D_log(RC2D_LOG_INFO, "Hot reload graphics shader success: %s", entry->filename);
+    }
+
+    SDL_UnlockMutex(rc2d_engine_state.gpu_graphics_shader_mutex);
+}
+#endif // RC2D_GPU_SHADER_HOT_RELOAD_ENABLED

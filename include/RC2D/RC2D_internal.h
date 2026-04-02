@@ -112,6 +112,27 @@ extern const size_t rc2d_gamecontrollerdb_size;
  *
  * \since Cette structure est disponible depuis RC2D 1.0.0.
  */
+typedef struct RC2D_GPURenderStateBindingEntry
+{
+    /**
+     * Pointeur vers la variable de l'application qui contient l'état de rendu.
+     *
+     * Cela permet de remplacer la valeur du pointeur en hot-reload après
+     * reconstruction de l'état de rendu.
+     */
+    SDL_GPURenderState** state_handle;
+
+    /**
+     * Nombre de samplers additionnels à rebind lors de la reconstruction.
+     */
+    int num_sampler_bindings;
+
+    /**
+     * Copie des sampler bindings passés à SDL_CreateGPURenderState.
+     */
+    SDL_GPUTextureSamplerBinding* sampler_bindings;
+} RC2D_GPURenderStateBindingEntry;
+
 typedef struct RC2D_GraphicsShaderEntry {
     /**
      * Nom du fichier du shader (e.g., "test.vertex" ou "test.fragment").
@@ -138,6 +159,21 @@ typedef struct RC2D_GraphicsShaderEntry {
      * \note Ce pointeur doit être libéré via SDL_DestroyGPURenderState().
      */
     SDL_GPURenderState* gpu_render_state;
+
+    /**
+     * Type de storage utilisé lors du chargement initial (TITLE ou USER).
+     */
+    RC2D_StorageKind storage_kind;
+
+    /**
+     * Liste des états de rendu liés à ce shader pour le hot-reload.
+     */
+    RC2D_GPURenderStateBindingEntry* gpu_render_states;
+
+    /**
+     * Nombre d'états de rendu suivis pour ce shader.
+     */
+    int gpu_render_state_count;
 
     /**
      * Timestamp de la dernière modification du fichier shader.
@@ -319,7 +355,30 @@ void rc2d_graphics_destroyRendererTextEngine(void);
  * 
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
+#if RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
 void rc2d_gpu_hotReloadGraphicsShaders(void);
+
+/**
+ * \brief Enregistre un SDL_GPURenderState pour qu'il soit reconstruit automatiquement au hot-reload.
+ *
+ * \param {const char*} shader_storage_path - Nom logique du shader fragment (ex: "water.fragment").
+ * \param {SDL_GPURenderState**} state_handle - Adresse du pointeur d'état de rendu côté application.
+ * \param {int} num_sampler_bindings - Nombre de samplers additionnels.
+ * \param {const SDL_GPUTextureSamplerBinding*} sampler_bindings - Samplers additionnels.
+ * \return {bool} true si l'état a été enregistré, false sinon.
+ */
+bool rc2d_gpu_trackGraphicsRenderState(const char* shader_storage_path,
+                                       SDL_GPURenderState** state_handle,
+                                       int num_sampler_bindings,
+                                       const SDL_GPUTextureSamplerBinding* sampler_bindings);
+
+/**
+ * \brief Retire un SDL_GPURenderState de la liste de suivi hot-reload.
+ *
+ * \param {SDL_GPURenderState**} state_handle - Adresse du pointeur d'état de rendu côté application.
+ */
+void rc2d_gpu_untrackGraphicsRenderState(SDL_GPURenderState** state_handle);
+#endif // RC2D_GPU_SHADER_HOT_RELOAD_ENABLED
 
 /**
  * \brief Initialise le moteur RC2D.
