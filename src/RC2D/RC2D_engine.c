@@ -1981,17 +1981,17 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
     // Quand l'orientation de l'affichage change
     else if (event->type == SDL_EVENT_DISPLAY_ORIENTATION) 
     {
+		/**
+		 * Recalculer le viewport GPU et le render scale, puisque l'orientation de l'affichage a changé.
+		 * Cela est nécessaire pour s'assurer que le rendu s'adapte correctement à la nouvelle orientation.
+		 */
+		rc2d_engine_presentationUpdate();
+		rc2d_engine_update_fps_based_on_monitor();
+		
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitororientationchanged != NULL) 
         {
-            /**
-             * Recalculer le viewport GPU et le render scale, puisque l'orientation de l'affichage a changé.
-             * Cela est nécessaire pour s'assurer que le rendu s'adapte correctement à la nouvelle orientation.
-             */
-            rc2d_engine_presentationUpdate();
-            rc2d_engine_update_fps_based_on_monitor();
-
             RC2D_DisplayOrientation newOrientation = rc2d_window_getDisplayOrientation();
             rc2d_engine_state.config->callbacks->rc2d_monitororientationchanged(event->display.displayID, newOrientation);
         }
@@ -2000,13 +2000,13 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
         // Monitor Added
     else if (event->type == SDL_EVENT_DISPLAY_ADDED)
     {
+		rc2d_engine_presentationUpdate();
+		rc2d_engine_update_fps_based_on_monitor();
+		
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitoradded != NULL) 
         {
-            rc2d_engine_presentationUpdate();
-            rc2d_engine_update_fps_based_on_monitor();
-
             rc2d_engine_state.config->callbacks->rc2d_monitoradded(event->display.displayID);
         }
     }
@@ -2014,13 +2014,13 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
     // Monitor Removed
     else if (event->type == SDL_EVENT_DISPLAY_REMOVED)
     {
+		rc2d_engine_presentationUpdate();
+		rc2d_engine_update_fps_based_on_monitor();
+		
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitorremoved != NULL) 
         {
-            rc2d_engine_presentationUpdate();
-            rc2d_engine_update_fps_based_on_monitor();
-
             rc2d_engine_state.config->callbacks->rc2d_monitorremoved(event->display.displayID);
         }
     }
@@ -2028,13 +2028,13 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
     // Monitor Moved
     else if (event->type == SDL_EVENT_DISPLAY_MOVED)
     {
+		rc2d_engine_presentationUpdate();
+		rc2d_engine_update_fps_based_on_monitor();
+		
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitormoved != NULL) 
         {
-            rc2d_engine_presentationUpdate();
-            rc2d_engine_update_fps_based_on_monitor();
-
             rc2d_engine_state.config->callbacks->rc2d_monitormoved(event->display.displayID);
         }
     }
@@ -2042,13 +2042,13 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
     // Monitor Desktop Mode Changed
     else if (event->type == SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED)
     {
+		rc2d_engine_presentationUpdate();
+		rc2d_engine_update_fps_based_on_monitor();
+		
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitordesktopmodechanged != NULL) 
         {
-            rc2d_engine_presentationUpdate();
-            rc2d_engine_update_fps_based_on_monitor();
-
             rc2d_engine_state.config->callbacks->rc2d_monitordesktopmodechanged(event->display.displayID);
         }
     }
@@ -2056,13 +2056,13 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
     // Monitor Current Mode Changed
     else if (event->type == SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED)
     {
+		rc2d_engine_presentationUpdate();
+		rc2d_engine_update_fps_based_on_monitor();
+		
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_monitorcurrentmodechanged != NULL) 
         {
-            rc2d_engine_presentationUpdate();
-            rc2d_engine_update_fps_based_on_monitor();
-
             rc2d_engine_state.config->callbacks->rc2d_monitorcurrentmodechanged(event->display.displayID);
         }
     }
@@ -2078,6 +2078,9 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
     else if (event->type == SDL_EVENT_WINDOW_HDR_STATE_CHANGED ||
             event->type == SDL_EVENT_WINDOW_ICCPROF_CHANGED)
     {
+		rc2d_engine_presentationUpdate();
+        rc2d_engine_update_fps_based_on_monitor();
+		
         // Re-set le meilleur swapchain disponible
         if (!rc2d_engine_configure_swapchain())
         {
@@ -2263,6 +2266,9 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
     // Window moved
     else if (event->type == SDL_EVENT_WINDOW_MOVED) 
     {
+		rc2d_engine_presentationUpdate();
+        rc2d_engine_update_fps_based_on_monitor();
+		
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_windowmoved != NULL) 
