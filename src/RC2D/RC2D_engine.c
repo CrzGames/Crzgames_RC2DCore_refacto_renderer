@@ -2163,12 +2163,22 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
     // Window Shown
     else if (event->type == SDL_EVENT_WINDOW_SHOWN)
     {
+		rc2d_engine_update_fps_based_on_monitor();
+        rc2d_engine_presentationUpdate();
+		
         if (rc2d_engine_state.config != NULL && 
             rc2d_engine_state.config->callbacks != NULL && 
             rc2d_engine_state.config->callbacks->rc2d_windowshown != NULL) 
         {
             rc2d_engine_state.config->callbacks->rc2d_windowshown();
         }
+    }
+
+    // Window usable bounds changed
+    else if (event->type == SDL_EVENT_DISPLAY_USABLE_BOUNDS_CHANGED)
+    {
+        rc2d_engine_update_fps_based_on_monitor();
+        rc2d_engine_presentationUpdate();
     }
 
     // Window leave fullscreen
@@ -2321,6 +2331,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * on met à jour la largeur et la hauteur de la fenêtre 
          * et on indique que le viewport du gpu et le render scale interne doit être recalculé.
          */
+		rc2d_engine_update_fps_based_on_monitor();
         rc2d_engine_presentationUpdate();
 
         if (rc2d_engine_state.config != NULL && 
@@ -2339,6 +2350,7 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
          * on met à jour la largeur et la hauteur de la fenêtre 
          * et on indique que le viewport du gpu et le render scale interne doit être recalculé.
          */
+		rc2d_engine_update_fps_based_on_monitor();
         rc2d_engine_presentationUpdate();
 
         if (rc2d_engine_state.config != NULL && 
