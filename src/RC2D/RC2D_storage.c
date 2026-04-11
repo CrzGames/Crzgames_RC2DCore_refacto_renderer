@@ -1,6 +1,7 @@
 #include <RC2D/RC2D_storage.h>
 
 #include <SDL3/SDL_storage.h>
+#include <SDL3/SDL_stdinc.h>
 
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_memory.h>
@@ -155,11 +156,50 @@ static bool read_all(SDL_Storage *storage, const char *path, void **out_data, Ui
     }
 
     // Obtient la taille du fichier
+    // Fallback compat: certains builds (notamment Android) exposent le storage title
+    // directement a la racine des assets. Dans ce cas, "assets/..." ne doit pas etre prefixe.
     Uint64 lengthFile = 0;
-    if (!SDL_GetStorageFileSize(storage, path, &lengthFile)) 
+    const char* resolved_path = path;
+    if (!SDL_GetStorageFileSize(storage, resolved_path, &lengthFile)) 
     {
-        RC2D_log(RC2D_LOG_ERROR, "read_all: SDL_GetStorageFileSize failed or file is empty: %s", SDL_GetError());
-        return false;
+        const char* fallback_path = NULL;
+        if (SDL_strncmp(path, "assets/", 7) == 0)
+        {
+            fallback_path = path + 7;
+        }
+        else if (SDL_strncmp(path, "./assets/", 9) == 0)
+        {
+            fallback_path = path + 9;
+        }
+
+        if (fallback_path != NULL && fallback_path[0] != '\0' &&
+            SDL_GetStorageFileSize(storage, fallback_path, &lengthFile))
+        {
+            static bool logged_assets_prefix_fallback = false;
+            resolved_path = fallback_path;
+
+            if (!logged_assets_prefix_fallback)
+            {
+                RC2D_log(
+                    RC2D_LOG_WARN,
+                    "read_all: remap storage path 'assets/...': '%s' -> '%s'",
+                    path,
+                    resolved_path);
+                logged_assets_prefix_fallback = true;
+            }
+        }
+        else
+        {
+            RC2D_log(
+                RC2D_LOG_ERROR,
+                "read_all: SDL_GetStorageFileSize failed for '%s'%s%s%s: %s",
+                path,
+                (fallback_path != NULL && fallback_path[0] != '\0') ? " and fallback '" : "",
+                (fallback_path != NULL && fallback_path[0] != '\0') ? fallback_path : "",
+                (fallback_path != NULL && fallback_path[0] != '\0') ? "'" : "",
+                SDL_GetError());
+            return false;
+        }
     }
 
     if (lengthFile == 0) 
@@ -177,9 +217,10 @@ static bool read_all(SDL_Storage *storage, const char *path, void **out_data, Ui
     }
 
     // Lit le fichier à partir du storage et dans le buffer
-    if (!SDL_ReadStorageFile(storage, path, buffer, lengthFile)) 
+    if (!SDL_ReadStorageFile(storage, resolved_path, buffer, lengthFile)) 
     {
         RC2D_safe_free(buffer);
+        RC2D_log(RC2D_LOG_ERROR, "read_all: SDL_ReadStorageFile failed for '%s': %s", resolved_path, SDL_GetError());
         return false;
     }
 
