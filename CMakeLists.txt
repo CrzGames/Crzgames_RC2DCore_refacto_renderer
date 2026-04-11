@@ -793,6 +793,21 @@ function(rc2d_configure_ffmpeg target_name)
           swscale
         )
       endif()
+
+      # Copier aussi les libraries dynamique FFmpeg dans le répertoire de la target.
+      # On copie les fichiers réels (cp -fL) pour éviter les soucis de symlink cassé.
+      file(GLOB_RECURSE FFMPEG_SO
+        "${CRZGAMES_LIBRARIES_PATH}/linux/lib/ffmpeg/${RC2D_ARCH}/*.so"
+        "${CRZGAMES_LIBRARIES_PATH}/linux/lib/ffmpeg/${RC2D_ARCH}/*.so.*"
+      )
+      foreach(FILE IN LISTS FFMPEG_SO)
+        get_filename_component(FILE_NAME "${FILE}" NAME)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND /bin/sh -c "cp -fL \"${FILE}\" \"$<TARGET_FILE_DIR:${target_name}>/${FILE_NAME}\""
+          COMMENT "Copie FFmpeg (sans symlink): ${FILE_NAME}"
+          VERBATIM
+        )
+      endforeach()
     elseif (ANDROID)
       # Link le dossier include de FFmpeg à la target
       target_include_directories(${target_name} PUBLIC "${CRZGAMES_LIBRARIES_PATH}/android/include/include_ffmpeg/ffmpeg")
