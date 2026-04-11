@@ -2191,6 +2191,13 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
         }
     }
 
+	// Window Metal view resized
+    else if (event->type == SDL_EVENT_WINDOW_METAL_VIEW_RESIZED)
+    {
+        rc2d_engine_presentationUpdate();
+        rc2d_engine_update_fps_based_on_monitor();
+    }
+
     // Window pixel size changed
     else if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) 
     {
