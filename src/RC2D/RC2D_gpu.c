@@ -323,13 +323,13 @@ RC2D_GPUShader* rc2d_gpu_loadGraphicsShaderFromStorage(const char* storage_path,
         SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/metallib/macos/%s.metallib", root_shaders, base);
     #endif
         format = SDL_GPU_SHADERFORMAT_METALLIB;
-        entrypoint = "main";
+        entrypoint = "main0"; // SDL_shadercross requiert "main0" pour Metallib sur Apple (même si le shader original HLSL a "main")
     }
     else if (backendFormatsSupported & SDL_GPU_SHADERFORMAT_MSL)
     {
         SDL_snprintf(fullPath, sizeof(fullPath), "%s/compiled/msl/%s.msl", root_shaders, base);
         format = SDL_GPU_SHADERFORMAT_MSL;
-        entrypoint = "main0"; // SDL_shadercross requiert "main0" pour MSL
+        entrypoint = "main0"; // SDL_shadercross requiert "main0" pour MSL sur Apple (même si le shader original HLSL a "main")
     } 
     // D3D (renderer GPU SDL): les shaders internes sont DXIL60.
     // On priorise donc DXIL pour eviter un mix de shader model dans un meme PSO.
