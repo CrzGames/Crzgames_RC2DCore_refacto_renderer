@@ -882,6 +882,23 @@ void rc2d_video_close(RC2D_Video* video)
     if (video->format_ctx) {
         avformat_close_input(&video->format_ctx);
     }
+    if (video->avio) {
+        RC2D_FFmpegIO *opaque = (RC2D_FFmpegIO *)video->avio->opaque;
+        avio_context_free(&video->avio);
+        if (opaque) {
+            RC2D_free(opaque);
+        }
+    }
+    if (video->sdl_io) {
+        SDL_CloseIO(video->sdl_io);
+        video->sdl_io = NULL;
+    }
+    if (video->owned_mem) {
+        RC2D_safe_free(video->owned_mem);
+        video->owned_mem = NULL;
+    }
+    video->owned_len = 0;
+    video->io_size = 0;
 
     video->is_finished = 1;
 }
