@@ -1,47 +1,82 @@
 #include <RC2D/RC2D_local.h>
 
-#include <SDL3/SDL_stdinc.h> // Required for : SDL_malloc, SDL_free
+#include <SDL3/SDL_stdinc.h>
 
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_memory.h>
 
 RC2D_Locale *rc2d_local_getPreferredLocales(void)
 {
-    // Récupère la liste des locales préférées de l'utilisateur
     int sdl_count = 0;
     SDL_Locale **sdl_locales = SDL_GetPreferredLocales(&sdl_count);
 
-    // Vérifie si la liste est valide et si le nombre de locales est positif
-    if (!sdl_locales || sdl_count <= 0) 
+    if (!sdl_locales || sdl_count <= 0)
     {
-        RC2D_log(RC2D_LOG_WARN, "rc2d_local_getPreferredLocales : Aucune locale détectée ou erreur SDL : %s", SDL_GetError());
+        RC2D_log(
+            RC2D_LOG_WARN,
+            "rc2d_local_getPreferredLocales: no locale detected or SDL error: %s",
+            SDL_GetError());
         return NULL;
     }
 
-    // Alloue de la mémoire pour le tableau de locales RC2D
-    RC2D_Locale *result = (RC2D_Locale *)RC2D_malloc(sizeof(RC2D_Locale) * sdl_count);
-    if (!result) 
+    // Keep a NULL-terminated RC2D copy so callers can iterate safely.
+    RC2D_Locale *result = (RC2D_Locale *)RC2D_calloc((size_t)sdl_count + 1, sizeof(RC2D_Locale));
+    if (!result)
     {
-        RC2D_log(RC2D_LOG_ERROR, "rc2d_local_getPreferredLocales : Échec d'allocation mémoire.");
+        RC2D_log(RC2D_LOG_ERROR, "rc2d_local_getPreferredLocales: allocation failed.");
         RC2D_safe_free(sdl_locales);
         return NULL;
     }
 
-    // Remplit le tableau de locales RC2D avec les données de SDL
-    for (int i = 0; i < sdl_count; ++i) 
+    for (int i = 0; i < sdl_count; ++i)
     {
-        result[i].language = sdl_locales[i]->language;
-        result[i].country = sdl_locales[i]->country;
+        result[i].language = RC2D_strdup(sdl_locales[i]->language ? sdl_locales[i]->language : "");
+        if (!result[i].language)
+        {
+            RC2D_log(RC2D_LOG_ERROR, "rc2d_local_getPreferredLocales: failed to duplicate language.");
+            rc2d_local_freeLocales(result);
+            RC2D_safe_free(sdl_locales);
+            return NULL;
+        }
+
+        if (sdl_locales[i]->country)
+        {
+            result[i].country = RC2D_strdup(sdl_locales[i]->country);
+            if (!result[i].country)
+            {
+                RC2D_log(RC2D_LOG_ERROR, "rc2d_local_getPreferredLocales: failed to duplicate country.");
+                rc2d_local_freeLocales(result);
+                RC2D_safe_free(sdl_locales);
+                return NULL;
+            }
+        }
     }
 
-    // Libère le tableau d'origine de SDL
     RC2D_safe_free(sdl_locales);
-
-    // Retourne le tableau de locales RC2D
     return result;
 }
 
 void rc2d_local_freeLocales(RC2D_Locale *locales)
 {
+    if (locales == NULL)
+    {
+        return;
+    }
+
+    for (size_t index = 0; locales[index].language != NULL; ++index)
+    {
+        if (locales[index].language != NULL)
+        {
+            RC2D_free((void*)locales[index].language);
+            locales[index].language = NULL;
+        }
+
+        if (locales[index].country != NULL)
+        {
+            RC2D_free((void*)locales[index].country);
+            locales[index].country = NULL;
+        }
+    }
+
     RC2D_safe_free(locales);
 }

@@ -34,7 +34,7 @@ typedef struct RC2D_Locale {
 /**
  * \brief Récupère la liste des locales préférées de l'utilisateur.
  *
- * \return Un tableau de `RC2D_Locale` contenant les locales préférées, ou NULL en cas d'erreur.
+ * \return Un tableau null-termine de `RC2D_Locale` contenant les locales preferees, ou NULL en cas d'erreur.
  * 
  * \warning Le tableau retourné doit être libéré par l'appelant avec `rc2d_local_freeLocales()`.
  *
