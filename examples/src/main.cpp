@@ -62,7 +62,7 @@ const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[])
     config->callbacks->rc2d_websocket_update = rc2d_websocket_update;
 #endif
     config->logicalPresentationMode = RC2D_LOGICAL_PRESENTATION_OVERSCAN;
-    config->pixelartMode = false;
+    config->textureScaleMode = RC2D_TEXTURE_SCALE_LINEAR;
     config->appInfo->name = "Amored Tactics";
     config->appInfo->organization = "Crzgames";
     config->appInfo->version = "1.0.0";

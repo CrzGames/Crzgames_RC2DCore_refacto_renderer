@@ -1104,6 +1104,33 @@ typedef enum RC2D_LogicalPresentationMode {
 } RC2D_LogicalPresentationMode;
 
 /**
+ * \brief Définit le mode de mise à l'échelle par défaut appliqué aux textures.
+ *
+ * Ce mode contrôle la façon dont les textures sont échantillonnées lorsqu'elles
+ * sont affichées avec une taille différente de leur taille d'origine.
+ *
+ * \since Cette enum est disponible depuis RC2D 1.0.0.
+ */
+typedef enum RC2D_TextureScaleMode {
+    /**
+     * Échantillonnage au plus proche voisin.
+     */
+    RC2D_TEXTURE_SCALE_NEAREST,
+
+    /**
+     * Filtrage linéaire.
+     *
+     * \note C'est le mode par défaut de RC2D.
+     */
+    RC2D_TEXTURE_SCALE_LINEAR,
+
+    /**
+     * Échantillonnage optimisé pour le pixel art.
+     */
+    RC2D_TEXTURE_SCALE_PIXELART,
+} RC2D_TextureScaleMode;
+
+/**
  * \brief Informations sur l'application.
  * 
  * \since Cette structure est disponible depuis RC2D 1.0.0.
@@ -1291,18 +1318,18 @@ typedef struct RC2D_EngineConfig {
     int logicalHeight;
 
     /**
-     * \brief Si le rendu doit être effectué en mode pixel art (true) ou en mode classique (false).
-     * 
-     * Par défaut : false (mode classique).
-     */
-    bool pixelartMode;
-
-    /**
      * Mode de présentation de RC2D_LogicalPresentationMode.
      * 
      * Par défaut : RC2D_LOGICAL_PRESENTATION_LETTERBOX.
      */
     RC2D_LogicalPresentationMode logicalPresentationMode;
+
+    /**
+     * Mode de mise à l'échelle par défaut des textures.
+     *
+     * Par défaut : RC2D_TEXTURE_SCALE_LINEAR.
+     */
+    RC2D_TextureScaleMode textureScaleMode;
 
     /**
      * Informations sur l'application (nom, organisation, version, identifiant).
@@ -1363,6 +1390,22 @@ const RC2D_EngineConfig* rc2d_engine_setup(int argc, char* argv[]);
  * \see rc2d_engine_setup
  */
 RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void);
+
+/**
+ * \brief Change dynamiquement le mode de mise à l'échelle par défaut des textures.
+ *
+ * Cette fonction met à jour la configuration interne du moteur et applique immédiatement
+ * le nouveau mode au renderer si celui-ci est déjà initialisé.
+ *
+ * \param mode Nouveau mode de mise à l'échelle à appliquer.
+ *
+ * \return true si le mode est valide et a été pris en compte, false sinon.
+ *
+ * \threadsafety Cette fonction doit être appelée depuis le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+bool rc2d_engine_setTextureScaleMode(RC2D_TextureScaleMode mode);
 
 /**
  * \brief Obtient le rectangle de la zone visible et interactive en coordonnées logiques.

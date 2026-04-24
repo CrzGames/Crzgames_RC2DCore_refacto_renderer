@@ -48,6 +48,56 @@
 
 RC2D_EngineState rc2d_engine_state = {0};
 
+static bool rc2d_engine_is_valid_texture_scale_mode(RC2D_TextureScaleMode mode)
+{
+    return mode == RC2D_TEXTURE_SCALE_NEAREST ||
+           mode == RC2D_TEXTURE_SCALE_LINEAR ||
+           mode == RC2D_TEXTURE_SCALE_PIXELART;
+}
+
+static SDL_ScaleMode rc2d_engine_to_sdl_scale_mode(RC2D_TextureScaleMode mode)
+{
+    switch (mode)
+    {
+        case RC2D_TEXTURE_SCALE_NEAREST:
+            return SDL_SCALEMODE_NEAREST;
+        case RC2D_TEXTURE_SCALE_LINEAR:
+            return SDL_SCALEMODE_LINEAR;
+        case RC2D_TEXTURE_SCALE_PIXELART:
+            return SDL_SCALEMODE_PIXELART;
+        default:
+            return SDL_SCALEMODE_LINEAR;
+    }
+}
+
+bool rc2d_engine_setTextureScaleMode(RC2D_TextureScaleMode mode)
+{
+    if (!rc2d_engine_is_valid_texture_scale_mode(mode))
+    {
+        RC2D_log(RC2D_LOG_WARN, "Invalid texture scale mode provided.\n");
+        return false;
+    }
+
+    if (rc2d_engine_state.config == NULL)
+    {
+        RC2D_log(RC2D_LOG_WARN, "Engine config is NULL. Cannot change texture scale mode.\n");
+        return false;
+    }
+
+    rc2d_engine_state.config->textureScaleMode = mode;
+
+    if (rc2d_engine_state.renderer != NULL &&
+        !SDL_SetDefaultTextureScaleMode(
+            rc2d_engine_state.renderer,
+            rc2d_engine_to_sdl_scale_mode(mode)))
+    {
+        RC2D_log(RC2D_LOG_WARN, "Erreur : impossible de configurer le mode de mise à l'échelle des textures (SDL_SetDefaultTextureScaleMode) : %s\n", SDL_GetError());
+        return false;
+    }
+
+    return true;
+}
+
 /**
  * \brief Initialise les valeurs par défaut de l'état global du moteur RC2D.
  *
@@ -158,7 +208,7 @@ RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void)
         .logicalWidth = 1920,
         .logicalHeight = 1080,
         .logicalPresentationMode = RC2D_LOGICAL_PRESENTATION_LETTERBOX,
-        .pixelartMode = false,
+        .textureScaleMode = RC2D_TEXTURE_SCALE_LINEAR,
         .appInfo = &default_app_info,
         .gpuFramesInFlight = RC2D_GPU_FRAMES_BALANCED,
         .gpuOptions = &default_gpu_options
@@ -3006,16 +3056,11 @@ static bool rc2d_engine(void)
     }
 
     /**
-     * Configurer le mode de mise à l'échelle des textures pour le rendu pixel art.
-     * Cela permet d'obtenir un rendu pixelisé sans lissage, puisque le mode 
-     * par défaut est le linear filtering (bilinear).
+     * Configurer le mode de mise à l'échelle des textures selon le choix utilisateur.
      */
-    if (rc2d_engine_state.config->pixelartMode == true)
+    if (!rc2d_engine_setTextureScaleMode(rc2d_engine_state.config->textureScaleMode))
     {
-        if (!SDL_SetDefaultTextureScaleMode(rc2d_engine_state.renderer, SDL_SCALEMODE_PIXELART))
-        {
-            RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'activer le mode pixel art (SDL_SetDefaultTextureScaleMode) : %s\n", SDL_GetError());
-        }
+        RC2D_log(RC2D_LOG_WARN, "Erreur : impossible d'initialiser le mode de mise à l'échelle des textures.\n");
     }
 
     /**
@@ -3587,14 +3632,14 @@ void rc2d_engine_configure(const RC2D_EngineConfig* config)
         rc2d_engine_state.config->logicalPresentationMode = RC2D_LOGICAL_PRESENTATION_LETTERBOX;
     }
 
-    if(config->pixelartMode == true || config->pixelartMode == false)
+    if (rc2d_engine_is_valid_texture_scale_mode(config->textureScaleMode))
     {
-        rc2d_engine_state.config->pixelartMode = config->pixelartMode;
+        rc2d_engine_state.config->textureScaleMode = config->textureScaleMode;
     }
     else
     {
-        RC2D_log(RC2D_LOG_WARN, "Invalid pixelart mode provided. Using default values.\n");
-        rc2d_engine_state.config->pixelartMode = false;
+        RC2D_log(RC2D_LOG_WARN, "Invalid texture scale mode provided. Using default values.\n");
+        rc2d_engine_state.config->textureScaleMode = RC2D_TEXTURE_SCALE_LINEAR;
     }
 }
 
