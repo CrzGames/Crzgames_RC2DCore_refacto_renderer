@@ -212,7 +212,7 @@ void rc2d_graphics_present(void)
 void rc2d_graphics_drawImage(RC2D_Image* image, float x, float y, double angle, float scaleX, float scaleY, float offsetX, float offsetY, bool flipHorizontal, bool flipVertical) 
 {
     // Vérifier que la texture est valide
-    if (!image->sdl_texture) 
+    if (!image || !image->sdl_texture) 
     {
         RC2D_log(RC2D_LOG_ERROR, "Invalid texture in rc2d_graphics_draw\n");
         return;
@@ -226,11 +226,8 @@ void rc2d_graphics_drawImage(RC2D_Image* image, float x, float y, double angle, 
     if (flipHorizontal) flip |= SDL_FLIP_HORIZONTAL;
     if (flipVertical) flip |= SDL_FLIP_VERTICAL;
 
-    // Point d'origine pour la rotation (offsetX, offsetY)
-    SDL_FPoint pointOffset = {(float)offsetX, (float)offsetY};
-
-    // Appliquer le scale avant de dessiner (si scaleX et/ou scaleY != 1.0)
-    SDL_SetRenderScale(rc2d_engine_state.renderer, scaleX, scaleY);
+    // Point d'origine pour la rotation (offsetX, offsetY) dans l'espace scale du dst.
+    SDL_FPoint pointOffset = {(float)offsetX * scaleX, (float)offsetY * scaleY};
 
     // Si offsetX et offsetY sont valides, on les utilise, sinon on centre la rotation
     if (offsetX >= 0 && offsetY >= 0) 
@@ -249,7 +246,6 @@ void rc2d_graphics_drawImage(RC2D_Image* image, float x, float y, double angle, 
     }
 
     // Remettre le scale à 1.0 après le dessin
-    SDL_SetRenderScale(rc2d_engine_state.renderer, 1.0f, 1.0f);
 }
 
 bool rc2d_graphics_rectangle(const char* mode, const SDL_FRect *rect) 
