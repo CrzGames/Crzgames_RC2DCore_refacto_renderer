@@ -3,6 +3,8 @@
 #include <SDL3/SDL_storage.h>
 #include <SDL3/SDL_stdinc.h>
 
+#include <stdint.h>
+
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_memory.h>
 
@@ -116,6 +118,32 @@ bool rc2d_storage_userReady(void)
     return (storage_user != NULL) && SDL_StorageReady(storage_user);
 }
 
+/* --------------------- File size ----------------------- */
+bool rc2d_storage_userGetFileSize(const char *path, Uint64 *out_len)
+{
+    if (!path || !out_len)
+    {
+        return false;
+    }
+    if (!storage_user)
+    {
+        return false;
+    }
+    if (!SDL_StorageReady(storage_user))
+    {
+        return false;
+    }
+
+    Uint64 len = 0;
+    if (!SDL_GetStorageFileSize(storage_user, path, &len))
+    {
+        return false;
+    }
+
+    *out_len = len;
+    return true;
+}
+
 /* --------------------- User mkdir ---------------------- */
 bool rc2d_storage_userMkdir(const char *path)
 {
@@ -208,8 +236,14 @@ static bool read_all(SDL_Storage *storage, const char *path, void **out_data, Ui
         return false;
     }
 
+    if (lengthFile > (Uint64)SIZE_MAX)
+    {
+        RC2D_log(RC2D_LOG_ERROR, "read_all: file size exceeds SIZE_MAX");
+        return false;
+    }
+
     // Alloue un buffer pour lire le fichier
-    void *buffer = RC2D_malloc(lengthFile);
+    void *buffer = RC2D_malloc((size_t)lengthFile);
     if (!buffer) 
     {
         RC2D_log(RC2D_LOG_ERROR, "read_all: allocation failed");

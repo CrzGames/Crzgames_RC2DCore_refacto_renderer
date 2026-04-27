@@ -124,6 +124,21 @@ bool rc2d_storage_userReady(void);
 bool rc2d_storage_userMkdir(const char *path);
 
 /**
+ * \brief Retourne la taille d'un fichier dans le storage "User" (sans lire le fichier).
+ *
+ * \details Wrap de SDL_GetStorageFileSize(user, path, out_len). Cette fonction permet
+ * de vérifier l'existence d'un fichier avant d'appeler rc2d_storage_userReadFile(),
+ * et évite de déclencher un log d'erreur "read_all" pour un fichier absent.
+ *
+ * \param path Chemin (style Unix) du fichier à interroger.
+ * \param out_len [out] Reçoit la taille du fichier si trouvé.
+ * \return true si le fichier existe (ou taille connue), false sinon.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ */
+bool rc2d_storage_userGetFileSize(const char *path, Uint64 *out_len);
+
+/**
  * \brief Lit entièrement un fichier depuis le storage "Title" dans un buffer alloué.
  *
  * \details Cette fonction interroge d’abord la taille via SDL_GetStorageFileSize(),
