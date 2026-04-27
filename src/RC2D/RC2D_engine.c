@@ -55,6 +55,13 @@ static bool rc2d_engine_is_valid_texture_scale_mode(RC2D_TextureScaleMode mode)
            mode == RC2D_TEXTURE_SCALE_PIXELART;
 }
 
+static bool rc2d_engine_is_valid_logical_presentation_mode(RC2D_LogicalPresentationMode mode)
+{
+    return mode == RC2D_LOGICAL_PRESENTATION_INTEGER_SCALE ||
+           mode == RC2D_LOGICAL_PRESENTATION_LETTERBOX ||
+           mode == RC2D_LOGICAL_PRESENTATION_OVERSCAN;
+}
+
 static SDL_ScaleMode rc2d_engine_to_sdl_scale_mode(RC2D_TextureScaleMode mode)
 {
     switch (mode)
@@ -67,6 +74,20 @@ static SDL_ScaleMode rc2d_engine_to_sdl_scale_mode(RC2D_TextureScaleMode mode)
             return SDL_SCALEMODE_PIXELART;
         default:
             return SDL_SCALEMODE_LINEAR;
+    }
+}
+
+static SDL_RendererLogicalPresentation rc2d_engine_to_sdl_logical_presentation_mode(RC2D_LogicalPresentationMode mode)
+{
+    switch (mode)
+    {
+        case RC2D_LOGICAL_PRESENTATION_INTEGER_SCALE:
+            return SDL_LOGICAL_PRESENTATION_INTEGER_SCALE;
+        case RC2D_LOGICAL_PRESENTATION_OVERSCAN:
+            return SDL_LOGICAL_PRESENTATION_OVERSCAN;
+        case RC2D_LOGICAL_PRESENTATION_LETTERBOX:
+        default:
+            return SDL_LOGICAL_PRESENTATION_LETTERBOX;
     }
 }
 
@@ -1000,6 +1021,71 @@ void rc2d_engine_presentationUpdate(void)
 SDL_FRect rc2d_engine_getVisibleSafeRectRender(void) 
 {
     return rc2d_engine_state.visible_safe_rect;
+}
+
+RC2D_LogicalPresentationMode rc2d_engine_getLogicalPresentationMode(void)
+{
+    if (rc2d_engine_state.config != NULL)
+    {
+        return rc2d_engine_state.config->logicalPresentationMode;
+    }
+
+    if (rc2d_engine_state.renderer != NULL)
+    {
+        int logicalWidth = 0;
+        int logicalHeight = 0;
+        SDL_RendererLogicalPresentation mode = SDL_LOGICAL_PRESENTATION_DISABLED;
+        if (SDL_GetRenderLogicalPresentation(rc2d_engine_state.renderer, &logicalWidth, &logicalHeight, &mode))
+        {
+            (void)logicalWidth;
+            (void)logicalHeight;
+            if (mode == SDL_LOGICAL_PRESENTATION_OVERSCAN)
+            {
+                return RC2D_LOGICAL_PRESENTATION_OVERSCAN;
+            }
+            if (mode == SDL_LOGICAL_PRESENTATION_INTEGER_SCALE)
+            {
+                return RC2D_LOGICAL_PRESENTATION_INTEGER_SCALE;
+            }
+        }
+    }
+
+    return RC2D_LOGICAL_PRESENTATION_LETTERBOX;
+}
+
+bool rc2d_engine_setLogicalPresentationMode(RC2D_LogicalPresentationMode mode)
+{
+    if (!rc2d_engine_is_valid_logical_presentation_mode(mode))
+    {
+        RC2D_log(RC2D_LOG_WARN, "Invalid logical presentation mode provided.\n");
+        return false;
+    }
+
+    if (rc2d_engine_state.config == NULL)
+    {
+        RC2D_log(RC2D_LOG_WARN, "Engine config is NULL. Cannot change logical presentation mode.\n");
+        return false;
+    }
+
+    rc2d_engine_state.config->logicalPresentationMode = mode;
+
+    if (rc2d_engine_state.renderer != NULL &&
+        !SDL_SetRenderLogicalPresentation(
+            rc2d_engine_state.renderer,
+            rc2d_engine_state.config->logicalWidth,
+            rc2d_engine_state.config->logicalHeight,
+            rc2d_engine_to_sdl_logical_presentation_mode(mode)))
+    {
+        RC2D_log(RC2D_LOG_WARN, "Erreur : impossible de configurer le mode de presentation logique : %s\n", SDL_GetError());
+        return false;
+    }
+
+    if (rc2d_engine_state.renderer != NULL)
+    {
+        rc2d_engine_presentationUpdate();
+    }
+
+    return true;
 }
 
 /**

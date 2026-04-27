@@ -1408,6 +1408,37 @@ RC2D_EngineConfig* rc2d_engine_getDefaultConfig(void);
 bool rc2d_engine_setTextureScaleMode(RC2D_TextureScaleMode mode);
 
 /**
+ * \brief Retourne le mode de presentation logique actuellement memorise par le moteur.
+ *
+ * \return Mode de presentation logique courant.
+ *
+ * \threadsafety Cette fonction doit etre appelee depuis le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ *
+ * \see rc2d_engine_setLogicalPresentationMode
+ */
+RC2D_LogicalPresentationMode rc2d_engine_getLogicalPresentationMode(void);
+
+/**
+ * \brief Change dynamiquement le mode de presentation logique du renderer.
+ *
+ * Cette fonction met a jour la configuration interne du moteur, applique le mode au renderer
+ * si celui-ci est deja initialise, puis recalcule la zone visible sure.
+ *
+ * \param mode Nouveau mode de presentation logique a appliquer.
+ *
+ * \return true si le mode est valide et a ete pris en compte, false sinon.
+ *
+ * \threadsafety Cette fonction doit etre appelee depuis le thread principal.
+ *
+ * \since Cette fonction est disponible depuis RC2D 1.0.0.
+ *
+ * \see rc2d_engine_getLogicalPresentationMode
+ */
+bool rc2d_engine_setLogicalPresentationMode(RC2D_LogicalPresentationMode mode);
+
+/**
  * \brief Obtient le rectangle de la zone visible et interactive en coordonnées logiques.
  *
  * Cette fonction retourne le rectangle représentant la zone de l'écran qui est garantie
