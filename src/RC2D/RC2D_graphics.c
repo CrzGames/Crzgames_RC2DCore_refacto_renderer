@@ -2,6 +2,8 @@
 
 #include <SDL3/SDL_iostream.h>
 
+#include <math.h>
+
 #include <RC2D/RC2D_internal.h>
 #include <RC2D/RC2D_logger.h>
 #include <RC2D/RC2D_memory.h>
@@ -691,6 +693,9 @@ RC2D_Font rc2d_graphics_openFontFromStorage(const char* storage_path, RC2D_Stora
     font.alignment  = TTF_HORIZONTAL_ALIGN_LEFT;
     font._file_data = bytes;
 
+    TTF_SetFontHinting(font.sdl_font, TTF_HINTING_LIGHT);
+    TTF_SetFontKerning(font.sdl_font, true);
+
     // Retour de la police créée
     return font;
 }
@@ -971,7 +976,10 @@ bool rc2d_graphics_drawText(RC2D_Text* text, float x, float y)
     // Vérification des paramètres
     if (!text || !text->sdl_text) return false;
 
-    if(!TTF_DrawRendererText(text->sdl_text, x, y))
+    const float snappedX = roundf(x);
+    const float snappedY = roundf(y);
+
+    if(!TTF_DrawRendererText(text->sdl_text, snappedX, snappedY))
     {
         RC2D_log(RC2D_LOG_ERROR, "Failed to draw text: %s\n", SDL_GetError());
         return false;
