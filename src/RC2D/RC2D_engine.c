@@ -346,108 +346,6 @@ const char* rc2d_composition_to_string(SDL_GPUSwapchainComposition comp) {
 }
 
 /**
- * \brief Configure le swapchain GPU avec la meilleure combinaison de mode de présentation et de composition.
- *
- * Cette fonction tente de trouver et d'appliquer la meilleure combinaison supportée de mode de présentation
- * et de composition de swapchain pour le dispositif GPU et la fenêtre donnés.
- *
- * \return true si une configuration valide a été appliquée, false sinon.
- *
- * \since Cette fonction est disponible depuis RC2D 1.0.0.
- */
-static bool rc2d_engine_configure_swapchain(void)
-{
-    // SDL3 : Configurer le mode de présentation du GPU
-    /**
-     * SDL_GPU_PRESENTMODE_MAILBOX est utiliser par défaut,
-     * car il est généralement le meilleur choix pour la plupart des applications.
-     * Il offre un bon équilibre entre la latence et la fluidité de l'affichage, 
-     * mais il n'est pas toujours disponible sur tous les systèmes.
-     * 
-     * SDL_GPU_PRESENTMODE_VSYNC est un bon choix si vous voulez éviter le tearing,
-     * mais il peut introduire une latence supplémentaire, mais il est toujours disponible et sûr.
-     * 
-     * SDL_GPU_PRESENTMODE_IMMEDIATE est le moins recommandé, car il peut entraîner du tearing,
-     * mais il peut être utilisé si vous avez besoin de la latence la plus basse possible.
-     */
-    SDL_GPUPresentMode present_modes[] = {
-        SDL_GPU_PRESENTMODE_MAILBOX,
-        SDL_GPU_PRESENTMODE_VSYNC,
-        SDL_GPU_PRESENTMODE_IMMEDIATE
-    };
-
-    // Configurer le swapchain pour le GPU
-    /**
-     * SDL_GPU_SWAPCHAINCOMPOSITION_HDR10_ST2084 est le meilleur choix pour les écrans HDR,
-     * mais il n'est pas toujours disponible sur tous les systèmes.
-     * 
-     * SDL_GPU_SWAPCHAINCOMPOSITION_HDR_EXTENDED_LINEAR est un bon choix pour les écrans HDR,
-     * mais il n'est pas toujours disponible sur tous les systèmes.
-     * 
-     * SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR est un bon choix pour les écrans SDR,
-     * mais il n'est pas toujours disponible sur tous les systèmes.
-     * 
-     * SDL_GPU_SWAPCHAINCOMPOSITION_SDR est toujours disponible sur tous les systèmes.
-     */
-    SDL_GPUSwapchainComposition compositions[] = {
-        SDL_GPU_SWAPCHAINCOMPOSITION_HDR10_ST2084,
-        SDL_GPU_SWAPCHAINCOMPOSITION_HDR_EXTENDED_LINEAR,
-        SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR,
-        SDL_GPU_SWAPCHAINCOMPOSITION_SDR
-    };
-    
-    /**
-     * Appliquer le swapchain pour le GPU
-     * Rechercher la meilleure combinaison supportée entre le mode de présentation et la composition.
-     */
-    bool swapchain_combo_found = false;
-    for (int i = 0; i < SDL_arraysize(present_modes); ++i)
-    {
-        for (int j = 0; j < SDL_arraysize(compositions); ++j) 
-        {
-            SDL_GPUPresentMode pm = present_modes[i];
-            SDL_GPUSwapchainComposition sc = compositions[j];
-
-            // Vérifie si la combinaison est supportée individuellement
-            if (SDL_WindowSupportsGPUPresentMode(rc2d_engine_state.gpu_device, rc2d_engine_state.window, pm) &&
-                SDL_WindowSupportsGPUSwapchainComposition(rc2d_engine_state.gpu_device, rc2d_engine_state.window, sc)) 
-            {
-                // Essaye la combinaison
-                if (SDL_SetGPUSwapchainParameters(rc2d_engine_state.gpu_device, rc2d_engine_state.window, sc, pm)) 
-                {
-                    // Si la combinaison est supportée, on l'applique
-                    rc2d_engine_state.gpu_present_mode = pm;
-                    rc2d_engine_state.gpu_swapchain_composition = sc;
-                    RC2D_log(RC2D_LOG_INFO, "GPU swapchain configuré avec succès : present_mode = %s, composition = %s", rc2d_present_mode_to_string(pm), rc2d_composition_to_string(sc));
-                    swapchain_combo_found = true;
-                    break;
-                }
-                else
-                {
-                    /**
-                     * Si la combinaison de mode de présentation et de composition est supportée individuellement
-                     * mais qu'elle échoue lors de l'application avec SDL_SetGPUSwapchainParameters, on loggue un avertissement
-                     * en précisant les noms lisibles de la combinaison qui a échoué.
-                     */
-                    RC2D_log(RC2D_LOG_WARN, "La combinaison de mode de présentation et de composition a échoué : present_mode = %s, composition = %s", rc2d_present_mode_to_string(pm), rc2d_composition_to_string(sc));
-                }
-            }
-        }
-
-        // Si une combinaison valide a été trouvée, on sort de la boucle externe
-        if (swapchain_combo_found) break;
-    }
-
-    if (!swapchain_combo_found) 
-    {
-        RC2D_log(RC2D_LOG_CRITICAL, "Could not find any valid swapchain configuration.");
-        return false;
-    }
-
-    return true;
-}
-
-/**
  * \brief Initialise la bibliothèque RCENet pour le module réseau.
  * 
  * Cette fonction initialise la bibliothèque RCENet si le module RC2D_net est activé.
@@ -886,10 +784,19 @@ static bool rc2d_engine_create_window(void)
 /**
  * \brief Initialise le dispositif de Renderer GPU pour le rendu graphique dans RC2D.
  * 
- * Cette fonction configure et crée le dispositif GPU SDL3, vérifie les formats de shaders supportés,
- * configure les modes de présentation et les paramètres de swapchain, et associe la fenêtre au GPU.
+ * Cette fonction configure et crée un renderer SDL3 utilisant le backend GPU,
+ * force une sortie SDR/sRGB pour éviter les problèmes de colorimétrie sur les écrans HDR,
+ * configure les options GPU demandées, et associe la fenêtre au renderer.
+ *
+ * Important :
+ * - On utilise SDL_CreateRendererWithProperties() au lieu de SDL_CreateGPURenderer()
+ *   afin de pouvoir forcer explicitement le colorspace de sortie.
+ * - Le renderer reste bien le renderer "gpu" de SDL.
+ * - Le colorspace de sortie est forcé en SDL_COLORSPACE_SRGB pour conserver un rendu SDR classique,
+ *   adapté aux assets 2D, PNG, UI et textures standards.
+ * - On ne configure pas manuellement la swapchain HDR ici. SDL_Renderer doit gérer la sortie.
  * 
- * \return true si le GPU a été initialisé avec succès, false sinon.
+ * \return true si le renderer GPU a été initialisé avec succès, false sinon.
  * 
  * \since Cette fonction est disponible depuis RC2D 1.0.0.
  */
@@ -898,55 +805,171 @@ static bool rc2d_engine_create_renderergpu(void)
     /**
      * Active le mode de débogage pour le rendu GPU si demandé dans la configuration.
      * Utile pour le développement et le débogage des shaders.
-    */
-    SDL_SetHintWithPriority(SDL_HINT_RENDER_GPU_DEBUG, rc2d_engine_state.config->gpuOptions->debugMode ? "1" : "0", SDL_HINT_OVERRIDE);
+     */
+    SDL_SetHintWithPriority(
+        SDL_HINT_RENDER_GPU_DEBUG,
+        rc2d_engine_state.config->gpuOptions->debugMode ? "1" : "0",
+        SDL_HINT_OVERRIDE
+    );
 
     /**
-    * Une variable contrôlant s'il faut préférer un GPU basse consommation sur les systèmes multi-GPU.
-    */ 
-    SDL_SetHintWithPriority(SDL_HINT_RENDER_GPU_LOW_POWER, rc2d_engine_state.config->gpuOptions->preferLowPower ? "1" : "0", SDL_HINT_OVERRIDE);
+     * Une variable contrôlant s'il faut préférer un GPU basse consommation sur les systèmes multi-GPU.
+     */
+    SDL_SetHintWithPriority(
+        SDL_HINT_RENDER_GPU_LOW_POWER,
+        rc2d_engine_state.config->gpuOptions->preferLowPower ? "1" : "0",
+        SDL_HINT_OVERRIDE
+    );
 
     /**
      * Force le backend GPU si demandé dans la configuration.
+     *
+     * Note :
+     * - SDL_HINT_GPU_DRIVER permet de sélectionner le backend GPU utilisé par SDL_GPU.
+     * - Si RC2D_GPU_DRIVER_DEFAULT est utilisé, on laisse SDL choisir automatiquement.
      */
-    switch (rc2d_engine_state.config->gpuOptions->driver) {
+    switch (rc2d_engine_state.config->gpuOptions->driver)
+    {
         case RC2D_GPU_DRIVER_VULKAN:
             SDL_SetHintWithPriority(SDL_HINT_GPU_DRIVER, "vulkan", SDL_HINT_OVERRIDE);
             break;
+
         case RC2D_GPU_DRIVER_METAL:
             SDL_SetHintWithPriority(SDL_HINT_GPU_DRIVER, "metal", SDL_HINT_OVERRIDE);
             break;
+
         case RC2D_GPU_DRIVER_DIRECT3D12:
             SDL_SetHintWithPriority(SDL_HINT_GPU_DRIVER, "direct3d12", SDL_HINT_OVERRIDE);
             break;
+
         case RC2D_GPU_DRIVER_PRIVATE:
-            // Rien d'équivalent en public pour un backend privé.
+            /**
+             * Rien d'équivalent en public pour un backend privé.
+             */
             break;
+
         case RC2D_GPU_DRIVER_DEFAULT:
         default:
-            // Laisser SDL choisir
+            /**
+             * Laisser SDL choisir le backend GPU le plus approprié.
+             */
             break;
     }
 
     /**
-    * Créez un contexte de rendu GPU 2D pour une fenêtre,
-    * avec prise en charge du format de shader spécifié.
-    */
-    rc2d_engine_state.renderer = SDL_CreateGPURenderer(NULL, rc2d_engine_state.window);
-    if (!rc2d_engine_state.renderer) 
+     * Crée un objet de propriétés SDL.
+     *
+     * Ces propriétés permettent de créer un renderer SDL avec une configuration explicite :
+     * - choix du renderer "gpu",
+     * - fenêtre cible,
+     * - colorspace de sortie,
+     * - VSync.
+     */
+    SDL_PropertiesID props = SDL_CreateProperties();
+    if (props == 0)
     {
-        RC2D_log(RC2D_LOG_CRITICAL, "Erreur lors de la création du renderer GPU : %s", SDL_GetError());
+        RC2D_log(RC2D_LOG_CRITICAL, "Erreur SDL_CreateProperties : %s", SDL_GetError());
         return false;
-    }
-    else
-    {
-        RC2D_log(RC2D_LOG_INFO, "Renderer GPU créé avec succès.");
-        rc2d_engine_state.gpu_device = SDL_GetGPURendererDevice(rc2d_engine_state.renderer);
     }
 
     /**
-    * Renvoie true si tout s'est bien passé.
-    */
+     * Force l'utilisation du renderer SDL nommé "gpu".
+     *
+     * Cela remplace l'appel direct à SDL_CreateGPURenderer(),
+     * tout en conservant le backend GPU de SDL_Renderer.
+     */
+    SDL_SetStringProperty(
+        props,
+        SDL_PROP_RENDERER_CREATE_NAME_STRING,
+        "gpu"
+    );
+
+    /**
+     * Associe la fenêtre SDL au renderer.
+     *
+     * Le renderer créé affichera son rendu dans rc2d_engine_state.window.
+     */
+    SDL_SetPointerProperty(
+        props,
+        SDL_PROP_RENDERER_CREATE_WINDOW_POINTER,
+        rc2d_engine_state.window
+    );
+
+    /**
+     * IMPORTANT :
+     * Force une sortie SDR/sRGB même si l'écran Windows est en HDR.
+     *
+     * Cela évite que les assets SDR classiques soient interprétés ou convertis
+     * dans un pipeline HDR/linéaire inadapté, ce qui peut provoquer des couleurs
+     * trop saturées, rouges, orangées ou brûlées.
+     *
+     * Pour un moteur 2D classique avec PNG, UI, sprites et textures SDR,
+     * SDL_COLORSPACE_SRGB est le choix le plus sûr.
+     */
+    SDL_SetNumberProperty(
+        props,
+        SDL_PROP_RENDERER_CREATE_OUTPUT_COLORSPACE_NUMBER,
+        SDL_COLORSPACE_SRGB
+    );
+
+    /**
+     * Active la synchronisation verticale dès la création du renderer.
+     *
+     * Cela permet de synchroniser le rendu avec le taux de rafraîchissement du moniteur,
+     * réduisant ainsi les déchirures d'écran.
+     */
+    SDL_SetNumberProperty(
+        props,
+        SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER,
+        1
+    );
+
+    /**
+     * Crée un contexte de rendu GPU 2D pour une fenêtre,
+     * avec les propriétés configurées ci-dessus.
+     *
+     * Contrairement à SDL_CreateGPURenderer(), cette méthode permet de contrôler
+     * explicitement le colorspace de sortie du renderer.
+     */
+    rc2d_engine_state.renderer = SDL_CreateRendererWithProperties(props);
+
+    /**
+     * Les propriétés ne sont plus nécessaires après la création du renderer.
+     */
+    SDL_DestroyProperties(props);
+
+    if (!rc2d_engine_state.renderer)
+    {
+        RC2D_log(
+            RC2D_LOG_CRITICAL,
+            "Erreur lors de la création du renderer GPU SDR/sRGB : %s",
+            SDL_GetError()
+        );
+        return false;
+    }
+
+    /**
+     * Récupère le périphérique GPU interne utilisé par le renderer SDL.
+     *
+     * Ce device peut être utilisé par les parties du moteur qui ont besoin
+     * d'accéder directement à SDL_GPU.
+     */
+    rc2d_engine_state.gpu_device = SDL_GetGPURendererDevice(rc2d_engine_state.renderer);
+
+    if (rc2d_engine_state.gpu_device == NULL)
+    {
+        RC2D_log(
+            RC2D_LOG_WARN,
+            "Renderer créé, mais SDL_GetGPURendererDevice retourne NULL : %s",
+            SDL_GetError()
+        );
+    }
+
+    RC2D_log(RC2D_LOG_INFO, "Renderer GPU créé avec sortie forcée SDR/sRGB.");
+
+    /**
+     * Renvoie true si tout s'est bien passé.
+     */
     return true;
 }
 
@@ -2208,20 +2231,6 @@ SDL_AppResult rc2d_engine_processevent(SDL_Event *event)
     {
         rc2d_engine_presentationUpdate();
         rc2d_engine_update_fps_based_on_monitor();
-    }
-
-    // Window HDR State changed
-    else if (event->type == SDL_EVENT_WINDOW_HDR_STATE_CHANGED ||
-            event->type == SDL_EVENT_WINDOW_ICCPROF_CHANGED)
-    {
-		rc2d_engine_presentationUpdate();
-        rc2d_engine_update_fps_based_on_monitor();
-		
-        // Re-set le meilleur swapchain disponible
-        if (!rc2d_engine_configure_swapchain())
-        {
-            RC2D_log(RC2D_LOG_ERROR, "Failed to update swapchain on HDR state change: %s", SDL_GetError());
-        }
     }
 
     else if (event->type == SDL_EVENT_FINGER_DOWN ||
@@ -3728,4 +3737,3 @@ void rc2d_engine_configure(const RC2D_EngineConfig* config)
         rc2d_engine_state.config->textureScaleMode = RC2D_TEXTURE_SCALE_LINEAR;
     }
 }
-
