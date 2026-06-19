@@ -36,7 +36,7 @@ jobs:
     container: ${{ matrix.config.platform == 'steamrt4' && matrix.config.container || '' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Java JDK LTS - Android
         if: matrix.config.platform == 'android'
